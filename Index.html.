@@ -3,59 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kolma - Tu Supermercado</title>
-    <script src="https://sdks.shopifycdn.com/buy-button/latest/buy-button-storefront.js"></script>
+    <title>Kolma - Tu Supermercado Online</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8F9FA; }
+        .red-kolma { color: #E63946; }
+        .bg-kolma { background-color: #E63946; }
+        .search-shadow { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    </style>
 </head>
-<body class="bg-gray-50">
+<body class="text-gray-800">
 
-    <header class="bg-white p-4 text-center">
-        <h1 class="text-3xl font-black text-red-600">KOLMA</h1>
+    <header class="bg-white sticky top-0 z-50 border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between gap-4">
+            <div class="flex-shrink-0">
+                <span class="text-3xl font-black tracking-tighter bg-kolma text-white px-3 py-1 rounded-lg">KOLMA</span>
+            </div>
+
+            <div class="hidden md:flex flex-grow max-w-2xl relative">
+                <input type="text" placeholder="Busca productos, marcas o categorías..." 
+                       class="w-full bg-gray-100 border-none rounded-full py-3 px-6 pl-12 focus:ring-2 focus:ring-red-500 outline-none transition-all">
+                <i data-lucide="search" class="absolute left-4 top-3.5 text-gray-400 w-5 h-5"></i>
+            </div>
+
+            <div class="flex items-center gap-6">
+                <button class="hidden lg:flex flex-col items-center text-gray-500 hover:text-red-600 transition">
+                    <i data-lucide="user" class="w-6 h-6"></i>
+                    <span class="text-[10px] font-bold">MI CUENTA</span>
+                </button>
+                <button class="relative bg-red-50 p-3 rounded-full text-red-600 hover:bg-red-600 hover:text-white transition group">
+                    <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                    <span class="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-white group-hover:bg-black">3</span>
+                </button>
+            </div>
+        </div>
     </header>
 
-    <div id="product-container" class="max-w-7xl mx-auto p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        
+        <section class="flex gap-4 overflow-x-auto pb-4 no-scrollbar mb-8">
+            <button class="flex flex-col items-center min-w-[90px] gap-2 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-red-200 transition">
+                <span class="text-2xl">🍎</span>
+                <span class="text-xs font-bold uppercase tracking-wide">Frutas</span>
+            </button>
+            <button class="flex flex-col items-center min-w-[90px] gap-2 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-red-200 transition">
+                <span class="text-2xl">🥛</span>
+                <span class="text-xs font-bold uppercase tracking-wide">Lácteos</span>
+            </button>
+            <button class="flex flex-col items-center min-w-[90px] gap-2 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-red-200 transition border-red-500 bg-red-50">
+                <span class="text-2xl">🔥</span>
+                <span class="text-xs font-bold uppercase tracking-wide text-red-600">Ofertas</span>
+            </button>
+            <button class="flex flex-col items-center min-w-[90px] gap-2 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-red-200 transition">
+                <span class="text-2xl">🧼</span>
+                <span class="text-xs font-bold uppercase tracking-wide">Limpieza</span>
+            </button>
+            <button class="flex flex-col items-center min-w-[90px] gap-2 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-red-200 transition border-red-500 bg-red-50">
+                <span class="text-2xl">🥩</span>
+                <span class="text-xs font-bold uppercase tracking-wide">Carnes</span>
+            </button>
+            <button class="flex flex-col items-center min-w-[90px] gap-2 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-red-200 transition">
+                <span class="text-2xl">🍷</span>
+                <span class="text-xs font-bold uppercase tracking-wide">Bebidas</span>
+            </button>
+        </section>
+
+        <section class="mb-10">
+            <div class="bg-red-600 rounded-3xl p-8 md:p-12 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between shadow-xl shadow-red-200">
+                <div class="z-10 text-center md:text-left space-y-4">
+                    <span class="bg-white/20 text-white text-xs font-black px-3 py-1 rounded-full tracking-widest uppercase">Especial de Hoy</span>
+                    <h2 class="text-4xl md:text-6xl font-black leading-tight">Frutas Frescas <br>con 20% OFF</h2>
+                    <p class="text-red-100 font-semibold opacity-90">Directo del campo a tu mesa en menos de 1 hora.</p>
+                    <button class="bg-white text-red-600 font-extrabold px-8 py-3 rounded-full hover:bg-gray-100 transition shadow-lg">COMPRAR AHORA</button>
+                </div>
+                <div class="mt-8 md:mt-0 opacity-80 scale-125">
+                    <i data-lucide="shopping-bag" class="w-48 h-48"></i>
+                </div>
+                <div class="absolute -right-10 -top-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+            </div>
+        </section>
+
+        <section>
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-extrabold tracking-tight">Lo más vendido</h3>
+                <a href="#" class="text-red-600 font-bold text-sm hover:underline">Ver todo →</a>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                <div class="bg-white p-4 rounded-2xl border border-gray-100 hover:shadow-xl transition-all group flex flex-col justify-between">
+                    <div class="relative mb-4">
+                        <span class="absolute top-0 left-0 bg-red-100 text-red-600 text-[10px] font-black px-2 py-1 rounded-md">OFERTA</span>
+                        <img src="https://images.unsplash.com/photo-1550989460-0adf9ea622e2?q=80&w=400" alt="Producto" class="w-full h-40 object-cover rounded-xl group-hover:scale-105 transition-transform">
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-[10px] font-bold uppercase mb-1">Frutas & Verduras</p>
+                        <h4 class="font-bold text-gray-800 leading-snug mb-2">Manzana Roja Gala Importada</h4>
+                        <div class="flex items-center justify-between mt-auto">
+                            <div>
+                                <span class="block text-lg font-black text-gray-900">$45.00</span>
+                                <span class="text-xs text-gray-400 line-through">$58.00</span>
+                            </div>
+                            <button class="bg-gray-100 text-gray-800 w-10 h-10 rounded-xl flex items-center justify-center hover:bg-red-600 hover:text-white transition">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-gray-100 hover:shadow-xl transition-all group flex flex-col justify-between">
+                    <div class="relative mb-4">
+                        <img src="https://images.unsplash.com/photo-1628088062854-d1870b4553ad?q=80&w=400" alt="Producto" class="w-full h-40 object-cover rounded-xl group-hover:scale-105 transition-transform">
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-[10px] font-bold uppercase mb-1">Lácteos</p>
+                        <h4 class="font-bold text-gray-800 leading-snug mb-2">Leche Entera Premium 1L</h4>
+                        <div class="flex items-center justify-between mt-auto">
+                            <div>
+                                <span class="block text-lg font-black text-gray-900">$72.00</span>
+                            </div>
+                            <button class="bg-gray-100 text-gray-800 w-10 h-10 rounded-xl flex items-center justify-center hover:bg-red-600 hover:text-white transition">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-gray-100 hover:shadow-xl transition-all group flex flex-col justify-between">
+                    <div class="relative mb-4">
+                        <img src="https://images.unsplash.com/photo-1563220412-259253457221?q=80&w=400" alt="Producto" class="w-full h-40 object-cover rounded-xl group-hover:scale-105 transition-transform">
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-[10px] font-bold uppercase mb-1">Abarrotes</p>
+                        <h4 class="font-bold text-gray-800 leading-snug mb-2">Arroz Selecto Kolma 5lbs</h4>
+                        <div class="flex items-center justify-between mt-auto">
+                            <div>
+                                <span class="block text-lg font-black text-gray-900">$185.00</span>
+                            </div>
+                            <button class="bg-gray-100 text-gray-800 w-10 h-10 rounded-xl flex items-center justify-center hover:bg-red-600 hover:text-white transition">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 h-16 flex items-center justify-around px-4 z-50">
+        <button class="flex flex-col items-center text-red-600">
+            <i data-lucide="home" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold mt-1">Inicio</span>
+        </button>
+        <button class="flex flex-col items-center text-gray-400">
+            <i data-lucide="search" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold mt-1">Buscar</span>
+        </button>
+        <button class="flex flex-col items-center text-gray-400">
+            <i data-lucide="heart" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold mt-1">Favoritos</span>
+        </button>
+        <button class="flex flex-col items-center text-gray-400">
+            <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold mt-1">Mi Carrito</span>
+        </button>
+    </div>
+
+    <div class="fixed bottom-20 right-6 hidden lg:block animate-bounce">
+        <div class="bg-black text-white p-4 rounded-2xl shadow-2xl flex items-center gap-3">
+            <div class="bg-green-500 p-2 rounded-full text-white">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+            </div>
+            <div>
+                <p class="text-[10px] font-black uppercase text-gray-400 tracking-tighter leading-none">Confianza Kolma</p>
+                <p class="text-xs font-bold">Paga al Recibir en Casa</p>
+            </div>
         </div>
+    </div>
 
     <script>
-        // CONFIGURACIÓN: Aquí van tus llaves de Shopify
-        const shopDomain = 'TU-TIENDA.myshopify.com';
-        const storefrontToken = 'TU-ACCESS-TOKEN';
-
-        const client = ShopifyBuy.buildClient({
-            domain: shopDomain,
-            storefrontAccessToken: storefrontToken
-        });
-
-        const ui = ShopifyBuy.UI.init(client);
-
-        // Función para cargar productos y mostrarlos en tu diseño
-        function cargarProductos() {
-            client.product.fetchAll().then((products) => {
-                const container = document.getElementById('product-container');
-                products.forEach(product => {
-                    // Creamos un div por cada producto
-                    const div = document.createElement('div');
-                    div.id = 'product-' + product.id;
-                    container.appendChild(div);
-
-                    // Insertamos el componente de Shopify en ese div
-                    ui.createComponent('product', {
-                        id: product.id,
-                        node: div,
-                        options: {
-                            product: {
-                                styles: {
-                                    button: { 'background-color': '#E63946', 'border-radius': '12px' }
-                                },
-                                text: { button: 'AGREGAR AL CARRITO' }
-                            }
-                        }
-                    });
-                });
-            });
-        }
-
-        cargarProductos();
+        // Inicializar iconos de Lucide
+        lucide.createIcons();
     </script>
 </body>
 </html>
+
