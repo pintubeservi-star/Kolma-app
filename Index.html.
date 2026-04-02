@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kolma - Tu Supermercado</title>
+    <script src="https://sdks.shopifycdn.com/buy-button/latest/buy-button-storefront.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+
+    <header class="bg-white p-4 text-center">
+        <h1 class="text-3xl font-black text-red-600">KOLMA</h1>
+    </header>
+
+    <div id="product-container" class="max-w-7xl mx-auto p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+        </div>
+
+    <script>
+        // CONFIGURACIÓN: Aquí van tus llaves de Shopify
+        const shopDomain = 'TU-TIENDA.myshopify.com';
+        const storefrontToken = 'TU-ACCESS-TOKEN';
+
+        const client = ShopifyBuy.buildClient({
+            domain: shopDomain,
+            storefrontAccessToken: storefrontToken
+        });
+
+        const ui = ShopifyBuy.UI.init(client);
+
+        // Función para cargar productos y mostrarlos en tu diseño
+        function cargarProductos() {
+            client.product.fetchAll().then((products) => {
+                const container = document.getElementById('product-container');
+                products.forEach(product => {
+                    // Creamos un div por cada producto
+                    const div = document.createElement('div');
+                    div.id = 'product-' + product.id;
+                    container.appendChild(div);
+
+                    // Insertamos el componente de Shopify en ese div
+                    ui.createComponent('product', {
+                        id: product.id,
+                        node: div,
+                        options: {
+                            product: {
+                                styles: {
+                                    button: { 'background-color': '#E63946', 'border-radius': '12px' }
+                                },
+                                text: { button: 'AGREGAR AL CARRITO' }
+                            }
+                        }
+                    });
+                });
+            });
+        }
+
+        cargarProductos();
+    </script>
+</body>
+</html>
