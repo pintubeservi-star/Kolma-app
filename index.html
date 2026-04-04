@@ -2,79 +2,113 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KOLMARD - Supermercado Digital</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KOLMARD | Supermercado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .cart-modal { transition: transform 0.3s ease-in-out; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .active-nav { color: #dc2626; border-top: 3px solid #dc2626; }
+        .product-card { transition: transform 0.1s ease; }
+        .product-card:active { transform: scale(0.95); }
     </style>
 </head>
-<body class="bg-gray-50 pb-20">
+<body class="bg-[#F8F9FA] pb-24">
 
-    <header class="bg-red-600 text-white p-4 sticky top-0 z-50 shadow-lg">
-        <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold italic tracking-tighter">KOLMA<span class="text-yellow-400">RD</span></h1>
-            <button onclick="toggleCart()" class="relative p-2 bg-red-700 rounded-full">
-                <i data-lucide="shopping-cart"></i>
-                <span id="cart-count" class="absolute -top-1 -right-1 bg-yellow-400 text-red-700 text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
-            </button>
+    <header class="bg-red-600 pt-4 pb-6 px-5 sticky top-0 z-40 rounded-b-[2.5rem] shadow-xl">
+        <div class="flex justify-between items-center mb-4 text-white">
+            <div>
+                <p class="text-[10px] opacity-80 uppercase tracking-widest font-bold">Bienvenido a</p>
+                <h1 class="text-2xl font-extrabold italic">KOLMA<span class="text-yellow-400">RD</span></h1>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="toggleCart()" class="relative p-2 bg-white/20 rounded-full backdrop-blur-md">
+                    <i data-lucide="shopping-basket" class="w-6 h-6"></i>
+                    <span id="cart-badge" class="absolute -top-1 -right-1 bg-yellow-400 text-red-700 text-[10px] font-black rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                </button>
+            </div>
+        </div>
+        <div class="relative group">
+            <input type="text" id="search" oninput="filterProducts()" placeholder="Busca arroz, leche, carnes..." 
+                class="w-full p-4 pl-12 rounded-2xl border-none shadow-inner focus:ring-4 focus:ring-yellow-400/50 outline-none text-gray-800 font-medium">
+            <i data-lucide="search" class="absolute left-4 top-4 text-gray-400"></i>
         </div>
     </header>
 
-    <div class="p-4 max-w-4xl mx-auto">
-        <div class="relative">
-            <input type="text" id="search-input" oninput="filterProducts()" placeholder="¿Qué buscas hoy en Cotuí?" 
-                class="w-full p-4 pl-12 rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-red-500 outline-none">
-            <i data-lucide="search" class="absolute left-4 top-4 text-gray-400 w-5 h-5"></i>
-        </div>
+    <div class="px-5 mt-4 overflow-x-auto flex gap-3 no-scrollbar py-2">
+        <button onclick="filterCategory('All')" class="bg-red-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-md shrink-0">Todo</button>
+        <button onclick="filterCategory('Víveres')" class="bg-white text-gray-600 px-6 py-2 rounded-full text-sm font-bold shadow-sm shrink-0 border border-gray-100">Víveres</button>
+        <button onclick="filterCategory('Carnes')" class="bg-white text-gray-600 px-6 py-2 rounded-full text-sm font-bold shadow-sm shrink-0 border border-gray-100">Carnes</button>
+        <button onclick="filterCategory('Lácteos')" class="bg-white text-gray-600 px-6 py-2 rounded-full text-sm font-bold shadow-sm shrink-0 border border-gray-100">Lácteos</button>
     </div>
 
-    <main id="product-grid" class="max-w-4xl mx-auto p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
-        <p class="col-span-2 text-center py-10 text-gray-400 italic">Conectando con el inventario...</p>
+    <main class="px-5 mt-4">
+        <h2 class="text-lg font-extrabold text-gray-800 mb-4 flex items-center gap-2">
+            <span class="w-1.5 h-6 bg-red-600 rounded-full"></span> Ofertas del día
+        </h2>
+        <div id="grid" class="grid grid-cols-2 gap-4">
+            <div class="col-span-2 text-center py-20">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent"></div>
+                <p class="mt-2 text-gray-400 font-bold">Sincronizando con Shopify...</p>
+            </div>
+        </div>
     </main>
 
-    <div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] hidden flex justify-end">
-        <div class="bg-white w-full max-w-md h-full flex flex-col shadow-2xl animate-slide-in">
-            <div class="p-6 border-b flex justify-between items-center">
-                <h2 class="text-xl font-bold text-red-600 flex items-center gap-2">
-                    <i data-lucide="package"></i> Mi Carrito
-                </h2>
-                <button onclick="toggleCart()" class="text-gray-400 text-3xl">&times;</button>
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-8 py-3 flex justify-between items-center z-50">
+        <div class="flex flex-col items-center text-red-600">
+            <i data-lucide="home" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold mt-1">Inicio</span>
+        </div>
+        <div onclick="toggleCart()" class="flex flex-col items-center text-gray-400 hover:text-red-600 transition-colors">
+            <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold mt-1">Carrito</span>
+        </div>
+        <div class="flex flex-col items-center text-gray-400">
+            <i data-lucide="user" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold mt-1">Mi Cuenta</span>
+        </div>
+    </nav>
+
+    <div id="cart-modal" class="fixed inset-0 bg-black/60 z-[60] hidden backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md ml-auto h-full flex flex-col animate-slide-in">
+            <div class="p-6 bg-red-600 text-white flex justify-between items-center">
+                <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="package"></i> Mi Orden</h2>
+                <button onclick="toggleCart()" class="text-3xl">&times;</button>
             </div>
-            <div id="cart-items" class="flex-grow overflow-y-auto p-6 space-y-4">
-                </div>
-            <div class="p-6 border-t bg-gray-50">
-                <div class="flex justify-between text-xl font-bold mb-6">
-                    <span>Total:</span>
+            <div id="cart-items" class="flex-grow overflow-y-auto p-5 space-y-4"></div>
+            <div class="p-6 border-t bg-gray-50 rounded-t-3xl shadow-2xl">
+                <div class="flex justify-between text-2xl font-black mb-6 text-gray-800">
+                    <span>Total</span>
                     <span id="cart-total" class="text-red-600">RD$0</span>
                 </div>
-                <button onclick="sendWhatsApp()" class="w-full bg-green-500 hover:bg-green-600 text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-transform">
-                    <i data-lucide="send"></i> PEDIR POR WHATSAPP
+                <button onclick="checkout()" class="w-full bg-green-500 py-5 rounded-2xl font-black text-white text-lg shadow-lg flex justify-center items-center gap-3">
+                    COMPRAR POR WHATSAPP <i data-lucide="chevron-right"></i>
                 </button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- CONFIGURACIÓN (Cambia tus datos aquí) ---
-        const SHOPIFY_DOMAIN = 'tu-tienda.myshopify.com';
-        const ACCESS_TOKEN = 'tu_token_aqui';
-        const WHATSAPP_NUM = '8295609147';
+        // CONFIGURACIÓN DE TU NEGOCIO
+        const CONFIG = {
+            shop: 'tu-tienda.myshopify.com', // Ej: kolmard.myshopify.com
+            token: 'tu_token_aqui', // Tu Storefront Access Token
+            whatsapp: '8295609147'
+        };
 
-        let allProducts = [];
+        let products = [];
         let cart = [];
 
-        // 1. CARGAR PRODUCTOS DE SHOPIFY
-        async function fetchShopify() {
+        async function init() {
             const query = `{
-                products(first: 50) {
+                products(first: 20) {
                     edges {
                         node {
                             id
                             title
+                            description
                             images(first: 1) { edges { node { url } } }
                             variants(first: 1) { edges { node { price { amount } } } }
                         }
@@ -83,98 +117,91 @@
             }`;
 
             try {
-                const res = await fetch(`https://${SHOPIFY_DOMAIN}/api/2024-01/graphql.json`, {
+                const response = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': ACCESS_TOKEN },
+                    headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token },
                     body: JSON.stringify({ query })
                 });
-                const json = await res.json();
-                allProducts = json.data.products.edges.map(e => ({
+                const { data } = await response.json();
+                products = data.products.edges.map(e => ({
                     id: e.node.id,
                     name: e.node.title,
                     price: parseFloat(e.node.variants.edges[0].node.price.amount),
                     image: e.node.images.edges[0]?.node.url || 'https://via.placeholder.com/150'
                 }));
-                renderProducts(allProducts);
+                render(products);
             } catch (err) {
-                console.error("Error:", err);
-                document.getElementById('product-grid').innerHTML = '<p class="col-span-2 text-center text-red-500">Error cargando productos. Verifica tus tokens.</p>';
+                document.getElementById('grid').innerHTML = `<p class="col-span-2 text-red-500 font-bold">Error de conexión con Shopify. Revisa el Token.</p>`;
             }
         }
 
-        // 2. MOSTRAR PRODUCTOS
-        function renderProducts(list) {
-            const grid = document.getElementById('product-grid');
+        function render(list) {
+            const grid = document.getElementById('grid');
             grid.innerHTML = list.map(p => `
-                <div class="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col">
-                    <img src="${p.image}" class="w-full h-32 object-contain mb-3">
-                    <h3 class="text-xs font-bold text-gray-700 h-8 overflow-hidden mb-1">${p.name}</h3>
-                    <p class="text-red-600 font-black text-sm mb-3">RD$${p.price}</p>
-                    <button onclick="addToCart('${p.id}')" class="w-full bg-red-600 text-white py-2 rounded-xl text-xs font-bold active:bg-red-800">AGREGAR</button>
-                </div>
-            `).join('');
-            lucide.createIcons();
-        }
-
-        // 3. BUSCADOR
-        function filterProducts() {
-            const term = document.getElementById('search-input').value.toLowerCase();
-            const filtered = allProducts.filter(p => p.name.toLowerCase().includes(term));
-            renderProducts(filtered);
-        }
-
-        // 4. CARRITO
-        function addToCart(id) {
-            const product = allProducts.find(p => p.id === id);
-            cart.push({ ...product, cartId: Date.now() });
-            updateCart();
-        }
-
-        function removeFromCart(cartId) {
-            cart = cart.filter(item => item.cartId !== cartId);
-            updateCart();
-        }
-
-        function updateCart() {
-            const list = document.getElementById('cart-items');
-            const totalEl = document.getElementById('cart-total');
-            const countEl = document.getElementById('cart-count');
-            
-            list.innerHTML = cart.map(item => `
-                <div class="flex items-center justify-between bg-gray-50 p-3 rounded-xl">
-                    <div class="flex items-center gap-3">
-                        <img src="${item.image}" class="w-10 h-10 rounded shadow-inner">
-                        <div>
-                            <p class="text-xs font-bold">${item.name}</p>
-                            <p class="text-xs text-red-500 font-bold">RD$${item.price}</p>
-                        </div>
+                <div class="product-card bg-white rounded-[2rem] p-4 shadow-sm flex flex-col border border-white">
+                    <img src="${p.image}" class="w-full h-32 object-contain mb-3 drop-shadow-md">
+                    <h3 class="text-xs font-bold text-gray-700 h-8 overflow-hidden">${p.name}</h3>
+                    <div class="mt-3 flex justify-between items-center">
+                        <span class="text-red-600 font-black text-sm">RD$${p.price.toLocaleString()}</span>
+                        <button onclick="add('${p.id}')" class="bg-red-600 text-white p-2 rounded-xl shadow-lg shadow-red-200">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </button>
                     </div>
-                    <button onclick="removeFromCart(${item.cartId})" class="text-gray-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             `).join('');
-
-            const total = cart.reduce((sum, item) => sum + item.price, 0);
-            totalEl.innerText = `RD$${total}`;
-            countEl.innerText = cart.length;
-            countEl.classList.toggle('hidden', cart.length === 0);
             lucide.createIcons();
         }
 
-        function toggleCart() {
-            document.getElementById('cart-modal').classList.toggle('hidden');
+        function filterProducts() {
+            const val = document.getElementById('search').value.toLowerCase();
+            render(products.filter(p => p.name.toLowerCase().includes(val)));
         }
 
-        // 5. ENVIAR A WHATSAPP
-        function sendWhatsApp() {
-            if (cart.length === 0) return;
-            const items = cart.map(i => `- ${i.name} (RD$${i.price})`).join('%0A');
-            const total = cart.reduce((sum, item) => sum + item.price, 0);
-            const text = `🛍️ *NUEVO PEDIDO - KOLMARD*%0A%0A${items}%0A%0A*TOTAL: RD$${total}*%0A%0A_Enviado desde la web_`;
-            window.open(`https://wa.me/${WHATSAPP_NUM}?text=${text}`, '_blank');
+        function add(id) {
+            const p = products.find(i => i.id === id);
+            cart.push({ ...p, cid: Date.now() });
+            update();
         }
 
-        // Iniciar todo
-        fetchShopify();
+        function update() {
+            const list = document.getElementById('cart-items');
+            const total = cart.reduce((s, i) => s + i.price, 0);
+            const badge = document.getElementById('cart-badge');
+            
+            badge.innerText = cart.length;
+            badge.classList.toggle('hidden', cart.length === 0);
+            
+            list.innerHTML = cart.map(i => `
+                <div class="flex items-center gap-4 bg-gray-50 p-4 rounded-3xl relative">
+                    <img src="${i.image}" class="w-16 h-16 object-contain">
+                    <div class="flex-grow">
+                        <p class="text-xs font-bold text-gray-800">${i.name}</p>
+                        <p class="text-red-600 font-black">RD$${i.price}</p>
+                    </div>
+                    <button onclick="remove(${i.cid})" class="text-gray-300"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                </div>
+            `).join('');
+            
+            document.getElementById('cart-total').innerText = `RD$${total.toLocaleString()}`;
+            lucide.createIcons();
+        }
+
+        function remove(cid) {
+            cart = cart.filter(i => i.cid !== cid);
+            update();
+        }
+
+        function toggleCart() { document.getElementById('cart-modal').classList.toggle('hidden'); }
+
+        function checkout() {
+            if (!cart.length) return;
+            const items = cart.map(i => `• ${i.name} (RD$${i.price})`).join('%0A');
+            const total = cart.reduce((s, i) => s + i.price, 0);
+            const msg = `🛒 *KOLMARD - NUEVO PEDIDO*%0A%0A${items}%0A%0A💰 *TOTAL: RD$${total}*%0A%0A📍 _Favor confirmar disponibilidad._`;
+            window.open(`https://wa.me/${CONFIG.whatsapp}?text=${msg}`, '_blank');
+        }
+
+        init();
         lucide.createIcons();
     </script>
 </body>
