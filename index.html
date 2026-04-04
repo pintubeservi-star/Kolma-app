@@ -3,65 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KOLMARD | Supermercado</title>
+    <title>KOLMARD | Supermercado Digital</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; background-color: #F8F9FA; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .active-nav { color: #dc2626; border-top: 3px solid #dc2626; }
-        .product-card { transition: transform 0.1s ease; }
-        .product-card:active { transform: scale(0.95); }
+        .category-pill.active { background-color: #dc2626; color: white; box-shadow: 0 10px 15px -3px rgba(220, 38, 38, 0.3); }
+        .product-card { transition: all 0.2s ease; border: 1px solid #fff; }
+        .product-card:active { transform: scale(0.96); background-color: #f3f4f6; }
+        @keyframes slideIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .animate-slide-in { animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
-<body class="bg-[#F8F9FA] pb-24">
+<body class="pb-24">
 
-    <header class="bg-red-600 pt-4 pb-6 px-5 sticky top-0 z-40 rounded-b-[2.5rem] shadow-xl">
-        <div class="flex justify-between items-center mb-4 text-white">
+    <header class="bg-red-600 pt-8 pb-10 px-6 sticky top-0 z-40 rounded-b-[3rem] shadow-2xl border-b-4 border-yellow-400">
+        <div class="flex justify-between items-center mb-6 text-white">
             <div>
-                <p class="text-[10px] opacity-80 uppercase tracking-widest font-bold">Bienvenido a</p>
-                <h1 class="text-2xl font-extrabold italic">KOLMA<span class="text-yellow-400">RD</span></h1>
+                <h1 class="text-3xl font-black italic tracking-tighter uppercase">KOLMA<span class="text-yellow-400">RD</span></h1>
+                <div class="flex items-center gap-1 opacity-90 text-[10px] font-bold">
+                    <i data-lucide="map-pin" class="w-3 h-3"></i> COTUÍ, RD
+                </div>
             </div>
-            <div class="flex gap-3">
-                <button onclick="toggleCart()" class="relative p-2 bg-white/20 rounded-full backdrop-blur-md">
-                    <i data-lucide="shopping-basket" class="w-6 h-6"></i>
-                    <span id="cart-badge" class="absolute -top-1 -right-1 bg-yellow-400 text-red-700 text-[10px] font-black rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
-                </button>
-            </div>
+            <button onclick="toggleCart()" class="relative p-3 bg-white/20 rounded-2xl backdrop-blur-md border border-white/30">
+                <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+                <span id="cart-badge" class="absolute -top-2 -right-2 bg-yellow-400 text-red-700 text-[11px] font-black rounded-full h-6 w-6 flex items-center justify-center border-2 border-red-600 hidden">0</span>
+            </button>
         </div>
-        <div class="relative group">
-            <input type="text" id="search" oninput="filterProducts()" placeholder="Busca arroz, leche, carnes..." 
-                class="w-full p-4 pl-12 rounded-2xl border-none shadow-inner focus:ring-4 focus:ring-yellow-400/50 outline-none text-gray-800 font-medium">
-            <i data-lucide="search" class="absolute left-4 top-4 text-gray-400"></i>
+        
+        <div class="relative">
+            <input type="text" id="search" oninput="handleSearch()" placeholder="¿Qué llevamos hoy a casa?" 
+                class="w-full p-4 pl-12 rounded-2xl border-none shadow-inner focus:ring-4 focus:ring-yellow-400/50 outline-none text-gray-800 font-semibold">
+            <i data-lucide="search" class="absolute left-4 top-4 text-gray-400 w-5 h-5"></i>
         </div>
     </header>
 
-    <div class="px-5 mt-4 overflow-x-auto flex gap-3 no-scrollbar py-2">
-        <button onclick="filterCategory('All')" class="bg-red-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-md shrink-0">Todo</button>
-        <button onclick="filterCategory('Víveres')" class="bg-white text-gray-600 px-6 py-2 rounded-full text-sm font-bold shadow-sm shrink-0 border border-gray-100">Víveres</button>
-        <button onclick="filterCategory('Carnes')" class="bg-white text-gray-600 px-6 py-2 rounded-full text-sm font-bold shadow-sm shrink-0 border border-gray-100">Carnes</button>
-        <button onclick="filterCategory('Lácteos')" class="bg-white text-gray-600 px-6 py-2 rounded-full text-sm font-bold shadow-sm shrink-0 border border-gray-100">Lácteos</button>
+    <div class="px-6 -mt-5 relative z-50">
+        <div id="category-list" class="flex gap-3 overflow-x-auto no-scrollbar py-2">
+            <button onclick="filterByCategory('All', this)" class="category-pill active bg-white text-gray-700 px-7 py-3 rounded-2xl text-xs font-black shadow-lg shrink-0 border border-gray-100 transition-all">TODO</button>
+            </div>
     </div>
 
-    <main class="px-5 mt-4">
-        <h2 class="text-lg font-extrabold text-gray-800 mb-4 flex items-center gap-2">
-            <span class="w-1.5 h-6 bg-red-600 rounded-full"></span> Ofertas del día
-        </h2>
-        <div id="grid" class="grid grid-cols-2 gap-4">
-            <div class="col-span-2 text-center py-20">
-                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-red-600 border-t-transparent"></div>
-                <p class="mt-2 text-gray-400 font-bold">Sincronizando con Shopify...</p>
+    <main class="px-6 mt-8">
+        <div class="flex justify-between items-center mb-6">
+            <h2 id="view-title" class="text-xl font-extrabold text-gray-900 tracking-tight">Pasillo Principal</h2>
+            <div class="bg-red-100 text-red-600 p-2 rounded-lg"><i data-lucide="layout-grid" class="w-4 h-4"></i></div>
+        </div>
+
+        <div id="product-grid" class="grid grid-cols-2 gap-4">
+            <div class="col-span-2 py-24 flex flex-col items-center justify-center">
+                <div class="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                <p class="mt-4 text-gray-400 font-bold italic">Abriendo el colmado...</p>
             </div>
         </div>
     </main>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-8 py-3 flex justify-between items-center z-50">
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-100 px-10 py-4 flex justify-between items-center z-50 rounded-t-[2rem] shadow-[0_-10px_25px_rgba(0,0,0,0.05)]">
         <div class="flex flex-col items-center text-red-600">
             <i data-lucide="home" class="w-6 h-6"></i>
             <span class="text-[10px] font-bold mt-1">Inicio</span>
         </div>
-        <div onclick="toggleCart()" class="flex flex-col items-center text-gray-400 hover:text-red-600 transition-colors">
+        <div onclick="toggleCart()" class="flex flex-col items-center text-gray-400 hover:text-red-600 transition-all cursor-pointer">
             <i data-lucide="shopping-cart" class="w-6 h-6"></i>
             <span class="text-[10px] font-bold mt-1">Carrito</span>
         </div>
@@ -71,44 +75,49 @@
         </div>
     </nav>
 
-    <div id="cart-modal" class="fixed inset-0 bg-black/60 z-[60] hidden backdrop-blur-sm">
-        <div class="bg-white w-full max-w-md ml-auto h-full flex flex-col animate-slide-in">
-            <div class="p-6 bg-red-600 text-white flex justify-between items-center">
-                <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="package"></i> Mi Orden</h2>
-                <button onclick="toggleCart()" class="text-3xl">&times;</button>
+    <div id="cart-modal" class="fixed inset-0 bg-black/60 z-[60] hidden backdrop-blur-sm p-4">
+        <div class="bg-white w-full max-w-md mx-auto h-[85vh] mt-12 rounded-[3.5rem] overflow-hidden flex flex-col animate-slide-in shadow-2xl">
+            <div class="p-8 border-b flex justify-between items-center bg-gray-50">
+                <div>
+                    <h2 class="text-2xl font-black text-gray-800">Mi Carrito</h2>
+                    <p id="cart-item-count" class="text-xs text-gray-400 font-bold">0 productos seleccionados</p>
+                </div>
+                <button onclick="toggleCart()" class="bg-gray-200 p-3 rounded-full text-gray-600 hover:bg-red-100 hover:text-red-600 transition-all">&times;</button>
             </div>
-            <div id="cart-items" class="flex-grow overflow-y-auto p-5 space-y-4"></div>
-            <div class="p-6 border-t bg-gray-50 rounded-t-3xl shadow-2xl">
-                <div class="flex justify-between text-2xl font-black mb-6 text-gray-800">
+            <div id="cart-items" class="flex-grow overflow-y-auto p-8 space-y-5 no-scrollbar">
+                </div>
+            <div class="p-8 bg-white border-t border-gray-100">
+                <div class="flex justify-between text-3xl font-black mb-8 text-gray-900">
                     <span>Total</span>
                     <span id="cart-total" class="text-red-600">RD$0</span>
                 </div>
-                <button onclick="checkout()" class="w-full bg-green-500 py-5 rounded-2xl font-black text-white text-lg shadow-lg flex justify-center items-center gap-3">
-                    COMPRAR POR WHATSAPP <i data-lucide="chevron-right"></i>
+                <button onclick="checkout()" class="w-full bg-green-500 hover:bg-green-600 py-6 rounded-[2.2rem] font-black text-white text-xl shadow-xl shadow-green-200 flex justify-center items-center gap-3 transition-all active:scale-95">
+                    COMPRAR POR WHATSAPP <i data-lucide="arrow-right" class="w-6 h-6"></i>
                 </button>
             </div>
         </div>
     </div>
 
     <script>
-        // CONFIGURACIÓN DE TU NEGOCIO
+        // --- CONEXIÓN AUTOMÁTICA CON TUS DATOS ---
         const CONFIG = {
-            shop: 'tu-tienda.myshopify.com', // Ej: kolmard.myshopify.com
-            token: 'tu_token_aqui', // Tu Storefront Access Token
+            shop: 'kolma-rd.myshopify.com', // Ya configurado para tu tienda
+            token: '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', // Usando tu token de acceso total
             whatsapp: '8295609147'
         };
 
-        let products = [];
+        let allProducts = [];
         let cart = [];
 
-        async function init() {
+        async function startApp() {
             const query = `{
-                products(first: 20) {
+                collections(first: 15) { edges { node { title } } }
+                products(first: 100) {
                     edges {
                         node {
                             id
                             title
-                            description
+                            productType
                             images(first: 1) { edges { node { url } } }
                             variants(first: 1) { edges { node { price { amount } } } }
                         }
@@ -123,72 +132,105 @@
                     body: JSON.stringify({ query })
                 });
                 const { data } = await response.json();
-                products = data.products.edges.map(e => ({
+                
+                // Categorías
+                renderCategories(data.collections.edges.map(e => e.node.title));
+
+                // Productos
+                allProducts = data.products.edges.map(e => ({
                     id: e.node.id,
                     name: e.node.title,
+                    type: e.node.productType || 'General',
                     price: parseFloat(e.node.variants.edges[0].node.price.amount),
                     image: e.node.images.edges[0]?.node.url || 'https://via.placeholder.com/150'
                 }));
-                render(products);
+                renderProducts(allProducts);
+
             } catch (err) {
-                document.getElementById('grid').innerHTML = `<p class="col-span-2 text-red-500 font-bold">Error de conexión con Shopify. Revisa el Token.</p>`;
+                console.error("Error cargando Shopify:", err);
+                document.getElementById('product-grid').innerHTML = `<p class="col-span-2 text-red-500 font-bold text-center">Revisa la conexión con Shopify.</p>`;
             }
         }
 
-        function render(list) {
-            const grid = document.getElementById('grid');
+        function renderCategories(list) {
+            const container = document.getElementById('category-list');
+            list.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = "category-pill bg-white text-gray-500 px-7 py-3 rounded-2xl text-xs font-black shadow-sm border border-gray-100 shrink-0 transition-all";
+                btn.innerText = cat.toUpperCase();
+                btn.onclick = (e) => {
+                    document.querySelectorAll('.category-pill').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    filterByCategory(cat);
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderProducts(list) {
+            const grid = document.getElementById('product-grid');
             grid.innerHTML = list.map(p => `
-                <div class="product-card bg-white rounded-[2rem] p-4 shadow-sm flex flex-col border border-white">
-                    <img src="${p.image}" class="w-full h-32 object-contain mb-3 drop-shadow-md">
-                    <h3 class="text-xs font-bold text-gray-700 h-8 overflow-hidden">${p.name}</h3>
-                    <div class="mt-3 flex justify-between items-center">
-                        <span class="text-red-600 font-black text-sm">RD$${p.price.toLocaleString()}</span>
-                        <button onclick="add('${p.id}')" class="bg-red-600 text-white p-2 rounded-xl shadow-lg shadow-red-200">
-                            <i data-lucide="plus" class="w-4 h-4"></i>
-                        </button>
+                <div class="product-card bg-white rounded-[2.8rem] p-5 shadow-sm flex flex-col justify-between">
+                    <img src="${p.image}" class="w-full h-36 object-contain mb-4">
+                    <div>
+                        <h3 class="text-[11px] font-extrabold text-gray-800 h-8 overflow-hidden leading-tight mb-2 uppercase tracking-tighter">${p.name}</h3>
+                        <div class="flex justify-between items-center">
+                            <span class="text-red-600 font-black text-sm">RD$${p.price.toLocaleString()}</span>
+                            <button onclick="addToCart('${p.id}')" class="bg-red-600 text-white p-3 rounded-2xl shadow-lg shadow-red-100 active:scale-75 transition-all">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             `).join('');
             lucide.createIcons();
         }
 
-        function filterProducts() {
+        function filterByCategory(cat) {
+            document.getElementById('view-title').innerText = cat === 'All' ? 'Pasillo Principal' : cat;
+            const filtered = cat === 'All' ? allProducts : allProducts.filter(p => p.type === cat || p.name.includes(cat));
+            renderProducts(filtered);
+        }
+
+        function handleSearch() {
             const val = document.getElementById('search').value.toLowerCase();
-            render(products.filter(p => p.name.toLowerCase().includes(val)));
+            renderProducts(allProducts.filter(p => p.name.toLowerCase().includes(val)));
         }
 
-        function add(id) {
-            const p = products.find(i => i.id === id);
+        function addToCart(id) {
+            const p = allProducts.find(i => i.id === id);
             cart.push({ ...p, cid: Date.now() });
-            update();
+            updateCartUI();
         }
 
-        function update() {
+        function updateCartUI() {
             const list = document.getElementById('cart-items');
-            const total = cart.reduce((s, i) => s + i.price, 0);
             const badge = document.getElementById('cart-badge');
+            const countLabel = document.getElementById('cart-item-count');
             
             badge.innerText = cart.length;
             badge.classList.toggle('hidden', cart.length === 0);
+            countLabel.innerText = `${cart.length} productos seleccionados`;
             
             list.innerHTML = cart.map(i => `
-                <div class="flex items-center gap-4 bg-gray-50 p-4 rounded-3xl relative">
+                <div class="flex items-center gap-5 bg-white p-5 rounded-[2.5rem] border border-gray-100 shadow-sm relative">
                     <img src="${i.image}" class="w-16 h-16 object-contain">
                     <div class="flex-grow">
-                        <p class="text-xs font-bold text-gray-800">${i.name}</p>
-                        <p class="text-red-600 font-black">RD$${i.price}</p>
+                        <p class="text-[10px] font-black text-gray-900 uppercase">${i.name}</p>
+                        <p class="text-red-600 font-black text-sm">RD$${i.price}</p>
                     </div>
-                    <button onclick="remove(${i.cid})" class="text-gray-300"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                    <button onclick="removeFromCart(${i.cid})" class="text-gray-300 hover:text-red-600 transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
                 </div>
             `).join('');
             
+            const total = cart.reduce((s, i) => s + i.price, 0);
             document.getElementById('cart-total').innerText = `RD$${total.toLocaleString()}`;
             lucide.createIcons();
         }
 
-        function remove(cid) {
+        function removeFromCart(cid) {
             cart = cart.filter(i => i.cid !== cid);
-            update();
+            updateCartUI();
         }
 
         function toggleCart() { document.getElementById('cart-modal').classList.toggle('hidden'); }
@@ -197,11 +239,11 @@
             if (!cart.length) return;
             const items = cart.map(i => `• ${i.name} (RD$${i.price})`).join('%0A');
             const total = cart.reduce((s, i) => s + i.price, 0);
-            const msg = `🛒 *KOLMARD - NUEVO PEDIDO*%0A%0A${items}%0A%0A💰 *TOTAL: RD$${total}*%0A%0A📍 _Favor confirmar disponibilidad._`;
+            const msg = `🛒 *NUEVO PEDIDO - KOLMARD*%0A%0A${items}%0A%0A💰 *TOTAL: RD$${total}*%0A%0A📍 _Cotuí, favor confirmar pedido._`;
             window.open(`https://wa.me/${CONFIG.whatsapp}?text=${msg}`, '_blank');
         }
 
-        init();
+        startApp();
         lucide.createIcons();
     </script>
 </body>
