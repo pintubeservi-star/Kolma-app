@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -10,9 +11,7 @@
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; background-color: #F8F9FA; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .product-card { transition: all 0.2s ease; background: white; border-radius: 2rem; padding: 1rem; border: 1px solid #eee; }
-        @keyframes slideIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .animate-slide-in { animation: slideIn 0.3s ease-out; }
+        .product-card { transition: all 0.2s ease; background: white; border-radius: 1.5rem; padding: 1rem; border: 1px solid #eee; }
     </style>
 </head>
 <body class="pb-24">
@@ -28,7 +27,6 @@
                 <span id="cart-badge" class="absolute -top-1 -right-1 bg-yellow-400 text-red-700 text-[10px] font-black rounded-full h-5 w-5 flex items-center justify-center border-2 border-red-600 hidden">0</span>
             </button>
         </div>
-        <input type="text" id="search" oninput="handleSearch()" placeholder="¿Qué buscas?" class="w-full p-3 pl-10 rounded-xl border-none shadow-inner outline-none text-sm font-bold">
     </header>
 
     <main class="px-6 mt-6">
@@ -40,11 +38,10 @@
     <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t px-10 py-4 flex justify-between items-center z-50 rounded-t-[2rem] shadow-2xl">
         <div onclick="location.reload()" class="text-red-600"><i data-lucide="home" class="w-6 h-6"></i></div>
         <div onclick="toggleCart()" class="text-gray-300"><i data-lucide="shopping-cart" class="w-6 h-6"></i></div>
-        <div class="text-gray-300"><i data-lucide="user" class="w-6 h-6"></i></div>
     </nav>
 
     <div id="cart-modal" class="fixed inset-0 bg-black/60 z-[60] hidden backdrop-blur-sm p-4">
-        <div class="bg-white w-full max-w-md mx-auto h-[85vh] mt-10 rounded-[2.5rem] overflow-hidden flex flex-col animate-slide-in">
+        <div class="bg-white w-full max-w-md mx-auto h-[85vh] mt-10 rounded-[2.5rem] overflow-hidden flex flex-col shadow-2xl">
             <div class="p-6 border-b flex justify-between items-center">
                 <h2 class="text-xl font-black text-gray-900 uppercase">Mi Carrito</h2>
                 <button onclick="toggleCart()" class="text-2xl font-bold text-gray-400">&times;</button>
@@ -107,7 +104,7 @@
             document.getElementById('product-grid').innerHTML = list.map(p => `
                 <div class="product-card flex flex-col justify-between">
                     <img src="${p.image}" class="w-full h-32 object-contain mb-2">
-                    <h3 class="text-[10px] font-bold text-gray-800 h-6 overflow-hidden uppercase">${p.name}</h3>
+                    <h3 class="text-[10px] font-bold text-gray-800 uppercase">${p.name}</h3>
                     <div class="flex justify-between items-center mt-2">
                         <span class="text-red-600 font-black text-xs">RD$${p.price}</span>
                         <button onclick="addToCart('${p.id}')" class="bg-red-600 text-white p-2 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></button>
@@ -131,10 +128,9 @@
             const list = document.getElementById('cart-items');
             list.innerHTML = cart.map(i => `
                 <div class="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl">
-                    <img src="${i.image}" class="w-12 h-12 object-contain">
                     <div class="flex-grow">
-                        <p class="text-[10px] font-bold uppercase leading-none">${i.name}</p>
-                        <p class="text-red-600 font-black text-xs mt-1">RD$${i.price}</p>
+                        <p class="text-[10px] font-bold uppercase">${i.name}</p>
+                        <p class="text-red-600 font-black text-xs">RD$${i.price}</p>
                     </div>
                     <button onclick="removeFromCart(${i.cid})" class="text-gray-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
@@ -152,27 +148,25 @@
 
         function toggleCart() { document.getElementById('cart-modal').classList.toggle('hidden'); }
 
-        // --- SOLUCIÓN AL ERROR DE INPUT ---
+        // --- MOTOR DE COMPRA DE ALTO RENDIMIENTO ---
         async function checkout() {
             if (!cart.length) return;
             const btn = document.getElementById('checkout-btn');
             btn.disabled = true;
-            btn.innerText = "CARGANDO PAGO...";
+            btn.innerText = "PROCESANDO...";
 
-            // Generamos los items para el checkout
+            // Shopify requiere que los IDs sean GIDs válidos
             const lineItems = cart.map(item => ({
                 variantId: item.variantId,
                 quantity: 1
             }));
 
-            // Usamos una mutación simplificada sin definir tipos estrictos en el encabezado
+            // Usamos una mutación que Shopify acepta globalmente
             const mutation = `
-                mutation {
-                    checkoutCreate(input: {
-                        lineItems: ${JSON.stringify(lineItems).replace(/"([^"]+)":/g, '$1:')}
-                    }) {
+                mutation checkoutCreate($input: CheckoutCreateInput!) {
+                    checkoutCreate(input: $input) {
                         checkout { webUrl }
-                        checkoutUserErrors { message }
+                        checkoutUserErrors { message field code }
                     }
                 }
             `;
@@ -184,22 +178,34 @@
                         'Content-Type': 'application/json',
                         'X-Shopify-Storefront-Access-Token': CONFIG.token
                     },
-                    body: JSON.stringify({ query: mutation })
+                    body: JSON.stringify({ 
+                        query: mutation,
+                        variables: { input: { lineItems } }
+                    })
                 });
                 
                 const result = await response.json();
-                const webUrl = result.data?.checkoutCreate?.checkout?.webUrl;
-
-                if (webUrl) {
-                    localStorage.removeItem('kolmard_cart');
-                    window.location.href = webUrl;
-                } else {
-                    alert("Error: " + (result.data?.checkoutCreate?.checkoutUserErrors[0]?.message || "No disponible"));
+                
+                if (result.errors) {
+                    console.error("Error GraphQL:", result.errors);
+                    alert("Error de API: " + result.errors[0].message);
                     btn.disabled = false;
                     btn.innerText = "Pagar Ahora";
+                    return;
+                }
+
+                const data = result.data.checkoutCreate;
+                
+                if (data.checkoutUserErrors && data.checkoutUserErrors.length > 0) {
+                    alert("Aviso de Shopify: " + data.checkoutUserErrors[0].message);
+                    btn.disabled = false;
+                    btn.innerText = "Pagar Ahora";
+                } else if (data.checkout && data.checkout.webUrl) {
+                    localStorage.removeItem('kolmard_cart');
+                    window.location.href = data.checkout.webUrl;
                 }
             } catch (err) {
-                alert("Error de conexión.");
+                alert("Error de red: Verifica tu internet.");
                 btn.disabled = false;
                 btn.innerText = "Pagar Ahora";
             }
