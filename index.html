@@ -1,11 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>KOLMA - Supermercado Digital</title>
+    <title>KOLMA Supermercado</title>
     
-    <!-- Librerías Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -14,47 +14,13 @@
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-        
-        :root {
-            --kolma-red: #E60023;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #fcfcfc;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .kolma-logo-container {
-            background-color: var(--kolma-red);
-            color: white;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 900;
-            border-radius: 10px;
-            font-size: 20px;
-            box-shadow: 0 4px 10px rgba(230, 0, 35, 0.2);
-        }
-
-        .product-card {
-            transition: transform 0.2s ease;
-        }
-        .product-card:active {
-            transform: scale(0.96);
-        }
-
-        .safe-bottom {
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-view { animation: fadeIn 0.4s ease-out; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f9fafb; margin: 0; }
+        .kolma-red { background-color: #E60023; }
+        .kolma-text { color: #E60023; }
+        .logo-box { background-color: #E60023; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; border-radius: 8px; width: 35px; height: 35px; }
+        .page-enter { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
@@ -63,264 +29,249 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // --- CONFIGURACIÓN DE SHOPIFY (TUS TOKENS INCLUIDOS) ---
-        const SHOPIFY_CONFIG = {
+        // --- CONFIGURACIÓN SHOPIFY ---
+        const SHOPIFY = {
             domain: 'q0q09e-cp.myshopify.com',
-            accessToken: 'a171ee1eaf68d9b7ca5234b4c45a9b0c',
-            version: '2024-01'
+            token: 'a171ee1eaf68d9b7ca5234b4c45a9b0c',
+            endpoint: 'https://q0q09e-cp.myshopify.com/api/2024-01/graphql.json'
         };
 
-        const API_URL = `https://${SHOPIFY_CONFIG.domain}/api/${SHOPIFY_CONFIG.version}/graphql.json`;
-
-        // --- COMPONENTE DE ICONOS ---
-        const Icon = ({ name, size = 20, className = "" }) => {
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            }, [name]);
+        // --- COMPONENTE ICONOS ---
+        const Icon = ({ name, size = 22, className = "" }) => {
+            useEffect(() => { if(window.lucide) window.lucide.createIcons(); }, [name]);
             return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
         };
 
-        // --- APP PRINCIPAL ---
         const App = () => {
-            const [view, setView] = useState('home');
+            const [view, setView] = useState('home'); // home, cart, profile, detail, search
             const [products, setProducts] = useState([]);
+            const [selectedProduct, setSelectedProduct] = useState(null);
             const [cart, setCart] = useState([]);
+            const [searchQuery, setSearchQuery] = useState("");
             const [loading, setLoading] = useState(true);
-            const [isCheckingOut, setIsCheckingOut] = useState(false);
 
             // Cargar productos de Shopify
             useEffect(() => {
-                const getProducts = async () => {
-                    const query = `
-                    {
-                      products(first: 20) {
-                        edges {
-                          node {
-                            id
-                            title
-                            description
-                            images(first: 1) { edges { node { url } } }
-                            variants(first: 1) {
-                              edges {
+                const fetchShopify = async () => {
+                    const query = `{
+                        products(first: 20) {
+                            edges {
                                 node {
-                                  id
-                                  price { amount }
+                                    id
+                                    title
+                                    description
+                                    images(first: 1) { edges { node { url } } }
+                                    variants(first: 1) { edges { node { id, price { amount } } } }
                                 }
-                              }
                             }
-                          }
                         }
-                      }
                     }`;
-
                     try {
-                        const response = await fetch(API_URL, {
+                        const res = await fetch(SHOPIFY.endpoint, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-Shopify-Storefront-Access-Token': SHOPIFY_CONFIG.accessToken,
-                            },
-                            body: JSON.stringify({ query }),
+                            headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOPIFY.token },
+                            body: JSON.stringify({ query })
                         });
-                        const json = await response.json();
-                        const fetchedProducts = json.data.products.edges.map(edge => ({
-                            id: edge.node.id,
-                            variantId: edge.node.variants.edges[0].node.id,
-                            title: edge.node.title,
-                            description: edge.node.description,
-                            price: parseFloat(edge.node.variants.edges[0].node.price.amount),
-                            image: edge.node.images.edges[0]?.node.url || 'https://via.placeholder.com/150'
-                        }));
-                        setProducts(fetchedProducts);
-                    } catch (error) {
-                        console.error("Error al cargar Shopify:", error);
-                    } finally {
-                        setLoading(false);
-                    }
+                        const { data } = await res.json();
+                        setProducts(data.products.edges.map(e => ({
+                            id: e.node.id,
+                            variantId: e.node.variants.edges[0].node.id,
+                            title: e.node.title,
+                            description: e.node.description,
+                            price: parseFloat(e.node.variants.edges[0].node.price.amount),
+                            image: e.node.images.edges[0]?.node.url
+                        })));
+                    } catch (e) { console.error("Error Shopify:", e); }
+                    setLoading(false);
                 };
-
-                getProducts();
+                fetchShopify();
             }, []);
 
-            // Checkout de Shopify
-            const handleCheckout = async () => {
-                if (cart.length === 0) return;
-                setIsCheckingOut(true);
-
-                const mutation = `
-                mutation checkoutCreate($input: CheckoutCreateInput!) {
-                  checkoutCreate(input: $input) {
-                    checkout { webUrl }
-                    checkoutUserErrors { message }
-                  }
-                }`;
-
-                const variables = {
-                    input: {
-                        lineItems: cart.map(item => ({
-                            variantId: item.variantId,
-                            quantity: item.quantity
-                        }))
-                    }
-                };
-
-                try {
-                    const response = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Shopify-Storefront-Access-Token': SHOPIFY_CONFIG.accessToken,
-                        },
-                        body: JSON.stringify({ query: mutation, variables }),
-                    });
-                    const json = await response.json();
-                    const checkoutUrl = json.data.checkoutCreate.checkout.webUrl;
-                    window.location.href = checkoutUrl; // Redirigir a la pasarela de pago de Shopify
-                } catch (error) {
-                    console.error("Error en checkout:", error);
-                    setIsCheckingOut(false);
-                }
-            };
-
-            const addToCart = (product) => {
+            // Funciones Carrito
+            const addToCart = (p) => {
                 setCart(prev => {
-                    const exists = prev.find(i => i.id === product.id);
-                    if (exists) {
-                        return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
-                    }
-                    return [...prev, { ...product, quantity: 1 }];
+                    const exists = prev.find(item => item.id === p.id);
+                    if (exists) return prev.map(item => item.id === p.id ? {...item, qty: item.qty + 1} : item);
+                    return [...prev, {...p, qty: 1}];
                 });
             };
 
-            const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+            const updateQty = (id, delta) => {
+                setCart(prev => prev.map(item => 
+                    item.id === id ? {...item, qty: Math.max(0, item.qty + delta)} : item
+                ).filter(item => item.qty > 0));
+            };
+
+            const total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+
+            // Filtrado para Buscador
+            const filteredProducts = products.filter(p => 
+                p.title.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+
+            // Checkout
+            const goCheckout = async () => {
+                const mutation = `mutation checkoutCreate($input: CheckoutCreateInput!) {
+                    checkoutCreate(input: $input) { checkout { webUrl } }
+                }`;
+                const variables = { input: { lineItems: cart.map(i => ({ variantId: i.variantId, quantity: i.qty })) } };
+                const res = await fetch(SHOPIFY.endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOPIFY.token },
+                    body: JSON.stringify({ query: mutation, variables })
+                });
+                const json = await res.json();
+                if(json.data?.checkoutCreate?.checkout?.webUrl) window.location.href = json.data.checkoutCreate.checkout.webUrl;
+            };
 
             return (
-                <div className="max-w-md mx-auto min-h-screen bg-white flex flex-col shadow-2xl">
+                <div className="max-w-md mx-auto min-h-screen bg-white flex flex-col shadow-2xl relative">
                     
-                    {/* Header con Logo KOLMA */}
-                    <header className="sticky top-0 bg-white/90 backdrop-blur-md z-50 p-4 border-b border-gray-100 flex justify-between items-center">
-                        <div className="flex items-center gap-3" onClick={() => setView('home')}>
-                            <div className="kolma-logo-container">K</div>
-                            <h1 className="font-extrabold text-xl tracking-tighter text-gray-900">KOLMA</h1>
+                    {/* HEADER DINÁMICO */}
+                    <header className="p-4 border-b flex justify-between items-center sticky top-0 bg-white z-50">
+                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('home')}>
+                            <div className="logo-box">K</div>
+                            <span className="font-extrabold text-xl tracking-tighter">KOLMA</span>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => setView('cart')} className="relative p-2">
-                                <Icon name="shopping-cart" className="text-gray-700" />
-                                {cart.length > 0 && (
-                                    <span className="absolute top-0 right-0 bg-[#E60023] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-black">
-                                        {cart.reduce((a, b) => a + b.quantity, 0)}
-                                    </span>
-                                )}
+                        <div className="flex gap-2">
+                            <button onClick={() => setView('search')} className="p-2 text-gray-500"><Icon name="search" /></button>
+                            <button onClick={() => setView('cart')} className="relative p-2 text-gray-800">
+                                <Icon name="shopping-basket" />
+                                {cart.length > 0 && <span className="absolute top-0 right-0 bg-[#E60023] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{cart.reduce((a,b)=>a+b.qty,0)}</span>}
                             </button>
                         </div>
                     </header>
 
-                    {/* Vistas */}
-                    <main className="flex-grow pb-24">
-                        {view === 'home' && (
-                            <div className="p-4 animate-view">
-                                <div className="bg-[#E60023] rounded-3xl p-6 text-white mb-8 shadow-xl relative overflow-hidden">
-                                    <div className="relative z-10">
-                                        <h2 className="text-2xl font-black italic uppercase leading-none mb-2">¡Fresco y Rápido!</h2>
-                                        <p className="text-xs opacity-90 font-medium mb-4">Pide ahora en Cotuí y recibe en minutos.</p>
-                                        <button className="bg-white text-[#E60023] px-5 py-2 rounded-full font-bold text-xs uppercase shadow-sm">Ofertas</button>
-                                    </div>
-                                    <div className="absolute -right-6 -bottom-6 opacity-10 rotate-12 scale-150">
-                                        <div className="text-9xl font-black">K</div>
-                                    </div>
+                    <main className="flex-grow pb-24 overflow-x-hidden">
+                        
+                        {/* VISTA: BUSCADOR */}
+                        {view === 'search' && (
+                            <div className="p-4 page-enter">
+                                <input 
+                                    autoFocus
+                                    className="w-full p-4 bg-gray-100 rounded-2xl outline-none border-2 border-transparent focus:border-[#E60023]" 
+                                    placeholder="¿Qué buscas en Kolma?"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                                <div className="grid grid-cols-2 gap-4 mt-6">
+                                    {filteredProducts.map(p => (
+                                        <div key={p.id} onClick={() => { setSelectedProduct(p); setView('detail'); }} className="bg-white border rounded-2xl p-3 shadow-sm">
+                                            <img src={p.image} className="h-28 mx-auto object-contain mb-2" />
+                                            <h4 className="text-[11px] font-bold h-8 line-clamp-2">{p.title}</h4>
+                                            <p className="kolma-text font-black text-sm mt-2">RD$ {p.price.toFixed(2)}</p>
+                                        </div>
+                                    ))}
                                 </div>
-
-                                <h3 className="font-extrabold text-lg mb-4 text-gray-800">Productos Destacados</h3>
-                                
-                                {loading ? (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {[1,2,3,4].map(i => <div key={i} className="h-48 bg-gray-100 animate-pulse rounded-2xl"></div>)}
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {products.map(product => (
-                                            <div key={product.id} className="product-card bg-white border border-gray-100 rounded-2xl p-3 shadow-sm flex flex-col">
-                                                <div className="aspect-square mb-3 flex items-center justify-center">
-                                                    <img src={product.image} className="max-h-full object-contain" alt={product.title} />
-                                                </div>
-                                                <h4 className="text-[11px] font-bold text-gray-700 line-clamp-2 h-8 leading-tight">{product.title}</h4>
-                                                <div className="mt-3 flex justify-between items-center">
-                                                    <span className="text-sm font-black text-[#E60023]">RD$ {product.price.toFixed(2)}</span>
-                                                    <button 
-                                                        onClick={() => addToCart(product)}
-                                                        className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-[#E60023] border border-red-50 active:bg-[#E60023] active:text-white transition-colors"
-                                                    >
-                                                        <Icon name="plus" size={16} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
                         )}
 
+                        {/* VISTA: INICIO */}
+                        {view === 'home' && (
+                            <div className="p-4 page-enter">
+                                <div className="kolma-red p-6 rounded-3xl text-white mb-6 shadow-lg relative overflow-hidden">
+                                    <h2 className="text-2xl font-black italic uppercase leading-none">¡Fresco de Cotuí!</h2>
+                                    <p className="text-xs opacity-90 mt-1">Calidad garantizada en tu puerta.</p>
+                                    <div className="absolute -right-4 -bottom-4 opacity-10 text-9xl font-black italic">K</div>
+                                </div>
+                                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                    <Icon name="zap" size={18} className="text-yellow-500" /> Populares
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {loading ? [1,2,3,4].map(n => <div key={n} className="h-44 bg-gray-100 animate-pulse rounded-2xl"></div>) : 
+                                        products.map(p => (
+                                            <div key={p.id} className="bg-white border border-gray-50 rounded-2xl p-3 shadow-sm flex flex-col active:scale-95 transition-transform" onClick={() => { setSelectedProduct(p); setView('detail'); }}>
+                                                <img src={p.image} className="h-28 mx-auto object-contain mb-2" />
+                                                <h4 className="text-[11px] font-bold h-8 line-clamp-2 text-gray-700">{p.title}</h4>
+                                                <div className="flex justify-between items-center mt-3">
+                                                    <span className="kolma-text font-black text-sm">RD$ {p.price.toFixed(2)}</span>
+                                                    <div className="w-7 h-7 rounded-full bg-gray-50 flex items-center justify-center kolma-text border"><Icon name="plus" size={14} /></div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    }
+                                </div>
+                            </div>
+                        )}
+
+                        {/* VISTA: DETALLE PRODUCTO */}
+                        {view === 'detail' && selectedProduct && (
+                            <div className="page-enter bg-white min-h-screen">
+                                <div className="relative p-8 bg-gray-50 flex justify-center">
+                                    <button onClick={() => setView('home')} className="absolute top-4 left-4 p-2 bg-white rounded-full shadow-md"><Icon name="chevron-left" /></button>
+                                    <img src={selectedProduct.image} className="max-h-64 object-contain" />
+                                </div>
+                                <div className="p-6">
+                                    <h2 className="text-2xl font-extrabold text-gray-900">{selectedProduct.title}</h2>
+                                    <p className="text-3xl font-black kolma-text mt-2">RD$ {selectedProduct.price.toFixed(2)}</p>
+                                    <div className="mt-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <p className="text-sm text-gray-500 leading-relaxed">{selectedProduct.description || "Producto de alta calidad disponible en Kolma Supermercado."}</p>
+                                    </div>
+                                    <button onClick={() => { addToCart(selectedProduct); setView('cart'); }} className="w-full kolma-red text-white py-5 rounded-2xl font-extrabold text-lg mt-8 shadow-xl active:scale-95 transition-transform">
+                                        Añadir a la Canasta
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* VISTA: CARRITO */}
                         {view === 'cart' && (
-                            <div className="p-4 animate-view">
-                                <h2 className="text-xl font-extrabold mb-6">Tu Canasta</h2>
+                            <div className="p-4 page-enter">
+                                <h2 className="text-xl font-extrabold mb-6">Mi Canasta</h2>
                                 {cart.length === 0 ? (
-                                    <div className="text-center py-20">
-                                        <Icon name="shopping-bag" size={48} className="mx-auto text-gray-200 mb-4" />
-                                        <p className="text-gray-400 font-bold">Está vacía por ahora...</p>
-                                        <button onClick={() => setView('home')} className="mt-4 text-[#E60023] font-bold text-sm uppercase">Ir a la tienda</button>
+                                    <div className="text-center py-20 opacity-30">
+                                        <Icon name="shopping-cart" size={60} className="mx-auto mb-4" />
+                                        <p className="font-bold">Tu canasta está vacía</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
                                         {cart.map(item => (
-                                            <div key={item.id} className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-gray-100">
+                                            <div key={item.id} className="flex items-center gap-4 bg-white p-3 rounded-2xl border shadow-sm">
                                                 <img src={item.image} className="w-16 h-16 object-contain" />
                                                 <div className="flex-grow">
                                                     <h4 className="text-xs font-bold">{item.title}</h4>
-                                                    <div className="flex justify-between items-center mt-1">
-                                                        <span className="text-[#E60023] font-black">RD$ {item.price.toFixed(2)}</span>
-                                                        <span className="text-xs font-bold text-gray-400">Cant: {item.quantity}</span>
+                                                    <p className="kolma-text font-bold text-sm">RD$ {item.price.toFixed(2)}</p>
+                                                    <div className="flex items-center gap-3 mt-2">
+                                                        <button onClick={() => updateQty(item.id, -1)} className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center font-bold">-</button>
+                                                        <span className="text-xs font-bold">{item.qty}</span>
+                                                        <button onClick={() => updateQty(item.id, 1)} className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center font-bold">+</button>
                                                     </div>
                                                 </div>
                                             </div>
                                         ))}
-
-                                        <div className="mt-10 bg-gray-50 p-6 rounded-3xl border border-gray-100">
-                                            <div className="flex justify-between mb-6">
-                                                <span className="font-bold text-gray-500 uppercase text-xs tracking-widest">Total Estimado</span>
-                                                <span className="text-2xl font-black text-gray-900">RD$ {total.toFixed(2)}</span>
+                                        <div className="fixed bottom-24 left-0 w-full px-4 md:max-w-md md:left-1/2 md:-translate-x-1/2">
+                                            <div className="bg-white rounded-3xl p-6 shadow-2xl border border-gray-100">
+                                                <div className="flex justify-between font-bold text-lg mb-4"><span>Total:</span><span>RD$ {total.toFixed(2)}</span></div>
+                                                <button onClick={goCheckout} className="w-full kolma-red text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl">Completar Pedido</button>
                                             </div>
-                                            <button 
-                                                onClick={handleCheckout}
-                                                disabled={isCheckingOut}
-                                                className="w-full bg-[#E60023] text-white py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
-                                            >
-                                                {isCheckingOut ? (
-                                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                                ) : (
-                                                    "Completar Orden"
-                                                )}
-                                            </button>
-                                            <p className="text-[10px] text-center text-gray-400 mt-4 px-4 font-medium italic">
-                                                Al completar la orden serás redirigido a la pasarela de pago segura de Shopify.
-                                            </p>
                                         </div>
                                     </div>
                                 )}
                             </div>
                         )}
+
+                        {/* VISTA: PERFIL */}
+                        {view === 'profile' && (
+                            <div className="p-8 text-center page-enter">
+                                <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center"><Icon name="user" size={40} className="text-gray-400" /></div>
+                                <h2 className="text-xl font-bold">Cliente Kolma</h2>
+                                <p className="text-sm text-gray-400">Cotuí, República Dominicana</p>
+                                <div className="mt-8 space-y-3">
+                                    <button className="w-full p-4 bg-white border rounded-2xl text-left font-bold text-sm flex justify-between">Mis Pedidos <Icon name="chevron-right" size={16}/></button>
+                                    <button className="w-full p-4 bg-white border rounded-2xl text-left font-bold text-sm flex justify-between">Direcciones <Icon name="chevron-right" size={16}/></button>
+                                    <button className="w-full p-4 bg-white border rounded-2xl text-left font-bold text-sm flex justify-between text-red-500">Cerrar Sesión</button>
+                                </div>
+                            </div>
+                        )}
+
                     </main>
 
-                    {/* Barra de Navegación Inferior */}
-                    <nav className="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-100 p-3 flex justify-around safe-bottom z-50">
-                        <button onClick={() => setView('home')} className={`p-2 ${view === 'home' ? 'text-[#E60023]' : 'text-gray-300'}`}>
-                            <Icon name="home" />
-                        </button>
-                        <button onClick={() => setView('cart')} className={`p-2 ${view === 'cart' ? 'text-[#E60023]' : 'text-gray-300'}`}>
-                            <Icon name="shopping-bag" />
-                        </button>
-                        <button className="p-2 text-gray-300">
-                            <Icon name="user" />
-                        </button>
+                    {/* NAVBAR INFERIOR */}
+                    <nav className="fixed bottom-0 w-full max-w-md bg-white border-t p-3 flex justify-around shadow-inner z-50">
+                        <button onClick={() => setView('home')} className={`p-2 rounded-xl ${view === 'home' ? 'bg-red-50 kolma-text' : 'text-gray-400'}`}><Icon name="home" /></button>
+                        <button onClick={() => setView('search')} className={`p-2 rounded-xl ${view === 'search' ? 'bg-red-50 kolma-text' : 'text-gray-400'}`}><Icon name="search" /></button>
+                        <button onClick={() => setView('cart')} className={`p-2 rounded-xl ${view === 'cart' ? 'bg-red-50 kolma-text' : 'text-gray-400'}`}><Icon name="shopping-bag" /></button>
+                        <button onClick={() => setView('profile')} className={`p-2 rounded-xl ${view === 'profile' ? 'bg-red-50 kolma-text' : 'text-gray-400'}`}><Icon name="user" /></button>
                     </nav>
 
                 </div>
@@ -332,4 +283,5 @@
     </script>
 </body>
 </html>
+
 
