@@ -22,28 +22,26 @@
 
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #f3f4f6; 
+            background-color: #f8f9fa; 
             margin: 0; 
             -webkit-tap-highlight-color: transparent;
+            color: var(--kolma-dark);
         }
 
         .kolma-red { background-color: var(--kolma-red); }
         .kolma-text { color: var(--kolma-red); }
         
-        /* Glassmorphism & UI */
         .glass-header {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
 
         .product-card {
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .product-card:active {
-            transform: scale(0.96);
-        }
+        .product-card:active { transform: scale(0.97); }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
@@ -51,27 +49,20 @@
             border: 3px solid rgba(230, 0, 35, 0.1);
             border-top: 3px solid var(--kolma-red);
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
+            width: 32px;
+            height: 32px;
+            animation: spin 0.8s linear infinite;
         }
 
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
-        .page-transition {
-            animation: fadeIn 0.3s ease-out;
-        }
-
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .search-bar:focus-within {
-            ring: 2px;
-            ring-color: var(--kolma-red);
-            border-color: var(--kolma-red);
-        }
+        input::placeholder { color: #9ca3af; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -80,7 +71,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        const CONFIG = {
+        const SHOPIFY_CONFIG = {
             endpoint: 'https://q0q09e-cp.myshopify.com/api/2024-01/graphql.json',
             token: 'a171ee1eaf68d9b7ca5234b4c45a9b0c'
         };
@@ -91,7 +82,6 @@
         };
 
         const App = () => {
-            // State
             const [view, setView] = useState('home'); 
             const [products, setProducts] = useState([]);
             const [cart, setCart] = useState([]);
@@ -100,9 +90,8 @@
             const [loading, setLoading] = useState(true);
             const [actionLoading, setActionLoading] = useState(false);
             const [errorMsg, setErrorMsg] = useState('');
-            const [user, setUser] = useState(null);
 
-            // Fetch Products
+            // Cargar productos de Shopify
             useEffect(() => {
                 const fetchProducts = async () => {
                     const query = `{
@@ -119,9 +108,9 @@
                         }
                     }`;
                     try {
-                        const res = await fetch(CONFIG.endpoint, {
+                        const res = await fetch(SHOPIFY_CONFIG.endpoint, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token },
+                            headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOPIFY_CONFIG.token },
                             body: JSON.stringify({ query })
                         });
                         const { data } = await res.json();
@@ -137,31 +126,28 @@
                             })));
                         }
                     } catch (e) { 
-                        setErrorMsg("Error al conectar con el servidor.");
+                        setErrorMsg("Error de conexión con el catálogo.");
                     } finally {
                         setLoading(false);
                     }
                 };
-
-                const savedSession = localStorage.getItem('kolma_user');
-                if (savedSession) setUser(JSON.parse(savedSession));
-                
                 fetchProducts();
             }, []);
 
-            // Search Logic
+            // Lógica del buscador profesional
             const filteredProducts = useMemo(() => {
+                const query = searchQuery.toLowerCase().trim();
+                if (!query) return products;
                 return products.filter(p => 
-                    p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    p.description.toLowerCase().includes(searchQuery.toLowerCase())
+                    p.title.toLowerCase().includes(query) || 
+                    (p.description && p.description.toLowerCase().includes(query))
                 );
             }, [searchQuery, products]);
 
-            // Cart Logic
             const addToCart = (product) => {
                 setCart(prev => {
-                    const exists = prev.find(item => item.id === product.id);
-                    if (exists) return prev.map(item => item.id === product.id ? {...item, qty: item.qty + 1} : item);
+                    const exists = prev.find(i => i.id === product.id);
+                    if (exists) return prev.map(i => i.id === product.id ? {...i, qty: i.qty + 1} : i);
                     return [...prev, {...product, qty: 1}];
                 });
                 setView('cart');
@@ -173,7 +159,7 @@
                 ).filter(item => item.qty > 0));
             };
 
-            // Checkout Logic
+            // Lógica de Pago Real (Cash on Delivery se maneja en el Checkout de Shopify)
             const handleCheckout = async () => {
                 if (cart.length === 0) return;
                 setActionLoading(true);
@@ -195,25 +181,23 @@
                     }
                 };
 
-                if (user?.email) variables.input.email = user.email;
-
                 try {
-                    const res = await fetch(CONFIG.endpoint, {
+                    const res = await fetch(SHOPIFY_CONFIG.endpoint, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token },
+                        headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': SHOPIFY_CONFIG.token },
                         body: JSON.stringify({ query: mutation, variables })
                     });
                     const { data } = await res.json();
                     
                     if (data?.checkoutCreate?.checkout?.webUrl) {
-                        // Redirección exitosa a Shopify para seleccionar "Pago contra entrega"
+                        // Redirigir al checkout real de Shopify
                         window.location.href = data.checkoutCreate.checkout.webUrl;
                     } else {
-                        setErrorMsg(data?.checkoutCreate?.checkoutUserErrors[0]?.message || "Error al procesar pago.");
+                        setErrorMsg(data?.checkoutCreate?.checkoutUserErrors[0]?.message || "Error al generar el pedido.");
+                        setActionLoading(false);
                     }
                 } catch (e) {
-                    setErrorMsg("Error de red. Intenta de nuevo.");
-                } finally {
+                    setErrorMsg("Error de red. Verifica tu internet.");
                     setActionLoading(false);
                 }
             };
@@ -221,28 +205,28 @@
             return (
                 <div className="max-w-md mx-auto min-h-screen bg-white shadow-2xl flex flex-col relative overflow-hidden">
                     
-                    {/* ACCIONES DE CARGA BLOQUEANTES */}
+                    {/* Pantalla de carga activa */}
                     {actionLoading && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/90 backdrop-blur-md">
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 backdrop-blur-md">
                             <div className="text-center">
                                 <div className="loading-spinner mx-auto mb-4"></div>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Procesando orden...</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-[#E60023]">Conectando con Shopify...</p>
                             </div>
                         </div>
                     )}
 
-                    {/* HEADER */}
-                    <header className="glass-header sticky top-0 z-[60] px-4 py-3 border-b border-gray-100">
-                        <div className="flex justify-between items-center mb-3">
+                    {/* HEADER CON BUSCADOR */}
+                    <header className="glass-header sticky top-0 z-[60] border-b border-gray-100">
+                        <div className="px-5 py-4 flex justify-between items-center">
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setView('home'); setSearchQuery(''); }}>
-                                <div className="kolma-red text-white w-8 h-8 rounded-lg flex items-center justify-center font-black">K</div>
-                                <span className="font-extrabold text-lg tracking-tighter uppercase">KOLMA</span>
+                                <div className="kolma-red text-white w-9 h-9 rounded-xl flex items-center justify-center font-black shadow-lg shadow-red-500/30">K</div>
+                                <span className="font-extrabold text-xl tracking-tighter uppercase italic">KOLMA</span>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setView('cart')} className="relative p-2 text-gray-700">
-                                    <Icon name="shopping-bag" />
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setView('cart')} className="relative p-2 text-gray-800">
+                                    <Icon name="shopping-bag" size={24} />
                                     {cart.length > 0 && (
-                                        <span className="absolute top-0 right-0 kolma-red text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                                        <span className="absolute top-1 right-1 kolma-red text-white text-[9px] w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-white">
                                             {cart.reduce((a, b) => a + b.qty, 0)}
                                         </span>
                                     )}
@@ -250,140 +234,158 @@
                             </div>
                         </div>
 
-                        {/* BUSCADOR PROFESIONAL */}
                         {view === 'home' && (
-                            <div className="relative group">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#E60023] transition-colors">
-                                    <Icon name="search" size={16} />
+                            <div className="px-5 pb-4">
+                                <div className="relative">
+                                    <Icon name="search" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input 
+                                        type="text"
+                                        placeholder="Busca productos, frutas, víveres..."
+                                        className="w-full bg-gray-100 border-none rounded-2xl py-3.5 pl-12 pr-4 text-sm focus:ring-2 focus:ring-[#E60023]/20 focus:bg-white transition-all outline-none font-medium"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                    {searchQuery && (
+                                        <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                            <Icon name="x-circle" size={18} />
+                                        </button>
+                                    )}
                                 </div>
-                                <input 
-                                    type="text"
-                                    placeholder="Buscar productos, marcas..."
-                                    className="w-full bg-gray-100 border-none rounded-xl py-2.5 pl-10 pr-4 text-sm focus:bg-white focus:ring-2 focus:ring-[#E60023]/20 transition-all outline-none"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                                {searchQuery && (
-                                    <button 
-                                        onClick={() => setSearchQuery('')}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                    >
-                                        <Icon name="x" size={14} />
-                                    </button>
-                                )}
                             </div>
                         )}
                     </header>
 
-                    {/* CONTENIDO PRINCIPAL */}
-                    <main className="flex-grow pb-24 overflow-y-auto no-scrollbar page-transition">
+                    {/* CONTENIDO */}
+                    <main className="flex-grow pb-32 overflow-y-auto no-scrollbar fade-in">
                         
-                        {/* HOME / CATALOGO */}
                         {view === 'home' && (
-                            <div className="p-4">
+                            <div className="p-5">
                                 {!searchQuery && (
-                                    <div className="kolma-red rounded-2xl p-5 mb-6 text-white relative overflow-hidden shadow-lg shadow-red-500/20">
-                                        <h3 className="text-xl font-black italic uppercase leading-tight">Envío Gratis</h3>
-                                        <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest">En tu primera compra contra entrega</p>
-                                        <Icon name="truck" size={60} className="absolute -right-2 -bottom-2 opacity-20 rotate-[-15deg]" />
+                                    <div className="kolma-red rounded-[2.5rem] p-8 mb-8 text-white relative overflow-hidden shadow-2xl shadow-red-500/20">
+                                        <div className="relative z-10">
+                                            <h3 className="text-3xl font-black italic uppercase leading-none">Paga al recibir</h3>
+                                            <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest mt-2">Seguridad total en tu compra</p>
+                                        </div>
+                                        <Icon name="truck" size={100} className="absolute -right-4 -bottom-4 opacity-10 rotate-[-10deg]" />
                                     </div>
                                 )}
 
                                 <div className="grid grid-cols-2 gap-4">
                                     {loading ? (
-                                        [1,2,3,4,5,6].map(i => <div key={i} className="aspect-[3/4] bg-gray-100 rounded-2xl animate-pulse"></div>)
+                                        [1,2,3,4,5,6].map(i => <div key={i} className="aspect-[3/4] bg-gray-100 rounded-3xl animate-pulse"></div>)
                                     ) : filteredProducts.length > 0 ? (
                                         filteredProducts.map(p => (
                                             <div 
                                                 key={p.id} 
-                                                className="product-card bg-white border border-gray-100 rounded-2xl p-3 shadow-sm flex flex-col"
+                                                className="product-card bg-white border border-gray-100 rounded-3xl p-3 shadow-sm flex flex-col cursor-pointer"
                                                 onClick={() => { setSelectedProduct(p); setView('detail'); }}
                                             >
-                                                <div className="relative mb-3 aspect-square bg-gray-50 rounded-xl overflow-hidden flex items-center justify-center p-2">
-                                                    <img src={p.image} alt={p.title} className={`object-contain w-full h-full ${!p.available ? 'grayscale opacity-40' : ''}`} />
+                                                <div className="relative mb-3 aspect-square bg-gray-50 rounded-2xl overflow-hidden flex items-center justify-center p-4">
+                                                    <img src={p.image} alt={p.title} className={`object-contain w-full h-full transition-transform duration-500 ${!p.available ? 'grayscale opacity-40' : ''}`} />
                                                     {!p.available && (
-                                                        <span className="absolute inset-0 flex items-center justify-center bg-white/60 text-[10px] font-black uppercase text-gray-500">Agotado</span>
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-[1px]">
+                                                            <span className="text-[9px] font-black uppercase text-gray-600 bg-white/80 px-2 py-1 rounded-full shadow-sm">Agotado</span>
+                                                        </div>
                                                     )}
                                                 </div>
-                                                <h4 className="text-[10px] font-bold text-gray-800 line-clamp-2 h-7 leading-tight">{p.title}</h4>
-                                                <div className="mt-auto pt-2 flex items-center justify-between">
+                                                <h4 className="text-[11px] font-bold text-gray-800 line-clamp-2 h-7 leading-tight px-1">{p.title}</h4>
+                                                <div className="mt-3 pt-2 flex items-center justify-between border-t border-gray-50 px-1">
                                                     <span className="kolma-text font-black text-sm italic">RD$ {p.price.toFixed(2)}</span>
-                                                    <button className="bg-gray-100 text-gray-700 w-7 h-7 rounded-lg flex items-center justify-center active:bg-[#E60023] active:text-white transition-colors">
-                                                        <Icon name="plus" size={14} />
+                                                    <button className="bg-gray-100 text-gray-800 w-8 h-8 rounded-xl flex items-center justify-center active:bg-[#E60023] active:text-white transition-colors">
+                                                        <Icon name="plus" size={16} />
                                                     </button>
                                                 </div>
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="col-span-2 py-20 text-center opacity-40">
-                                            <Icon name="search-x" size={40} className="mx-auto mb-3" />
-                                            <p className="text-xs font-bold uppercase tracking-widest">No hay resultados</p>
+                                        <div className="col-span-2 py-20 text-center opacity-30">
+                                            <Icon name="search" size={48} className="mx-auto mb-4" />
+                                            <p className="text-xs font-black uppercase tracking-widest">No encontramos lo que buscas</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         )}
 
-                        {/* DETALLE DE PRODUCTO */}
                         {view === 'detail' && selectedProduct && (
                             <div className="p-6">
-                                <button onClick={() => setView('home')} className="mb-4 text-gray-400 font-bold text-xs flex items-center gap-1 uppercase">
-                                    <Icon name="arrow-left" size={14}/> Atrás
+                                <button onClick={() => setView('home')} className="mb-6 text-gray-400 font-bold text-[10px] flex items-center gap-2 uppercase tracking-widest">
+                                    <Icon name="arrow-left" size={16}/> Volver
                                 </button>
-                                <div className="bg-gray-50 rounded-[2.5rem] p-10 mb-6 flex items-center justify-center aspect-square shadow-inner">
+                                <div className="bg-gray-50 rounded-[3rem] p-12 mb-8 flex items-center justify-center aspect-square shadow-inner">
                                     <img src={selectedProduct.image} className="w-full h-full object-contain drop-shadow-2xl" />
                                 </div>
-                                <h2 className="text-2xl font-extrabold text-gray-900 mb-2 leading-tight">{selectedProduct.title}</h2>
-                                <p className="text-3xl font-black kolma-text italic mb-6">RD$ {selectedProduct.price.toFixed(2)}</p>
-                                <div className="space-y-4 text-sm text-gray-500 leading-relaxed">
-                                    <p>{selectedProduct.description || "Calidad certificada por KOLMA para asegurar la frescura en tu hogar."}</p>
-                                    <div className="bg-green-50 text-green-700 p-3 rounded-xl border border-green-100 flex items-center gap-2 text-[10px] font-bold uppercase">
-                                        <Icon name="check-circle" size={14}/> Disponible para pago contra entrega
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="text-[10px] font-black text-[#E60023] uppercase tracking-[0.2em] italic">Premium Selection</span>
+                                    {selectedProduct.available ? (
+                                        <span className="text-[9px] font-black text-green-600 bg-green-50 px-3 py-1 rounded-full uppercase tracking-tighter">En Existencia</span>
+                                    ) : (
+                                        <span className="text-[9px] font-black text-red-600 bg-red-50 px-3 py-1 rounded-full uppercase tracking-tighter">Sin Stock</span>
+                                    )}
+                                </div>
+                                <h2 className="text-2xl font-black text-gray-900 mb-2 leading-tight">{selectedProduct.title}</h2>
+                                <p className="text-4xl font-black kolma-text italic mb-8 underline underline-offset-8 decoration-red-100">RD$ {selectedProduct.price.toFixed(2)}</p>
+                                
+                                <div className="space-y-4">
+                                    <p className="text-sm text-gray-500 leading-relaxed font-medium">
+                                        {selectedProduct.description || "Este producto ha sido seleccionado por nuestro equipo para garantizar la mejor calidad en Cotuí."}
+                                    </p>
+                                    <div className="bg-gray-50 border border-gray-100 p-4 rounded-3xl flex items-center gap-4">
+                                        <div className="bg-white w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm text-green-600">
+                                            <Icon name="check-circle" size={20}/>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-gray-800">Aceptamos efectivo</p>
+                                            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Pago contra entrega disponible</p>
+                                        </div>
                                     </div>
                                 </div>
+
                                 <button 
                                     disabled={!selectedProduct.available}
                                     onClick={() => addToCart(selectedProduct)}
-                                    className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest mt-10 shadow-xl transition-all ${selectedProduct.available ? 'kolma-red text-white active:scale-95 shadow-red-500/20' : 'bg-gray-200 text-gray-400'}`}
+                                    className={`w-full py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-widest mt-12 shadow-2xl transition-all ${selectedProduct.available ? 'kolma-red text-white active:scale-95 shadow-red-500/30' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
                                 >
-                                    {selectedProduct.available ? 'Agregar a la Canasta' : 'Sin Existencias'}
+                                    {selectedProduct.available ? 'Añadir al Carrito' : 'No Disponible'}
                                 </button>
                             </div>
                         )}
 
-                        {/* CARRITO */}
                         {view === 'cart' && (
-                            <div className="p-4">
-                                <h2 className="text-xl font-black mb-6 flex items-center gap-2 uppercase italic tracking-tighter">
-                                    <Icon name="shopping-bag" className="kolma-text"/> Mi Canasta
+                            <div className="p-6">
+                                <h2 className="text-2xl font-black mb-8 flex items-center gap-3 uppercase italic tracking-tighter">
+                                    <Icon name="shopping-bag" className="kolma-text" size={28}/> Mi Canasta
                                 </h2>
                                 
                                 {errorMsg && (
-                                    <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-[10px] font-bold rounded-xl flex items-center gap-2 uppercase">
-                                        <Icon name="alert-circle" size={14}/> {errorMsg}
+                                    <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 text-[10px] font-black rounded-2xl flex items-center gap-3 uppercase tracking-tighter">
+                                        <Icon name="alert-triangle" size={18}/> {errorMsg}
                                     </div>
                                 )}
 
                                 {cart.length === 0 ? (
-                                    <div className="py-24 text-center">
-                                        <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <Icon name="shopping-cart" size={32} className="text-gray-200" />
-                                        </div>
-                                        <p className="text-[10px] font-black uppercase text-gray-300 tracking-widest">Tu canasta está vacía</p>
-                                        <button onClick={() => setView('home')} className="mt-6 text-[10px] font-black uppercase kolma-text">Explorar productos</button>
+                                    <div className="py-20 text-center opacity-20">
+                                        <Icon name="shopping-cart" size={64} className="mx-auto mb-6" />
+                                        <p className="text-sm font-black uppercase tracking-[0.2em]">Está vacío</p>
+                                        <button onClick={() => setView('home')} className="mt-8 text-xs font-black uppercase text-[#E60023] underline underline-offset-4">Empezar a comprar</button>
                                     </div>
                                 ) : (
-                                    <div className="space-y-3 pb-40">
+                                    <div className="space-y-4 pb-48">
                                         {cart.map(item => (
-                                            <div key={item.id} className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
-                                                <img src={item.image} className="w-16 h-16 object-contain rounded-lg" />
+                                            <div key={item.id} className="flex items-center gap-4 bg-white p-4 rounded-[2rem] border border-gray-100 shadow-sm">
+                                                <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center p-2 flex-shrink-0">
+                                                    <img src={item.image} className="w-full h-full object-contain" />
+                                                </div>
                                                 <div className="flex-grow">
-                                                    <h4 className="text-[10px] font-bold line-clamp-1 text-gray-800">{item.title}</h4>
-                                                    <p className="kolma-text font-black text-sm italic">RD$ {item.price.toFixed(2)}</p>
-                                                    <div className="flex items-center gap-3 mt-2">
-                                                        <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center text-xs font-bold">-</button>
-                                                        <span className="text-xs font-black w-4 text-center">{item.qty}</span>
-                                                        <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center text-xs font-bold">+</button>
+                                                    <h4 className="text-[11px] font-bold text-gray-800 line-clamp-1">{item.title}</h4>
+                                                    <p className="kolma-text font-black text-sm italic mt-1">RD$ {item.price.toFixed(2)}</p>
+                                                    <div className="flex items-center gap-4 mt-3">
+                                                        <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-4 px-3">
+                                                            <button onClick={() => updateQty(item.id, -1)} className="text-gray-500 font-bold text-lg">-</button>
+                                                            <span className="text-xs font-black min-w-[12px] text-center">{item.qty}</span>
+                                                            <button onClick={() => updateQty(item.id, 1)} className="text-gray-500 font-bold text-lg">+</button>
+                                                        </div>
+                                                        <button onClick={() => updateQty(item.id, -item.qty)} className="text-gray-300 hover:text-red-500"><Icon name="trash-2" size={16}/></button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -391,79 +393,77 @@
                                     </div>
                                 )}
 
-                                {/* TOTAL Y CHECKOUT FIXED */}
                                 {cart.length > 0 && (
-                                    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/95 backdrop-blur-md border-t p-5 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
-                                        <div className="flex justify-between items-end mb-5">
+                                    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/95 backdrop-blur-xl border-t p-6 shadow-[0_-15px_40px_rgba(0,0,0,0.06)] z-50">
+                                        <div className="flex justify-between items-end mb-6">
                                             <div>
-                                                <span className="text-[10px] font-black text-green-600 uppercase flex items-center gap-1 mb-1 italic">
-                                                    <Icon name="check" size={10}/> Pago Contra Entrega
+                                                <span className="text-[10px] font-black text-green-600 uppercase flex items-center gap-2 mb-1 italic">
+                                                    <Icon name="truck" size={12}/> Envío Express a Cotuí
                                                 </span>
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Estimado</p>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total de la Orden</p>
                                             </div>
-                                            <span className="kolma-text font-black text-2xl italic">
+                                            <span className="kolma-text font-black text-3xl italic">
                                                 RD$ {cart.reduce((a, b) => a + (b.price * b.qty), 0).toFixed(2)}
                                             </span>
                                         </div>
                                         <button 
                                             onClick={handleCheckout}
-                                            className="w-full kolma-red text-white py-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-red-500/20 active:scale-95 transition-transform"
+                                            className="w-full kolma-red text-white py-5 rounded-[1.5rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-red-500/30 active:scale-95 transition-transform"
                                         >
                                             Finalizar Compra
                                         </button>
+                                        <p className="text-center text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-4 italic">Podrás elegir Pago Contra Entrega en el siguiente paso</p>
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* PERFIL (Sencillo para Git) */}
                         {view === 'profile' && (
-                            <div className="p-8 page-transition text-center">
-                                <div className="w-24 h-24 bg-gray-50 rounded-full mx-auto mb-6 flex items-center justify-center border-4 border-white shadow-xl">
-                                    <Icon name="user" size={40} className="text-gray-300" />
+                            <div className="p-8 text-center">
+                                <div className="w-28 h-28 bg-gray-50 rounded-[2.5rem] mx-auto mb-8 flex items-center justify-center border-4 border-white shadow-2xl">
+                                    <Icon name="user" size={48} className="text-gray-200" />
                                 </div>
-                                <h3 className="text-xl font-black mb-1 tracking-tighter">Bienvenido a KOLMA</h3>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-10 italic">Tu supermercado de confianza</p>
+                                <h3 className="text-2xl font-black mb-2 tracking-tighter italic">¡Hola, Cliente!</h3>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-12">Gestiona tus pedidos y direcciones</p>
                                 
-                                <div className="space-y-4">
-                                    <button className="w-full p-5 bg-gray-50 rounded-2xl text-left flex justify-between items-center group">
-                                        <span className="text-[10px] font-black uppercase text-gray-600">Mis pedidos</span>
-                                        <Icon name="chevron-right" size={16} className="text-gray-300 group-hover:kolma-text transition-colors"/>
-                                    </button>
-                                    <button className="w-full p-5 bg-gray-50 rounded-2xl text-left flex justify-between items-center group">
-                                        <span className="text-[10px] font-black uppercase text-gray-600">Direcciones guardadas</span>
-                                        <Icon name="map-pin" size={16} className="text-gray-300 group-hover:kolma-text transition-colors"/>
-                                    </button>
-                                    <button className="w-full p-5 bg-gray-50 rounded-2xl text-left flex justify-between items-center group">
-                                        <span className="text-[10px] font-black uppercase text-gray-600">Configuración</span>
-                                        <Icon name="settings" size={16} className="text-gray-300 group-hover:kolma-text transition-colors"/>
-                                    </button>
+                                <div className="space-y-4 max-w-xs mx-auto">
+                                    <div className="w-full p-6 bg-gray-50 rounded-3xl text-left flex justify-between items-center cursor-not-allowed">
+                                        <span className="text-[11px] font-black uppercase text-gray-600">Historial de Compras</span>
+                                        <Icon name="lock" size={16} className="text-gray-300"/>
+                                    </div>
+                                    <div className="w-full p-6 bg-gray-50 rounded-3xl text-left flex justify-between items-center cursor-not-allowed">
+                                        <span className="text-[11px] font-black uppercase text-gray-600">Soporte por WhatsApp</span>
+                                        <Icon name="message-circle" size={16} className="text-gray-300"/>
+                                    </div>
                                 </div>
 
-                                <p className="mt-16 text-[8px] font-bold uppercase text-gray-300 tracking-[0.2em]">Versión 1.0.4 | © Supermercados KOLMA</p>
+                                <div className="mt-24 p-6 bg-red-50 rounded-3xl">
+                                    <p className="text-[10px] font-black uppercase text-[#E60023] mb-1">KOLMA Cotuí</p>
+                                    <p className="text-[9px] text-red-300 font-bold uppercase tracking-widest leading-loose">De lunes a domingo<br/>8:00 AM - 9:00 PM</p>
+                                </div>
                             </div>
                         )}
                     </main>
 
-                    {/* NAVEGACIÓN INFERIOR */}
-                    <nav className="fixed bottom-0 w-full max-w-md glass-header border-t border-gray-100 px-6 py-4 flex justify-around items-center z-[70]">
+                    {/* MENÚ INFERIOR */}
+                    <nav className="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-100 px-8 py-5 flex justify-around items-center z-[70] shadow-[0_-5px_20px_rgba(0,0,0,0.03)]">
                         <button 
                             onClick={() => { setView('home'); setSearchQuery(''); }} 
-                            className={`p-2 transition-all duration-300 ${view === 'home' ? 'kolma-text scale-125' : 'text-gray-300'}`}
+                            className={`p-1 transition-all duration-300 ${view === 'home' ? 'kolma-text scale-125' : 'text-gray-300'}`}
                         >
-                            <Icon name="home" />
+                            <Icon name="home" size={24} />
                         </button>
                         <button 
                             onClick={() => setView('cart')} 
-                            className={`p-2 transition-all duration-300 ${view === 'cart' ? 'kolma-text scale-125' : 'text-gray-300'}`}
+                            className={`p-1 transition-all duration-300 ${view === 'cart' ? 'kolma-text scale-125' : 'text-gray-300'}`}
                         >
-                            <Icon name="shopping-basket" />
+                            <Icon name="shopping-basket" size={24} />
                         </button>
                         <button 
                             onClick={() => setView('profile')} 
-                            className={`p-2 transition-all duration-300 ${view === 'profile' ? 'kolma-text scale-125' : 'text-gray-300'}`}
+                            className={`p-1 transition-all duration-300 ${view === 'profile' ? 'kolma-text scale-125' : 'text-gray-300'}`}
                         >
-                            <Icon name="user" />
+                            <Icon name="user-round" size={24} />
                         </button>
                     </nav>
                 </div>
