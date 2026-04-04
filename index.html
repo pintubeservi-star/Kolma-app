@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -20,7 +19,7 @@
         <div class="flex justify-between items-center mb-4 text-white">
             <div>
                 <h1 class="text-2xl font-black italic uppercase">KOLMA<span class="text-yellow-400">RD</span></h1>
-                <p class="text-[9px] font-bold opacity-80 tracking-widest uppercase">Cotuí, RD</p>
+                <p class="text-[9px] font-bold opacity-80 tracking-widest uppercase text-white">Cotuí, RD</p>
             </div>
             <button onclick="toggleCart()" class="relative p-2 bg-white/20 rounded-xl backdrop-blur-md border border-white/30">
                 <i data-lucide="shopping-basket" class="w-6 h-6 text-white"></i>
@@ -36,21 +35,21 @@
     </main>
 
     <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t px-10 py-4 flex justify-between items-center z-50 rounded-t-[2rem] shadow-2xl">
-        <div onclick="location.reload()" class="text-red-600"><i data-lucide="home" class="w-6 h-6"></i></div>
-        <div onclick="toggleCart()" class="text-gray-300"><i data-lucide="shopping-cart" class="w-6 h-6"></i></div>
+        <div onclick="location.reload()" class="text-red-600 cursor-pointer"><i data-lucide="home" class="w-6 h-6"></i></div>
+        <div onclick="toggleCart()" class="text-gray-300 cursor-pointer"><i data-lucide="shopping-cart" class="w-6 h-6"></i></div>
     </nav>
 
     <div id="cart-modal" class="fixed inset-0 bg-black/60 z-[60] hidden backdrop-blur-sm p-4">
         <div class="bg-white w-full max-w-md mx-auto h-[85vh] mt-10 rounded-[2.5rem] overflow-hidden flex flex-col shadow-2xl">
             <div class="p-6 border-b flex justify-between items-center">
-                <h2 class="text-xl font-black text-gray-900 uppercase">Mi Carrito</h2>
+                <h2 class="text-xl font-black text-gray-900">MI PEDIDO</h2>
                 <button onclick="toggleCart()" class="text-2xl font-bold text-gray-400">&times;</button>
             </div>
             <div id="cart-items" class="flex-grow overflow-y-auto p-6 space-y-4 no-scrollbar"></div>
             <div class="p-6 border-t bg-gray-50">
                 <div class="flex justify-between text-2xl font-black mb-6">
                     <span>Total</span>
-                    <span id="cart-total" class="text-red-600">RD$0</span>
+                    <span id="cart-total" class="text-red-600 font-bold">RD$0</span>
                 </div>
                 <button id="checkout-btn" onclick="checkout()" class="w-full bg-red-600 py-5 rounded-2xl font-black text-white text-lg shadow-lg active:scale-95 uppercase">
                     Pagar Ahora
@@ -82,7 +81,7 @@
                 }
             }`;
             try {
-                const response = await fetch(`https://${CONFIG.shop}/api/2023-10/graphql.json`, {
+                const response = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token },
                     body: JSON.stringify({ query })
@@ -104,7 +103,7 @@
             document.getElementById('product-grid').innerHTML = list.map(p => `
                 <div class="product-card flex flex-col justify-between">
                     <img src="${p.image}" class="w-full h-32 object-contain mb-2">
-                    <h3 class="text-[10px] font-bold text-gray-800 uppercase">${p.name}</h3>
+                    <h3 class="text-[10px] font-bold text-gray-800 uppercase leading-none h-6 overflow-hidden">${p.name}</h3>
                     <div class="flex justify-between items-center mt-2">
                         <span class="text-red-600 font-black text-xs">RD$${p.price}</span>
                         <button onclick="addToCart('${p.id}')" class="bg-red-600 text-white p-2 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></button>
@@ -148,31 +147,30 @@
 
         function toggleCart() { document.getElementById('cart-modal').classList.toggle('hidden'); }
 
-        // --- MOTOR DE COMPRA DE ALTO RENDIMIENTO ---
+        // --- NUEVO MOTOR: CART API (Sustituye al Checkout API problemático) ---
         async function checkout() {
             if (!cart.length) return;
             const btn = document.getElementById('checkout-btn');
             btn.disabled = true;
-            btn.innerText = "PROCESANDO...";
+            btn.innerText = "PREPARANDO PAGO...";
 
-            // Shopify requiere que los IDs sean GIDs válidos
-            const lineItems = cart.map(item => ({
-                variantId: item.variantId,
+            // Formato para Cart API (moderno)
+            const lines = cart.map(item => ({
+                merchandiseId: item.variantId, // Aquí se usa merchandiseId en lugar de variantId
                 quantity: 1
             }));
 
-            // Usamos una mutación que Shopify acepta globalmente
             const mutation = `
-                mutation checkoutCreate($input: CheckoutCreateInput!) {
-                    checkoutCreate(input: $input) {
-                        checkout { webUrl }
-                        checkoutUserErrors { message field code }
+                mutation cartCreate($input: CartInput!) {
+                    cartCreate(input: $input) {
+                        cart { checkoutUrl }
+                        userErrors { message field }
                     }
                 }
             `;
 
             try {
-                const response = await fetch(`https://${CONFIG.shop}/api/2023-10/graphql.json`, {
+                const response = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -180,32 +178,31 @@
                     },
                     body: JSON.stringify({ 
                         query: mutation,
-                        variables: { input: { lineItems } }
+                        variables: { input: { lines: lines } }
                     })
                 });
                 
                 const result = await response.json();
                 
                 if (result.errors) {
-                    console.error("Error GraphQL:", result.errors);
                     alert("Error de API: " + result.errors[0].message);
                     btn.disabled = false;
                     btn.innerText = "Pagar Ahora";
                     return;
                 }
 
-                const data = result.data.checkoutCreate;
+                const data = result.data.cartCreate;
                 
-                if (data.checkoutUserErrors && data.checkoutUserErrors.length > 0) {
-                    alert("Aviso de Shopify: " + data.checkoutUserErrors[0].message);
+                if (data.userErrors && data.userErrors.length > 0) {
+                    alert("Aviso: " + data.userErrors[0].message);
                     btn.disabled = false;
                     btn.innerText = "Pagar Ahora";
-                } else if (data.checkout && data.checkout.webUrl) {
+                } else if (data.cart && data.cart.checkoutUrl) {
                     localStorage.removeItem('kolmard_cart');
-                    window.location.href = data.checkout.webUrl;
+                    window.location.href = data.cart.checkoutUrl; // Redirección directa al pago
                 }
             } catch (err) {
-                alert("Error de red: Verifica tu internet.");
+                alert("Fallo de conexión.");
                 btn.disabled = false;
                 btn.innerText = "Pagar Ahora";
             }
