@@ -1,8 +1,9 @@
 {
   "name": "kolma-app",
   "version": "1.0.0",
-  "scripts": {
-    "build": "prisma db push && prisma generate && next build"
+"scripts": {
+  "build": "prisma db push && prisma generate && next build"
+}
   },
   "dependencies": {
     "next": "latest",
