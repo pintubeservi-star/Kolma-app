@@ -15,7 +15,6 @@
         .side-panel.active { transform: translateX(0); }
         .loader { border-top-color: transparent; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        /* BANNER OSCURO PREMIUM */
         .dark-banner { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); position: relative; overflow: hidden; }
         .wallet-card { background: linear-gradient(135deg, #1e293b 0%, #020617 100%); }
     </style>
@@ -79,7 +78,7 @@
                 <p class="text-[10px] font-bold uppercase opacity-50 mb-1 tracking-widest">Balance KolmaCard</p>
                 <p class="text-4xl font-black italic tracking-tighter">RD$ 0.00</p>
                 <div class="mt-12 flex justify-between items-center">
-                    <p id="wallet-email" class="text-[9px] font-bold opacity-40 uppercase truncate w-40">Invitado</p>
+                    <p id="wallet-email" class="text-[9px] font-bold opacity-40 uppercase truncate w-40">Visitante</p>
                     <div class="w-8 h-5 bg-rose-600 rounded-sm"></div>
                 </div>
             </div>
@@ -171,10 +170,9 @@
             renderProducts(allProducts.filter(p => p.name.toLowerCase().includes(val)));
         }
 
-        // WALLET LOGIC
+        // WALLET LOGIC (AHORA LIBRE)
         function openWallet() { 
-            if(!localStorage.getItem('k_token')) { alert("Inicia sesión para ver tu Wallet"); toggleProfile(); }
-            else { document.getElementById('wallet-panel').classList.add('active'); }
+            document.getElementById('wallet-panel').classList.add('active'); 
         }
         function closeWallet() { document.getElementById('wallet-panel').classList.remove('active'); }
 
