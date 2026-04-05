@@ -53,8 +53,13 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        .side-panel {
-            transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+        /* Animación para el modal de la wallet */
+        .slide-up {
+            animation: slideUpAnim 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+        }
+        @keyframes slideUpAnim {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
         }
     </style>
 </head>
@@ -117,7 +122,7 @@
             <span class="text-[8px] font-black uppercase tracking-tighter">Inicio</span>
         </button>
         
-        <button onclick="toggleWallet()" class="flex flex-col items-center gap-1 text-gray-400 opacity-60">
+        <button onclick="toggleWallet()" class="flex flex-col items-center gap-1 text-gray-400 active:text-rose-600 transition-colors">
             <i data-lucide="wallet" class="w-5 h-5"></i>
             <span class="text-[8px] font-black uppercase tracking-tighter">Wallet</span>
         </button>
@@ -138,6 +143,80 @@
         </button>
     </nav>
 
+    <div id="wallet-modal" class="fixed inset-0 z-[110] hidden flex-col justify-end">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="toggleWallet()"></div>
+        
+        <div class="relative bg-gray-50 w-full rounded-t-[2.5rem] p-6 flex flex-col shadow-2xl slide-up h-[80vh]">
+            
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+            
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black uppercase italic tracking-tighter text-gray-900">Mi Wallet</h2>
+                <button onclick="toggleWallet()" class="w-10 h-10 bg-white border border-gray-100 rounded-full flex items-center justify-center text-gray-400 shadow-sm active:scale-95">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="flex-grow overflow-y-auto no-scrollbar pb-6">
+                
+                <div class="w-full bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-[2rem] p-6 text-white shadow-xl shadow-gray-900/20 relative overflow-hidden mb-6">
+                    <div class="absolute -right-8 -top-8 w-32 h-32 bg-rose-600/30 rounded-full blur-3xl"></div>
+                    <div class="absolute left-0 bottom-0 w-full h-1/2 bg-gradient-to-t from-black/50 to-transparent"></div>
+                    
+                    <div class="relative z-10 flex flex-col gap-6">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-300">Supermercado <span class="text-rose-500">VIP</span></span>
+                            <i data-lucide="nfc" class="w-5 h-5 text-gray-400"></i>
+                        </div>
+                        
+                        <div>
+                            <p class="text-[9px] font-bold uppercase text-gray-400 tracking-widest mb-1">Balance Acumulado</p>
+                            <div class="flex items-end gap-2">
+                                <h3 class="text-4xl font-black italic tracking-tighter">0</h3>
+                                <span class="text-sm font-black text-rose-500 uppercase mb-1">PTS</span>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-end pt-2">
+                            <div>
+                                <p class="text-[7px] font-bold uppercase text-gray-500 tracking-widest mb-0.5">Nombre del Cliente</p>
+                                <p class="text-sm font-black uppercase tracking-widest text-gray-200">Usuario Invitado</p>
+                            </div>
+                            <div class="w-10 h-6 rounded bg-gradient-to-r from-yellow-200/20 to-yellow-500/20 flex items-center justify-center border border-yellow-500/30">
+                                <i data-lucide="credit-card" class="w-4 h-4 text-yellow-500/80"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-[1.5rem] border border-gray-100 shadow-sm flex items-start gap-4 mb-4">
+                    <div class="bg-rose-50 w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="gift" class="w-5 h-5 text-rose-600"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-[11px] font-black uppercase text-gray-900 tracking-widest mb-1">Tus Puntos son Dinero</h4>
+                        <p class="text-[11px] font-medium text-gray-500 leading-relaxed">
+                            Aquí estarán tus puntos. <strong class="text-gray-900">Cada punto es un Peso Dominicano (RD$1)</strong> para usar en tus compras del supermercado.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-[1.5rem] border border-gray-100 shadow-sm flex items-center justify-between opacity-50 grayscale pointer-events-none">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-gray-50 w-10 h-10 rounded-xl flex items-center justify-center">
+                            <i data-lucide="history" class="w-5 h-5 text-gray-400"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-[10px] font-black uppercase text-gray-900 tracking-widest">Historial de puntos</h4>
+                            <p class="text-[9px] font-bold text-gray-400">Sin movimientos recientes</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-300"></i>
+                </div>
+
+            </div>
+        </div>
+    </div>
     <script>
         const CONFIG = { shop: 'q0q09e-cp.myshopify.com', token: 'a171ee1eaf68d9b7ca5234b4c45a9b0c' };
         let allProducts = [], cart = JSON.parse(localStorage.getItem('kolmard_cart')) || [];
@@ -207,11 +286,17 @@
             updateCartUI();
         }
 
+        // ====== FUNCIÓN DE WALLET ======
+        function toggleWallet() {
+            const modal = document.getElementById('wallet-modal');
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+        }
+
         // Placeholders para navegación futura
-        function toggleWallet() { alert("Próximamente: Wallet de Puntos de Recompensa 🎁"); }
         function toggleOrders() { alert("Historial de pedidos en mantenimiento 📦"); }
         function toggleProfile() { alert("Inicia sesión desde el botón de la esquina superior 👤"); }
-        function toggleCart() { alert("Abriendo carrito... (Usa el código del bloque anterior para completar la integración)"); }
+        function toggleCart() { alert("Abre el modal de carrito con la lógica anterior"); }
 
         initApp();
     </script>
