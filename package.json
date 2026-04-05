@@ -2,7 +2,7 @@
   "name": "kolma-app",
   "version": "1.0.0",
   "scripts": {
-    "build": "npx prisma generate && npx prisma db push --accept-data-loss && next build"
+    "build": "next build"
   },
   "dependencies": {
     "next": "latest",
