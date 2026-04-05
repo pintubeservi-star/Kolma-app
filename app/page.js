@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 // ICONOS SVG PROFESIONALES (Premium)
 // ==========================================
 const IconAdd = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
-const IconSearch = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
+const IconSearch = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" x1="21" x2="16.65" y2="16.65"></line></svg>;
 const IconHome = ({ active }) => <svg width="24" height="24" viewBox="0 0 24 24" fill={active ? "#E31E24" : "none"} stroke={active ? "#E31E24" : "#9CA3AF"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>;
 const IconOrders = ({ active }) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? "#E31E24" : "#9CA3AF"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>;
 const IconWallet = ({ active }) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? "#E31E24" : "#9CA3AF"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>;
@@ -30,8 +30,14 @@ export default function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login', 'register', 'recovery'
 
-  // Formulario Auth
-  const [formData, setFormData] = useState({ nombre: '', email: '', telefono: '', password: '' });
+  // Formulario Auth (Incluida Dirección)
+  const [formData, setFormData] = useState({ 
+    nombre: '', 
+    email: '', 
+    telefono: '', 
+    password: '',
+    direccion: '' 
+  });
   const [errorAuth, setErrorAuth] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,12 +49,26 @@ export default function App() {
   // ==========================================
   useEffect(() => {
     const token = localStorage.getItem('kolma_access_token');
+    const savedName = localStorage.getItem('kolma_user_name');
+    const savedEmail = localStorage.getItem('kolma_user_email');
+    const savedAddress = localStorage.getItem('kolma_user_address');
+    const savedPhone = localStorage.getItem('kolma_user_phone');
+
     if (token) {
       setUser({ 
-        nombre: localStorage.getItem('kolma_user_name') || "Cliente", 
-        email: localStorage.getItem('kolma_user_email'),
+        nombre: savedName || "Cliente", 
+        email: savedEmail,
+        direccion: savedAddress,
+        telefono: savedPhone,
         id: token 
       });
+      setFormData(prev => ({
+        ...prev,
+        nombre: savedName || '',
+        email: savedEmail || '',
+        direccion: savedAddress || '',
+        telefono: savedPhone || ''
+      }));
     }
 
     async function fetchData() {
@@ -77,7 +97,7 @@ export default function App() {
   }, []);
 
   // ==========================================
-  // LÓGICA AUTH SHOPIFY (LOGIN / REGISTRO / RECOVERY)
+  // LÓGICA AUTH SHOPIFY
   // ==========================================
   const fixPhone = (tel) => {
     let clean = tel.replace(/\D/g, '');
@@ -98,21 +118,29 @@ export default function App() {
       if (authMode === 'register') {
         const tel = fixPhone(formData.telefono);
         if (tel.length < 11) throw new Error("Teléfono inválido (10 dígitos requeridos)");
+        if (formData.direccion.length < 5) throw new Error("Por favor ingresa una dirección clara");
 
         const res = await fetch(shopifyUrl, {
           method: 'POST',
           headers,
           body: JSON.stringify({
             query: `mutation customerCreate($input: CustomerCreateInput!) { 
-              customerCreate(input: $input) { customer { id firstName email } customerUserErrors { message } } 
+              customerCreate(input: $input) { customer { id firstName email phone } customerUserErrors { message } } 
             }`,
             variables: { input: { firstName: formData.nombre, email: formData.email, phone: tel, password: formData.password } }
           })
         });
         const { data } = await res.json();
         if (data.customerCreate.customerUserErrors.length) throw new Error(data.customerCreate.customerUserErrors[0].message);
+        
+        // Guardamos dirección localmente ya que Shopify pide registro de dirección aparte
+        localStorage.setItem('kolma_user_address', formData.direccion);
+        localStorage.setItem('kolma_user_name', formData.nombre);
+        localStorage.setItem('kolma_user_phone', tel);
+        localStorage.setItem('kolma_user_email', formData.email);
+
         setAuthMode('login');
-        setErrorAuth('¡Cuenta creada! Ahora inicia sesión.');
+        setErrorAuth('¡Cuenta creada! Ahora inicia sesión para confirmar.');
       } 
       
       else if (authMode === 'login') {
@@ -133,7 +161,13 @@ export default function App() {
         const token = data.customerAccessTokenCreate.customerAccessToken.accessToken;
         localStorage.setItem('kolma_access_token', token);
         localStorage.setItem('kolma_user_email', formData.email);
-        setUser({ nombre: formData.email.split('@')[0], email: formData.email, id: token });
+        
+        setUser({ 
+          nombre: localStorage.getItem('kolma_user_name') || formData.email.split('@')[0], 
+          email: formData.email, 
+          direccion: localStorage.getItem('kolma_user_address'),
+          id: token 
+        });
         setIsAuthOpen(false);
       }
 
@@ -164,6 +198,7 @@ export default function App() {
   const handleLogout = () => {
     localStorage.clear();
     setUser(null);
+    setFormData({ nombre: '', email: '', telefono: '', password: '', direccion: '' });
     setActiveTab('inicio');
   };
 
@@ -208,7 +243,7 @@ export default function App() {
   const transicionSuave = 'all 0.25s ease-in-out';
 
   return (
-    <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#1F2937', paddingBottom: '100px' }}>
+    <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#1F2937', paddingBottom: '100px', overflowX: 'hidden' }}>
       
       {/* HEADER */}
       <header style={{ backgroundColor: '#FFFFFF', padding: '15px 25px', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 20px rgba(227, 30, 36, 0.08)', borderBottom: '1px solid #F3F4F6' }}>
@@ -250,7 +285,7 @@ export default function App() {
           {/* GRID COMPACTO */}
           <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px 15px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '12px' }}>
-              {loading ? <p>Cargando...</p> : productos.filter(p => p.node.title.toLowerCase().includes(searchTerm.toLowerCase())).map(({ node }) => (
+              {loading ? <p>Cargando pasillos...</p> : productos.filter(p => p.node.title.toLowerCase().includes(searchTerm.toLowerCase())).map(({ node }) => (
                 <div key={node.id} style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', padding: '14px', border: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
                     <img src={node.images.edges[0]?.node.url} style={{ maxWidth: '100%', maxHeight: '120px', objectFit: 'contain' }} />
@@ -279,7 +314,7 @@ export default function App() {
         </section>
       )}
 
-      {/* VISTA PERFIL */}
+      {/* VISTA PERFIL - CORREGIDA CON DATOS REALES */}
       {activeTab === 'perfil' && (
         <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
@@ -288,19 +323,33 @@ export default function App() {
           </div>
           {user ? (
             <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '30px', border: '1px solid #eee' }}>
-              <p><strong>Nombre:</strong> {user.nombre}</p>
-              <p><strong>Email:</strong> {user.email}</p>
+              <div style={{ marginBottom: '15px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#999', fontWeight: '800' }}>NOMBRE</span>
+                <p style={{ margin: '5px 0 0 0', fontWeight: '700', color: '#333' }}>{user.nombre}</p>
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#999', fontWeight: '800' }}>EMAIL</span>
+                <p style={{ margin: '5px 0 0 0', fontWeight: '700', color: '#333' }}>{user.email}</p>
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#999', fontWeight: '800' }}>TELÉFONO</span>
+                <p style={{ margin: '5px 0 0 0', fontWeight: '700', color: '#333' }}>{user.telefono || 'No registrado'}</p>
+              </div>
+              <div style={{ marginBottom: '0px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#999', fontWeight: '800' }}>DIRECCIÓN DE ENTREGA</span>
+                <p style={{ margin: '5px 0 0 0', fontWeight: '700', color: '#333' }}>{user.direccion || 'Sin dirección guardada'}</p>
+              </div>
             </div>
           ) : <div style={{ textAlign: 'center' }}><button onClick={() => setIsAuthOpen(true)} style={{ backgroundColor: '#E31E24', color: '#fff', padding: '12px 30px', borderRadius: '12px', border: 'none', fontWeight: 'bold' }}>Ingresar</button></div>}
         </section>
       )}
 
       {/* ==========================================
-          MODAL AUTH (LOGIN / REGISTRO / RECOVERY)
+          MODAL AUTH (CON NOMBRE, TELÉFONO Y DIRECCIÓN)
           ========================================== */}
       {isAuthOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
-          <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', width: '90%', maxWidth: '400px' }}>
+          <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', width: '90%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '900' }}>
                 {authMode === 'login' ? 'Iniciar Sesión' : authMode === 'register' ? 'Crear Cuenta' : 'Recuperar Contraseña'}
@@ -310,25 +359,44 @@ export default function App() {
             
             <form onSubmit={handleAuth}>
               {authMode === 'register' && (
-                <input placeholder="Nombre" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #ddd', marginBottom: '15px' }} onChange={e => setFormData({...formData, nombre: e.target.value})} />
-              )}
-              <input type="email" placeholder="Email" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #ddd', marginBottom: '15px' }} onChange={e => setFormData({...formData, email: e.target.value})} />
-              
-              {authMode === 'register' && (
-                <div style={{ display: 'flex', border: '1px solid #ddd', borderRadius: '10px', overflow: 'hidden', marginBottom: '15px' }}>
-                  <div style={{ background: '#f5f5f5', padding: '12px' }}>+1</div>
-                  <input placeholder="809 000 0000" style={{ width: '100%', padding: '12px', border: 'none' }} onChange={e => setFormData({...formData, telefono: e.target.value})} />
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#666' }}>NOMBRE COMPLETO</label>
+                  <input placeholder="Ej: Juan Pérez" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #ddd', marginTop: '5px' }} onChange={e => setFormData({...formData, nombre: e.target.value})} />
                 </div>
               )}
 
-              {authMode !== 'recovery' && (
-                <input type="password" placeholder="Contraseña" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #ddd', marginBottom: '15px' }} onChange={e => setFormData({...formData, password: e.target.value})} />
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#666' }}>CORREO ELECTRÓNICO</label>
+                <input type="email" placeholder="juan@email.com" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #ddd', marginTop: '5px' }} onChange={e => setFormData({...formData, email: e.target.value})} />
+              </div>
+              
+              {authMode === 'register' && (
+                <>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#666' }}>TELÉFONO</label>
+                    <div style={{ display: 'flex', border: '1px solid #ddd', borderRadius: '10px', overflow: 'hidden', marginTop: '5px' }}>
+                      <div style={{ background: '#f5f5f5', padding: '12px', fontWeight: 'bold' }}>+1</div>
+                      <input placeholder="809 000 0000" required style={{ width: '100%', padding: '12px', border: 'none' }} onChange={e => setFormData({...formData, telefono: e.target.value})} />
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#666' }}>DIRECCIÓN DE ENTREGA (COTUÍ)</label>
+                    <input placeholder="Calle, sector, # de casa" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #ddd', marginTop: '5px' }} onChange={e => setFormData({...formData, direccion: e.target.value})} />
+                  </div>
+                </>
               )}
 
-              {errorAuth && <p style={{ color: '#E31E24', fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '15px' }}>{errorAuth}</p>}
+              {authMode !== 'recovery' && (
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#666' }}>CONTRASEÑA</label>
+                  <input type="password" placeholder="Mínimo 6 caracteres" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #ddd', marginTop: '5px' }} onChange={e => setFormData({...formData, password: e.target.value})} />
+                </div>
+              )}
 
-              <button type="submit" disabled={isSubmitting} style={{ width: '100%', backgroundColor: '#E31E24', color: '#fff', padding: '14px', borderRadius: '12px', border: 'none', fontWeight: '900' }}>
-                {isSubmitting ? 'Cargando...' : authMode === 'login' ? 'ENTRAR' : authMode === 'register' ? 'REGISTRARME' : 'ENVIAR CORREO'}
+              {errorAuth && <p style={{ color: '#E31E24', fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '15px' }}>⚠️ {errorAuth}</p>}
+
+              <button type="submit" disabled={isSubmitting} style={{ width: '100%', backgroundColor: '#E31E24', color: '#fff', padding: '14px', borderRadius: '12px', border: 'none', fontWeight: '900', cursor: 'pointer' }}>
+                {isSubmitting ? 'Cargando...' : authMode === 'login' ? 'ENTRAR' : authMode === 'register' ? 'CREAR MI CUENTA' : 'ENVIAR CORREO'}
               </button>
             </form>
 
@@ -348,44 +416,49 @@ export default function App() {
 
       {/* CARRITO DRAWER */}
       {isCartOpen && (
-        <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', justifyContent: 'flex-end', backdropFilter: 'blur(3px)' }}>
           <div style={{ backgroundColor: '#fff', width: '100%', maxWidth: '400px', height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '20px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><h3 style={{ margin: 0, fontWeight: '900' }}>Tu Canasta</h3><div onClick={() => setIsCartOpen(false)} style={{ cursor: 'pointer' }}><IconClose /></div></div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-              {carrito.length === 0 ? <p style={{ textAlign: 'center', marginTop: '50px' }}>Canasta vacía.</p> : carrito.map((item, i) => (
+              {carrito.length === 0 ? <p style={{ textAlign: 'center', marginTop: '50px', color: '#999' }}>Canasta vacía.</p> : carrito.map((item, i) => (
                 <div key={i} style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-                  <img src={item.image} style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
-                  <div style={{ flex: 1 }}><h4 style={{ margin: 0, fontSize: '0.85rem' }}>{item.title}</h4><p style={{ color: '#E31E24', fontWeight: 'bold' }}>RD${item.price} x {item.quantity}</p></div>
+                  <img src={item.image} style={{ width: '50px', height: '50px', objectFit: 'contain', border: '1px solid #eee', borderRadius: '8px' }} />
+                  <div style={{ flex: 1 }}><h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: '600' }}>{item.title}</h4><p style={{ color: '#E31E24', fontWeight: 'bold' }}>RD${item.price} x {item.quantity}</p></div>
                 </div>
               ))}
             </div>
-            <div style={{ padding: '20px', borderTop: '1px solid #eee' }}>
+            <div style={{ padding: '20px', borderTop: '1px solid #eee', background: '#f9f9f9' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontWeight: '900' }}><span>Total:</span><span>RD$ {totalCarrito.toFixed(2)}</span></div>
-              <button onClick={procesarCheckout} style={{ width: '100%', backgroundColor: '#E31E24', color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: '900' }}>PAGAR</button>
+              <button onClick={procesarCheckout} style={{ width: '100%', backgroundColor: '#E31E24', color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: '900', cursor: 'pointer' }}>PAGAR PEDIDO</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MENÚ INFERIOR CORREGIDO */}
+      {/* MENÚ INFERIOR PROFESIONAL */}
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: '#FFFFFF', borderTop: '1px solid #F1F1F1', display: 'flex', justifyContent: 'space-around', alignItems: 'center', height: '75px', zIndex: 1000, boxShadow: '0 -8px 25px rgba(0,0,0,0.04)' }}>
         <div onClick={() => setActiveTab('inicio')} style={{ textAlign: 'center', color: activeTab === 'inicio' ? '#E31E24' : '#9CA3AF', cursor: 'pointer', flex: 1 }}>
           <IconHome active={activeTab === 'inicio'} />
-          <div style={{ fontSize: '0.75rem', fontWeight: activeTab === 'inicio' ? '800' : '500' }}>Inicio</div>
+          <div style={{ fontSize: '0.75rem', fontWeight: activeTab === 'inicio' ? '800' : '500', marginTop: '4px' }}>Inicio</div>
         </div>
         <div onClick={() => setIsCartOpen(true)} style={{ textAlign: 'center', color: '#9CA3AF', cursor: 'pointer', flex: 1 }}>
           <IconOrders active={false} />
-          <div style={{ fontSize: '0.75rem' }}>Pedido</div>
+          <div style={{ fontSize: '0.75rem', marginTop: '4px' }}>Pedido</div>
         </div>
         <div onClick={() => setActiveTab('wallet')} style={{ textAlign: 'center', color: activeTab === 'wallet' ? '#E31E24' : '#9CA3AF', cursor: 'pointer', flex: 1 }}>
           <IconWallet active={activeTab === 'wallet'} />
-          <div style={{ fontSize: '0.75rem', fontWeight: activeTab === 'wallet' ? '800' : '500' }}>Wallet</div>
+          <div style={{ fontSize: '0.75rem', fontWeight: activeTab === 'wallet' ? '800' : '500', marginTop: '4px' }}>Wallet</div>
         </div>
         <div onClick={() => setActiveTab('perfil')} style={{ textAlign: 'center', color: activeTab === 'perfil' ? '#E31E24' : '#9CA3AF', cursor: 'pointer', flex: 1 }}>
           <IconProfile active={activeTab === 'perfil'} />
-          <div style={{ fontSize: '0.75rem', fontWeight: activeTab === 'perfil' ? '800' : '500' }}>Perfil</div>
+          <div style={{ fontSize: '0.75rem', fontWeight: activeTab === 'perfil' ? '800' : '500', marginTop: '4px' }}>Perfil</div>
         </div>
       </nav>
+
+      <style>{`
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+      `}</style>
     </div>
   );
 }
