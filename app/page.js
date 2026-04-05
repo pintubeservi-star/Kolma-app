@@ -27,11 +27,17 @@ export default function KolmaPremium() {
   const [wallet, setWallet] = useState(0.00); 
   const [misPedidos, setMisPedidos] = useState([]); 
   
-  // ESTADOS DE AUTENTICACIÓN
+  // ESTADOS DE AUTENTICACIÓN (LOGIN, REGISTRO, RECUPERACIÓN)
+  const [authView, setAuthView] = useState('login'); // 'login', 'register', 'recover'
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [regFirstName, setRegFirstName] = useState('');
+  const [regLastName, setRegLastName] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [authSuccessMsg, setAuthSuccessMsg] = useState('');
 
   // ESTADOS DE LA UI
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,7 +57,6 @@ export default function KolmaPremium() {
     async function fetchShopifyData() {
       try {
         if (!domain || !token) {
-          // Datos de prueba solo si no se detectan las variables de Vercel
           const mockData = [
             { node: { id: 1, productType: 'Despensa', title: 'Arroz Premium La Garza 10 Lbs', images: { edges: [{ node: { url: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=300' } }] }, variants: { edges: [{ node: { price: { amount: '450.00' } } }] } } },
             { node: { id: 2, productType: 'Lácteos', title: 'Leche Rica Entera 1 Litro', images: { edges: [{ node: { url: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&q=80&w=300' } }] }, variants: { edges: [{ node: { price: { amount: '75.00' } } }] } } },
@@ -90,15 +95,21 @@ export default function KolmaPremium() {
   }, [domain, token]);
 
   // ==================================================================
-  // 2. INICIO DE SESIÓN REAL (SHOPIFY CUSTOMER API)
+  // 2. SISTEMA DE AUTENTICACIÓN (LOGIN, REGISTRO, RECUPERAR)
   // ==================================================================
+  const switchAuthView = (view) => {
+    setAuthError('');
+    setAuthSuccessMsg('');
+    setAuthView(view);
+  };
+
   const procesarLoginShopify = async (e) => {
     e.preventDefault();
     setAuthLoading(true);
     setAuthError('');
+    setAuthSuccessMsg('');
 
     if (!domain || !token) {
-      // Simulación solo si no hay variables de entorno (Para que no falle el Canvas de prueba)
       setTimeout(() => {
         setUser({ nombre: "Cliente Demo", telefono: "809-000-0000", direccion: "Cotuí, RD", email: loginEmail, customerToken: "demo_token" });
         setWallet(1850.50);
@@ -109,7 +120,6 @@ export default function KolmaPremium() {
     }
 
     try {
-      // Paso A: Crear el Token de Acceso del Cliente
       const authRes = await fetch(`https://${domain}/api/2024-04/graphql.json`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': token },
@@ -128,26 +138,19 @@ export default function KolmaPremium() {
       const authErrors = authData.data?.customerAccessTokenCreate?.customerUserErrors;
 
       if (authErrors && authErrors.length > 0) {
-        setAuthError("Correo o contraseña incorrectos."); // Mensaje de Shopify traducido
+        setAuthError("Correo o contraseña incorrectos.");
         setAuthLoading(false);
         return;
       }
 
       const customerToken = authData.data?.customerAccessTokenCreate?.customerAccessToken?.accessToken;
-
       if (!customerToken) throw new Error("No se pudo generar el token.");
 
-      // Paso B: Traer los datos del cliente con ese Token
       const customerRes = await fetch(`https://${domain}/api/2024-04/graphql.json`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': token },
         body: JSON.stringify({
-          query: `query {
-            customer(customerAccessToken: "${customerToken}") {
-              firstName lastName email phone
-              defaultAddress { address1 city }
-            }
-          }`
+          query: `query { customer(customerAccessToken: "${customerToken}") { firstName lastName email phone defaultAddress { address1 city } } }`
         }),
       });
 
@@ -155,9 +158,7 @@ export default function KolmaPremium() {
       const customerInfo = customerData.data?.customer;
 
       if (customerInfo) {
-        // Formatear el nombre
         const fullName = `${customerInfo.firstName || ''} ${customerInfo.lastName || ''}`.trim() || customerInfo.email;
-        
         setUser({
           nombre: fullName,
           email: customerInfo.email,
@@ -165,18 +166,117 @@ export default function KolmaPremium() {
           direccion: customerInfo.defaultAddress ? `${customerInfo.defaultAddress.address1}, ${customerInfo.defaultAddress.city}` : "Sin dirección guardada",
           customerToken: customerToken
         });
-        
-        setWallet(1850.50); // El sistema de Rewards se maneja a nivel de app o Metafields
-        setLoginEmail('');
-        setLoginPassword('');
+        setWallet(1850.50); 
+        setLoginEmail(''); setLoginPassword('');
         setActiveTab('inicio');
       } else {
         setAuthError("No pudimos extraer la información de tu cuenta.");
       }
-
     } catch (error) {
       console.error("Error en Auth:", error);
       setAuthError("Problema de conexión con Shopify. Intenta de nuevo.");
+    }
+    setAuthLoading(false);
+  };
+
+  const procesarRegistroShopify = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+    setAuthSuccessMsg('');
+
+    if (!domain || !token) {
+      setTimeout(() => {
+        setAuthSuccessMsg("¡Cuenta creada con éxito! Iniciando sesión...");
+        setTimeout(() => {
+          setUser({ nombre: `${regFirstName} ${regLastName}`, telefono: regPhone, direccion: "Cotuí, RD", email: loginEmail, customerToken: "demo_token_new" });
+          setWallet(500.00); // Bono de bienvenida simulado
+          setAuthLoading(false);
+          setActiveTab('inicio');
+        }, 1500);
+      }, 1500);
+      return;
+    }
+
+    try {
+      const authRes = await fetch(`https://${domain}/api/2024-04/graphql.json`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': token },
+        body: JSON.stringify({
+          query: `mutation customerCreate($input: CustomerCreateInput!) {
+            customerCreate(input: $input) {
+              customer { id }
+              customerUserErrors { message }
+            }
+          }`,
+          variables: { input: { firstName: regFirstName, lastName: regLastName, email: loginEmail, password: loginPassword, phone: regPhone } }
+        }),
+      });
+
+      const authData = await authRes.json();
+      const authErrors = authData.data?.customerCreate?.customerUserErrors;
+
+      if (authErrors && authErrors.length > 0) {
+        setAuthError(authErrors[0].message);
+        setAuthLoading(false);
+        return;
+      }
+
+      // Registro exitoso, auto-login
+      setAuthSuccessMsg("¡Cuenta creada! Iniciando sesión automáticamente...");
+      await procesarLoginShopify(e); // Llama al login con las credenciales que acaba de crear
+
+    } catch (error) {
+      console.error("Error en Registro:", error);
+      setAuthError("Problema de conexión al crear cuenta. Intenta de nuevo.");
+      setAuthLoading(false);
+    }
+  };
+
+  const procesarRecuperacionShopify = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+    setAuthSuccessMsg('');
+
+    if (!domain || !token) {
+      setTimeout(() => {
+        setAuthSuccessMsg("Te hemos enviado un correo con instrucciones para restablecer tu contraseña.");
+        setAuthLoading(false);
+        setTimeout(() => switchAuthView('login'), 3000);
+      }, 1500);
+      return;
+    }
+
+    try {
+      const authRes = await fetch(`https://${domain}/api/2024-04/graphql.json`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': token },
+        body: JSON.stringify({
+          query: `mutation customerRecover($email: String!) {
+            customerRecover(email: $email) {
+              customerUserErrors { message }
+            }
+          }`,
+          variables: { email: loginEmail }
+        }),
+      });
+
+      const authData = await authRes.json();
+      const authErrors = authData.data?.customerRecover?.customerUserErrors;
+
+      if (authErrors && authErrors.length > 0) {
+        setAuthError("No encontramos ninguna cuenta con ese correo.");
+        setAuthLoading(false);
+        return;
+      }
+
+      setAuthSuccessMsg("¡Listo! Revisa tu bandeja de entrada o spam para restablecer tu contraseña.");
+      setTimeout(() => switchAuthView('login'), 4000);
+      
+    } catch (error) {
+      console.error("Error en Recuperación:", error);
+      setAuthError("Error de conexión. Intenta de nuevo.");
     }
     setAuthLoading(false);
   };
@@ -185,6 +285,8 @@ export default function KolmaPremium() {
     setUser(null);
     setWallet(0);
     setAuthError('');
+    setAuthSuccessMsg('');
+    setAuthView('login');
     setActiveTab('inicio');
   };
 
@@ -233,62 +335,118 @@ export default function KolmaPremium() {
   // VISTAS DE LA APLICACIÓN (PANTALLAS)
   // ==========================================
 
-  // PANTALLA DE LOGIN CON FORMULARIO (Conectado a Shopify)
-  const renderLoginPrompt = () => (
-    <section style={{ maxWidth: '400px', margin: '0 auto', padding: '60px 25px', textAlign: 'center', animation: 'fadeInUp 0.4s ease-out' }}>
+  // COMPONENTE DE AUTENTICACIÓN DINÁMICO
+  const renderAuthForms = () => (
+    <section style={{ maxWidth: '400px', margin: '0 auto', padding: '50px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
       <div style={{ color: '#E31E24', display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
         <IconLock />
       </div>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', marginBottom: '10px' }}>Bienvenido de nuevo</h2>
-      <p style={{ color: '#6B7280', marginBottom: '30px', fontSize: '0.95rem' }}>Ingresa tus credenciales para acceder a tus pedidos y beneficios.</p>
       
-      <form onSubmit={procesarLoginShopify} style={{ textAlign: 'left' }}>
-        {authError && (
-          <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', padding: '12px', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '20px', textAlign: 'center', fontWeight: 'bold' }}>
-            {authError}
-          </div>
-        )}
-        
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Correo Electrónico</label>
-          <input 
-            type="email" 
-            value={loginEmail}
-            onChange={(e) => setLoginEmail(e.target.value)}
-            required
-            placeholder="tu@correo.com"
-            style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '1rem', outline: 'none', transition: transicionSuave }}
-            onFocus={(e) => e.target.style.borderColor = '#E31E24'}
-            onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
-          />
+      {authView === 'login' && (
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', marginBottom: '10px' }}>Bienvenido</h2>
+          <p style={{ color: '#6B7280', marginBottom: '30px', fontSize: '0.95rem' }}>Ingresa para acceder a tus pedidos y beneficios.</p>
         </div>
-        
-        <div style={{ marginBottom: '30px' }}>
-          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Contraseña</label>
-          <input 
-            type="password" 
-            value={loginPassword}
-            onChange={(e) => setLoginPassword(e.target.value)}
-            required
-            placeholder="••••••••"
-            style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '1rem', outline: 'none', transition: transicionSuave }}
-            onFocus={(e) => e.target.style.borderColor = '#E31E24'}
-            onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
-          />
+      )}
+      
+      {authView === 'register' && (
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', marginBottom: '10px' }}>Crea tu Cuenta</h2>
+          <p style={{ color: '#6B7280', marginBottom: '30px', fontSize: '0.95rem' }}>Únete a Kolma RD y recibe beneficios exclusivos.</p>
         </div>
+      )}
 
-        <button 
-          type="submit"
-          disabled={authLoading}
-          style={{ width: '100%', backgroundColor: authLoading ? '#FCA5A5' : '#E31E24', color: '#FFF', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '800', fontSize: '1.1rem', cursor: authLoading ? 'wait' : 'pointer', boxShadow: authLoading ? 'none' : '0 8px 20px rgba(227,30,36,0.3)', transition: transicionSuave }}
-        >
-          {authLoading ? 'Verificando...' : 'Iniciar Sesión'}
-        </button>
-      </form>
-      
-      <div style={{ marginTop: '25px', fontSize: '0.9rem', color: '#6B7280' }}>
-        ¿No tienes cuenta? <a href="#" style={{ color: '#E31E24', fontWeight: 'bold', textDecoration: 'none' }}>Regístrate</a>
-      </div>
+      {authView === 'recover' && (
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', marginBottom: '10px' }}>Recuperar Acceso</h2>
+          <p style={{ color: '#6B7280', marginBottom: '30px', fontSize: '0.95rem' }}>Te enviaremos un enlace seguro para restablecerla.</p>
+        </div>
+      )}
+
+      {/* MENSAJES DE ERROR O ÉXITO GLOBALES */}
+      {authError && (
+        <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', padding: '12px', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '20px', textAlign: 'center', fontWeight: 'bold', animation: 'fadeInUp 0.3s' }}>
+          {authError}
+        </div>
+      )}
+      {authSuccessMsg && (
+        <div style={{ backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0', color: '#059669', padding: '12px', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '20px', textAlign: 'center', fontWeight: 'bold', animation: 'fadeInUp 0.3s' }}>
+          {authSuccessMsg}
+        </div>
+      )}
+
+      {/* FORMULARIO DE INICIO DE SESIÓN */}
+      {authView === 'login' && (
+        <form onSubmit={procesarLoginShopify} style={{ textAlign: 'left', animation: 'fadeInUp 0.3s' }}>
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Correo Electrónico</label>
+            <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required placeholder="tu@correo.com" style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '1rem', outline: 'none', transition: transicionSuave }} onFocus={(e) => e.target.style.borderColor = '#E31E24'} onBlur={(e) => e.target.style.borderColor = '#D1D5DB'} />
+          </div>
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: '700', color: '#374151' }}>Contraseña</label>
+              <span onClick={() => switchAuthView('recover')} style={{ fontSize: '0.8rem', color: '#E31E24', fontWeight: 'bold', cursor: 'pointer' }}>¿Olvidaste tu contraseña?</span>
+            </div>
+            <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required placeholder="••••••••" style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '1rem', outline: 'none', transition: transicionSuave }} onFocus={(e) => e.target.style.borderColor = '#E31E24'} onBlur={(e) => e.target.style.borderColor = '#D1D5DB'} />
+          </div>
+          <button type="submit" disabled={authLoading} style={{ width: '100%', backgroundColor: authLoading ? '#FCA5A5' : '#E31E24', color: '#FFF', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '800', fontSize: '1.1rem', cursor: authLoading ? 'wait' : 'pointer', boxShadow: authLoading ? 'none' : '0 8px 20px rgba(227,30,36,0.3)', transition: transicionSuave }}>
+            {authLoading ? 'Verificando...' : 'Iniciar Sesión'}
+          </button>
+          <div style={{ marginTop: '25px', fontSize: '0.9rem', color: '#6B7280', textAlign: 'center' }}>
+            ¿No tienes cuenta? <span onClick={() => switchAuthView('register')} style={{ color: '#E31E24', fontWeight: 'bold', cursor: 'pointer' }}>Regístrate aquí</span>
+          </div>
+        </form>
+      )}
+
+      {/* FORMULARIO DE REGISTRO */}
+      {authView === 'register' && (
+        <form onSubmit={procesarRegistroShopify} style={{ textAlign: 'left', animation: 'fadeInUp 0.3s' }}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Nombre</label>
+              <input type="text" value={regFirstName} onChange={(e) => setRegFirstName(e.target.value)} required placeholder="Ej. Juan" style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '1rem', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#E31E24'} onBlur={(e) => e.target.style.borderColor = '#D1D5DB'} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Apellido</label>
+              <input type="text" value={regLastName} onChange={(e) => setRegLastName(e.target.value)} required placeholder="Ej. Pérez" style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '1rem', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#E31E24'} onBlur={(e) => e.target.style.borderColor = '#D1D5DB'} />
+            </div>
+          </div>
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Teléfono (Para Delivery)</label>
+            <input type="tel" value={regPhone} onChange={(e) => setRegPhone(e.target.value)} placeholder="809-000-0000" style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '1rem', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#E31E24'} onBlur={(e) => e.target.style.borderColor = '#D1D5DB'} />
+          </div>
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Correo Electrónico</label>
+            <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required placeholder="tu@correo.com" style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '1rem', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#E31E24'} onBlur={(e) => e.target.style.borderColor = '#D1D5DB'} />
+          </div>
+          <div style={{ marginBottom: '25px' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Crea una Contraseña</label>
+            <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required placeholder="Mínimo 5 caracteres" minLength="5" style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '1rem', outline: 'none' }} onFocus={(e) => e.target.style.borderColor = '#E31E24'} onBlur={(e) => e.target.style.borderColor = '#D1D5DB'} />
+          </div>
+          <button type="submit" disabled={authLoading} style={{ width: '100%', backgroundColor: authLoading ? '#9CA3AF' : '#111827', color: '#FFF', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '800', fontSize: '1.1rem', cursor: authLoading ? 'wait' : 'pointer', boxShadow: authLoading ? 'none' : '0 8px 20px rgba(0,0,0,0.2)', transition: transicionSuave }}>
+            {authLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
+          </button>
+          <div style={{ marginTop: '25px', fontSize: '0.9rem', color: '#6B7280', textAlign: 'center' }}>
+            ¿Ya tienes cuenta? <span onClick={() => switchAuthView('login')} style={{ color: '#E31E24', fontWeight: 'bold', cursor: 'pointer' }}>Inicia Sesión</span>
+          </div>
+        </form>
+      )}
+
+      {/* FORMULARIO DE RECUPERACIÓN DE CONTRASEÑA */}
+      {authView === 'recover' && (
+        <form onSubmit={procesarRecuperacionShopify} style={{ textAlign: 'left', animation: 'fadeInUp 0.3s' }}>
+          <div style={{ marginBottom: '25px' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Correo Electrónico</label>
+            <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required placeholder="tu@correo.com" style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '1rem', outline: 'none', transition: transicionSuave }} onFocus={(e) => e.target.style.borderColor = '#E31E24'} onBlur={(e) => e.target.style.borderColor = '#D1D5DB'} />
+          </div>
+          <button type="submit" disabled={authLoading} style={{ width: '100%', backgroundColor: authLoading ? '#9CA3AF' : '#E31E24', color: '#FFF', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '800', fontSize: '1.1rem', cursor: authLoading ? 'wait' : 'pointer', transition: transicionSuave }}>
+            {authLoading ? 'Enviando...' : 'Enviar Instrucciones'}
+          </button>
+          <div style={{ marginTop: '25px', fontSize: '0.9rem', color: '#6B7280', textAlign: 'center' }}>
+            <span onClick={() => switchAuthView('login')} style={{ color: '#111', fontWeight: 'bold', cursor: 'pointer' }}>&larr; Volver a Inicio de Sesión</span>
+          </div>
+        </form>
+      )}
     </section>
   );
 
@@ -383,7 +541,7 @@ export default function KolmaPremium() {
   );
 
   const renderPedidos = () => {
-    if (!user) return renderLoginPrompt();
+    if (!user) return renderAuthForms();
 
     return (
       <section style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
@@ -423,7 +581,7 @@ export default function KolmaPremium() {
   };
 
   const renderWallet = () => {
-    if (!user) return renderLoginPrompt();
+    if (!user) return renderAuthForms();
 
     return (
       <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
@@ -464,7 +622,7 @@ export default function KolmaPremium() {
   };
 
   const renderPerfil = () => {
-    if (!user) return renderLoginPrompt();
+    if (!user) return renderAuthForms();
 
     return (
       <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
@@ -520,7 +678,7 @@ export default function KolmaPremium() {
                 <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#E31E24' }}>RD$ {wallet.toLocaleString()}</div>
               </div>
             ) : (
-              <button onClick={() => setActiveTab('perfil')} style={{ background: 'none', border: 'none', color: '#E31E24', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', display: 'none' }} className="desktop-wallet">
+              <button onClick={() => { switchAuthView('login'); setActiveTab('perfil'); }} style={{ background: 'none', border: 'none', color: '#E31E24', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', display: 'none' }} className="desktop-wallet">
                 Iniciar Sesión
               </button>
             )}
@@ -603,7 +761,7 @@ export default function KolmaPremium() {
         <div onClick={() => setActiveTab('wallet')} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '0.7rem', color: activeTab === 'wallet' ? '#E31E24' : '#9CA3AF', fontWeight: '800', cursor: 'pointer', transition: transicionSuave }}>
           <IconWallet active={activeTab === 'wallet'} /><span style={{ marginTop: '5px' }}>Wallet</span>
         </div>
-        <div onClick={() => setActiveTab('perfil')} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '0.7rem', color: activeTab === 'perfil' ? '#E31E24' : '#9CA3AF', fontWeight: '800', cursor: 'pointer', transition: transicionSuave }}>
+        <div onClick={() => { switchAuthView('login'); setActiveTab('perfil'); }} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '0.7rem', color: activeTab === 'perfil' ? '#E31E24' : '#9CA3AF', fontWeight: '800', cursor: 'pointer', transition: transicionSuave }}>
           <IconProfile active={activeTab === 'perfil'} /><span style={{ marginTop: '5px' }}>Perfil</span>
         </div>
       </nav>
