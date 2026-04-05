@@ -27,7 +27,7 @@
         <div class="flex justify-between items-center mb-4">
             <div>
                 <span class="text-rose-600 font-bold text-[8px] uppercase tracking-widest flex items-center gap-1">
-                    <span class="w-1 h-1 bg-rose-600 rounded-full animate-ping"></span> Live Store
+                    <span class="w-1 h-1 bg-rose-600 rounded-full animate-ping"></span> Live Cotuí
                 </span>
                 <h1 class="text-2xl font-black text-gray-900 tracking-tighter italic uppercase leading-none">KOLMA<span class="text-rose-600">RD</span></h1>
             </div>
@@ -38,22 +38,11 @@
         </div>
         <div class="relative">
             <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
-            <input type="text" id="search-input" oninput="filterProducts()" placeholder="¿Qué necesitas hoy?" class="w-full bg-gray-100 p-3.5 pl-11 rounded-2xl outline-none font-medium text-sm focus:bg-white focus:ring-1 focus:ring-rose-500/10 transition-all shadow-inner">
+            <input type="text" id="search-input" oninput="filterProducts()" placeholder="¿Qué buscas hoy?" class="w-full bg-gray-100 p-3.5 pl-11 rounded-2xl outline-none font-medium text-sm focus:bg-white shadow-inner">
         </div>
     </header>
 
-    <section class="px-6 mt-4">
-        <div class="w-full h-28 bg-gray-900 rounded-[2rem] p-6 text-white relative overflow-hidden shadow-xl flex items-center">
-            <div class="z-10">
-                <h2 class="text-lg font-black italic uppercase leading-tight">Envío Express</h2>
-                <p class="text-rose-500 text-[10px] font-black uppercase tracking-widest">Cotuí y zonas aledañas</p>
-            </div>
-            <i data-lucide="truck" class="absolute right-6 w-10 h-10 text-white/10 -rotate-12"></i>
-        </div>
-    </section>
-
     <main class="px-6 mt-6">
-        <h3 class="font-black text-[10px] text-gray-400 uppercase tracking-widest mb-4 italic">Seleccionado para ti</h3>
         <div id="product-grid" class="grid grid-cols-2 gap-3"></div>
     </main>
 
@@ -66,18 +55,18 @@
 
     <div id="wallet-modal" class="fixed inset-0 z-[110] hidden flex-col justify-end">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="toggleWallet()"></div>
-        <div class="relative bg-gray-50 w-full rounded-t-[2.5rem] p-6 shadow-2xl slide-up h-[70vh]">
+        <div class="relative bg-gray-50 w-full rounded-t-[2.5rem] p-6 shadow-2xl slide-up h-[60vh]">
             <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-8"></div>
-            <div class="w-full bg-gradient-to-br from-gray-900 to-black rounded-[2rem] p-6 text-white relative shadow-2xl overflow-hidden mb-6">
+            <div class="w-full bg-black rounded-[2rem] p-6 text-white relative shadow-2xl overflow-hidden mb-6">
                 <div class="z-10 relative flex flex-col gap-6">
-                    <div class="flex justify-between items-start"><span class="text-[10px] font-black uppercase text-rose-500 tracking-widest">VIP Member</span><i data-lucide="nfc" class="w-5 h-5 text-gray-600"></i></div>
-                    <div><p class="text-[8px] text-gray-400 uppercase font-bold mb-1 tracking-widest">Puntos Acumulados</p><h3 class="text-4xl font-black italic">0 <span class="text-sm text-rose-500 uppercase">RD$</span></h3></div>
+                    <span class="text-[10px] font-black uppercase text-rose-500 tracking-widest">VIP Card</span>
+                    <div><p class="text-[8px] text-gray-400 uppercase font-bold mb-1">Puntos KolmaRD</p><h3 class="text-4xl font-black italic">0 <span class="text-sm text-rose-500 uppercase">PTS</span></h3></div>
                     <p id="wallet-name" class="text-sm font-black uppercase tracking-widest text-gray-300">Usuario Invitado</p>
                 </div>
             </div>
             <div class="bg-white p-5 rounded-3xl border border-gray-100 flex items-center gap-4">
-                <div class="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center"><i data-lucide="gift" class="w-5 h-5 text-rose-600"></i></div>
-                <p class="text-[11px] font-medium text-gray-500 leading-tight">Usa tus puntos como efectivo en tu próxima compra.</p>
+                <div class="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center"><i data-lucide="info" class="w-5 h-5 text-rose-600"></i></div>
+                <p class="text-[11px] font-medium text-gray-500 leading-tight">Cada compra te acerca a premios exclusivos.</p>
             </div>
         </div>
     </div>
@@ -86,27 +75,27 @@
         <div class="absolute inset-0 bg-black/30 backdrop-blur-md" onclick="toggleProfile()"></div>
         <div class="absolute right-0 top-0 bottom-0 w-[85%] bg-white p-8 rounded-l-[3rem] shadow-2xl flex flex-col">
             <div class="flex justify-between items-center mb-10">
-                <h2 class="text-2xl font-black uppercase italic text-gray-900">Perfil</h2>
+                <h2 class="text-2xl font-black uppercase italic text-gray-900">Mi Cuenta</h2>
                 <button onclick="toggleProfile()" class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-400"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
 
             <div id="auth-box" class="space-y-6">
                 <div class="space-y-4">
-                    <div id="reg-name-field" class="hidden"><input type="text" id="auth-fname" placeholder="Nombre completo" class="w-full p-5 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-rose-500/10"></div>
-                    <input type="email" id="auth-email" placeholder="Correo" class="w-full p-5 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-rose-500/10">
-                    <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full p-5 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-rose-500/10">
-                    <button onclick="handleAuthSubmit()" id="btn-main-auth" class="btn-touch w-full bg-rose-600 py-5 rounded-[2rem] text-white font-black uppercase italic shadow-xl shadow-rose-200">Entrar Ahora</button>
+                    <div id="reg-name-field" class="hidden"><input type="text" id="auth-fname" placeholder="Nombre" class="w-full p-5 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-rose-500/10 shadow-inner"></div>
+                    <input type="email" id="auth-email" placeholder="Correo" class="w-full p-5 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-rose-500/10 shadow-inner">
+                    <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full p-5 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-rose-500/10 shadow-inner">
+                    <button onclick="handleAuthSubmit()" id="btn-main-auth" class="btn-touch w-full bg-rose-600 py-5 rounded-[2rem] text-white font-black uppercase italic shadow-xl shadow-rose-200">Acceder</button>
                 </div>
                 <div class="text-center">
-                    <button id="switch-to-reg" onclick="switchAuth('register')" class="text-[10px] font-black text-rose-600 uppercase tracking-widest">¿No tienes cuenta? Únete gratis</button>
-                    <button id="switch-to-login" onclick="switchAuth('login')" class="hidden text-[10px] font-black text-gray-400 uppercase tracking-widest">Ya soy cliente</button>
+                    <button id="switch-to-reg" onclick="switchAuth('register')" class="text-[10px] font-black text-rose-600 uppercase tracking-widest">¿No tienes cuenta? Regístrate</button>
+                    <button id="switch-to-login" onclick="switchAuth('login')" class="hidden text-[10px] font-black text-gray-400 uppercase tracking-widest">Ya tengo cuenta</button>
                 </div>
             </div>
 
             <div id="auth-welcome" class="hidden space-y-6 flex-grow">
                 <div class="p-8 bg-gray-900 rounded-[2.5rem] text-white">
                     <span class="text-[9px] font-black uppercase text-rose-500 tracking-widest">Bienvenido</span>
-                    <p id="display-name" class="font-black text-xl italic uppercase truncate mt-1">Usuario</p>
+                    <p id="display-name" class="font-black text-xl italic uppercase mt-1 truncate"></p>
                 </div>
                 <button onclick="logout()" class="w-full py-5 bg-gray-50 rounded-2xl font-black text-gray-400 uppercase text-[10px] tracking-widest btn-touch">Cerrar Sesión</button>
             </div>
@@ -117,9 +106,9 @@
         <div class="absolute inset-0" onclick="toggleCart()"></div>
         <div class="relative bg-white w-full rounded-t-[3rem] p-8 max-h-[85vh] flex flex-col shadow-2xl">
             <div id="cart-items" class="flex-grow overflow-y-auto space-y-4 no-scrollbar mb-6"></div>
-            <div class="bg-gray-50 p-6 rounded-[2.5rem] border border-gray-100 shadow-inner">
+            <div class="bg-gray-50 p-6 rounded-[2.5rem]">
                 <div class="flex justify-between items-center mb-4"><span class="font-black uppercase italic text-gray-400">Total</span><span id="cart-total" class="text-3xl font-black text-rose-600 tracking-tighter">RD$0</span></div>
-                <button onclick="checkout()" id="btn-pay" class="btn-touch w-full bg-rose-600 py-6 rounded-[2rem] font-black text-white uppercase italic shadow-xl shadow-rose-200">Realizar Pedido</button>
+                <button onclick="checkout()" id="btn-pay" class="btn-touch w-full bg-rose-600 py-6 rounded-[2rem] font-black text-white uppercase italic shadow-xl">Comprar Ahora</button>
             </div>
         </div>
     </div>
@@ -156,41 +145,41 @@
         }
 
         async function handleAuthSubmit() {
-            const email = document.getElementById('auth-email').value, pass = document.getElementById('auth-pass').value;
-            if(!email || !pass) return alert("Completa los datos");
-            
+            const email = document.getElementById('auth-email').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
             const btn = document.getElementById('btn-main-auth');
-            const originalText = btn.innerText;
             btn.innerHTML = `<div class="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto"></div>`;
-            
-            const query = currentMode === 'login' 
-                ? `mutation { customerAccessTokenCreate(input: {email: "${email}", password: "${pass}"}) { customerAccessToken { accessToken } customerUserErrors { message } } }`
-                : `mutation { customerCreate(input: {firstName: "${document.getElementById('auth-fname').value}", email: "${email}", password: "${pass}"}) { customer { id } customerUserErrors { message } } }`;
-            
-            try {
-                const response = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token }, body: JSON.stringify({ query }) });
-                const res = await response.json();
-                const auth = currentMode === 'login' ? res.data.customerAccessTokenCreate : res.data.customerCreate;
+            btn.disabled = true;
 
-                if (auth?.customerAccessToken) {
-                    localStorage.setItem('k_token', auth.customerAccessToken.accessToken);
-                    await fetchCustomerName(auth.customerAccessToken.accessToken);
-                    location.reload();
-                } else if(currentMode === 'register' && !auth.customerUserErrors.length) {
-                    alert("¡Éxito! Ahora inicia sesión."); switchAuth('login');
-                    btn.innerText = "Entrar Ahora";
-                } else {
-                    alert(auth?.customerUserErrors[0]?.message || "Credenciales incorrectas");
-                    btn.innerText = originalText;
-                }
-            } catch (e) { alert("Error de red"); btn.innerText = originalText; }
+            if (currentMode === 'register') {
+                const name = document.getElementById('auth-fname').value.trim();
+                const q = `mutation { customerCreate(input: {firstName: "${name}", email: "${email}", password: "${pass}"}) { customer { id } customerUserErrors { message } } }`;
+                const r = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token }, body: JSON.stringify({ query: q }) });
+                const d = await r.json();
+                if (d.data.customerCreate.customerUserErrors.length > 0) { alert(d.data.customerCreate.customerUserErrors[0].message); btn.innerText = "Acceder"; btn.disabled = false; return; }
+                alert("Cuenta creada. Ahora inicia sesión."); switchAuth('login'); btn.innerText = "Acceder"; btn.disabled = false; return;
+            }
+
+            const qLogin = `mutation { customerAccessTokenCreate(input: {email: "${email}", password: "${pass}"}) { customerAccessToken { accessToken } customerUserErrors { message } } }`;
+            const rLogin = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token }, body: JSON.stringify({ query: qLogin }) });
+            const dLogin = await rLogin.json();
+            const auth = dLogin.data.customerAccessTokenCreate;
+
+            if (auth?.customerAccessToken) {
+                localStorage.setItem('k_token', auth.customerAccessToken.accessToken);
+                await fetchCustomerName(auth.customerAccessToken.accessToken);
+                location.reload();
+            } else {
+                alert("Datos incorrectos. Intenta de nuevo.");
+                btn.innerText = "Acceder"; btn.disabled = false;
+            }
         }
 
         async function fetchCustomerName(token) {
-            const query = `query { customer(customerAccessToken: "${token}") { firstName } }`;
-            const response = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token }, body: JSON.stringify({ query }) });
-            const res = await response.json();
-            if(res.data.customer) localStorage.setItem('k_name', res.data.customer.firstName);
+            const q = `query { customer(customerAccessToken: "${token}") { firstName } }`;
+            const r = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token }, body: JSON.stringify({ query: q }) });
+            const d = await r.json();
+            if(d.data?.customer) localStorage.setItem('k_name', d.data.customer.firstName);
         }
 
         function checkSession() {
@@ -198,8 +187,8 @@
             if(token) {
                 document.getElementById('auth-box').classList.add('hidden');
                 document.getElementById('auth-welcome').classList.remove('hidden');
-                document.getElementById('display-name').innerText = name || 'Usuario';
-                document.getElementById('wallet-name').innerText = name || 'Usuario';
+                document.getElementById('display-name').innerText = name || 'Cliente';
+                document.getElementById('wallet-name').innerText = name || 'Cliente';
                 document.getElementById('user-dot').classList.remove('hidden');
             }
         }
@@ -209,9 +198,9 @@
             if(!token) { toggleCart(); toggleProfile(); return alert("Inicia sesión para pedir"); }
             const lines = cart.map(item => ({ merchandiseId: item.variantId, quantity: 1 }));
             const query = `mutation { cartCreate(input: { buyerIdentity: { customerAccessToken: "${token}" }, lines: ${JSON.stringify(lines).replace(/"([^"]+)":/g, '$1:')} }) { cart { checkoutUrl } } }`;
-            const response = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token }, body: JSON.stringify({ query }) });
-            const res = await response.json();
-            if(res.data.cartCreate.cart.checkoutUrl) window.location.href = res.data.cartCreate.cart.checkoutUrl;
+            const r = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token }, body: JSON.stringify({ query }) });
+            const d = await r.json();
+            if(d.data.cartCreate.cart.checkoutUrl) window.location.href = d.data.cartCreate.cart.checkoutUrl;
         }
 
         function updateCartUI() {
@@ -229,7 +218,7 @@
         function toggleCart() { const c = document.getElementById('cart-modal'); c.classList.toggle('hidden'); c.classList.toggle('flex'); }
         function toggleWallet() { const w = document.getElementById('wallet-modal'); w.classList.toggle('hidden'); w.classList.toggle('flex'); }
         function logout() { localStorage.clear(); location.reload(); }
-        function switchAuth(m) { currentMode = m; document.getElementById('reg-name-field').classList.toggle('hidden', m!=='register'); document.getElementById('switch-to-reg').classList.toggle('hidden', m==='register'); document.getElementById('switch-to-login').classList.toggle('hidden', m==='login'); document.getElementById('btn-main-auth').innerText = m==='login'?'Entrar Ahora':'Crear Cuenta VIP'; }
+        function switchAuth(m) { currentMode = m; document.getElementById('reg-name-field').classList.toggle('hidden', m!=='register'); document.getElementById('switch-to-reg').classList.toggle('hidden', m==='register'); document.getElementById('switch-to-login').classList.toggle('hidden', m==='login'); }
         function filterProducts() { const q = document.getElementById('search-input').value.toLowerCase(); renderProducts(allProducts.filter(p => p.name.toLowerCase().includes(q))); }
 
         initApp();
