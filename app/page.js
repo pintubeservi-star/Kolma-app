@@ -17,15 +17,22 @@ const IconStar = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="cur
 const IconLock = () => <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
 
 export default function KolmaPremium() {
+  // ESTADOS DE INVENTARIO (Shopify)
   const [productos, setProductos] = useState([]);
   const [colecciones, setColecciones] = useState([{ node: { id: 'all', title: 'Todas' } }]);
   const [loading, setLoading] = useState(true);
   
   // ESTADOS DEL USUARIO Y PEDIDOS
-  const [user, setUser] = useState(null); // SESIÓN CERRADA POR DEFECTO
+  const [user, setUser] = useState(null); 
   const [wallet, setWallet] = useState(0.00); 
-  const [misPedidos, setMisPedidos] = useState([]); // Historial de pedidos
+  const [misPedidos, setMisPedidos] = useState([]); 
   
+  // ESTADOS DE AUTENTICACIÓN
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+
   // ESTADOS DE LA UI
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('inicio');
@@ -34,34 +41,30 @@ export default function KolmaPremium() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProcessingPago, setIsProcessingPago] = useState(false);
 
+  const domain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
+  const token = process.env.NEXT_PUBLIC_SHOPIFY_ACCESS_TOKEN;
+
+  // ==================================================================
+  // 1. CARGAR PRODUCTOS DE SHOPIFY AL INICIAR
+  // ==================================================================
   useEffect(() => {
-    // CONEXIÓN REAL A SHOPIFY STOREFRONT API
     async function fetchShopifyData() {
       try {
-        const domain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
-        const token = process.env.NEXT_PUBLIC_SHOPIFY_ACCESS_TOKEN;
-
-        // Fallback de datos de prueba si no hay tokens configurados (Para previsualizar en Canvas)
         if (!domain || !token) {
+          // Datos de prueba solo si no se detectan las variables de Vercel
           const mockData = [
             { node: { id: 1, productType: 'Despensa', title: 'Arroz Premium La Garza 10 Lbs', images: { edges: [{ node: { url: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=300' } }] }, variants: { edges: [{ node: { price: { amount: '450.00' } } }] } } },
             { node: { id: 2, productType: 'Lácteos', title: 'Leche Rica Entera 1 Litro', images: { edges: [{ node: { url: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&q=80&w=300' } }] }, variants: { edges: [{ node: { price: { amount: '75.00' } } }] } } },
-            { node: { id: 3, productType: 'Víveres', title: 'Plátano Verde Fresco (Unidad)', images: { edges: [{ node: { url: 'https://images.unsplash.com/photo-1528825871115-3581a5387919?auto=format&fit=crop&q=80&w=300' } }] }, variants: { edges: [{ node: { price: { amount: '25.00' } } }] } } },
-            { node: { id: 4, productType: 'Despensa', title: 'Aceite de Soya Crisol 64 oz', images: { edges: [{ node: { url: 'https://images.unsplash.com/photo-1620619894458-150244435133?auto=format&fit=crop&q=80&w=300' } }] }, variants: { edges: [{ node: { price: { amount: '295.00' } } }] } } },
           ];
           setProductos(mockData);
-          setColecciones([{ node: { id: 'all', title: 'Todas' } }, { node: { id: 'c1', title: 'Despensa' } }, { node: { id: 'c2', title: 'Lácteos' } }, { node: { id: 'c3', title: 'Víveres' } }]);
+          setColecciones([{ node: { id: 'all', title: 'Todas' } }, { node: { id: 'c1', title: 'Despensa' } }, { node: { id: 'c2', title: 'Lácteos' } }]);
           setLoading(false);
           return;
         }
 
-        // Petición real
         const response = await fetch(`https://${domain}/api/2024-04/graphql.json`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Shopify-Storefront-Access-Token': token,
-          },
+          headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': token },
           body: JSON.stringify({
             query: `{ products(first: 40) { edges { node { id title productType images(first: 1) { edges { node { url } } } variants(first: 1) { edges { node { price { amount } } } } } } } }`
           }),
@@ -74,14 +77,8 @@ export default function KolmaPremium() {
           setProductos(fetchedProducts);
 
           const types = [...new Set(fetchedProducts.map(p => p.node.productType).filter(Boolean))];
-          const dynamicCollections = [
-            { node: { id: 'all', title: 'Todas' } },
-            ...types.map((type, i) => ({ node: { id: `cat_${i}`, title: type } }))
-          ];
-          
-          if (dynamicCollections.length > 1) {
-            setColecciones(dynamicCollections);
-          }
+          const dynamicCollections = [{ node: { id: 'all', title: 'Todas' } }, ...types.map((type, i) => ({ node: { id: `cat_${i}`, title: type } }))];
+          if (dynamicCollections.length > 1) setColecciones(dynamicCollections);
         }
         setLoading(false);
       } catch (error) {
@@ -89,52 +86,131 @@ export default function KolmaPremium() {
         setLoading(false);
       }
     }
-
     fetchShopifyData();
-  }, []);
+  }, [domain, token]);
 
-  // LÓGICA DEL CARRITO
-  const agregarAlCarrito = (producto, e) => {
-    e.stopPropagation(); 
-    setCarrito(prev => {
-      const existe = prev.find(item => item.id === producto.node.id);
-      if (existe) {
-        return prev.map(item => item.id === producto.node.id ? { ...item, cantidad: item.cantidad + 1 } : item);
+  // ==================================================================
+  // 2. INICIO DE SESIÓN REAL (SHOPIFY CUSTOMER API)
+  // ==================================================================
+  const procesarLoginShopify = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+
+    if (!domain || !token) {
+      // Simulación solo si no hay variables de entorno (Para que no falle el Canvas de prueba)
+      setTimeout(() => {
+        setUser({ nombre: "Cliente Demo", telefono: "809-000-0000", direccion: "Cotuí, RD", email: loginEmail, customerToken: "demo_token" });
+        setWallet(1850.50);
+        setAuthLoading(false);
+        setActiveTab('inicio');
+      }, 1500);
+      return;
+    }
+
+    try {
+      // Paso A: Crear el Token de Acceso del Cliente
+      const authRes = await fetch(`https://${domain}/api/2024-04/graphql.json`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': token },
+        body: JSON.stringify({
+          query: `mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
+            customerAccessTokenCreate(input: $input) {
+              customerAccessToken { accessToken }
+              customerUserErrors { message }
+            }
+          }`,
+          variables: { input: { email: loginEmail, password: loginPassword } }
+        }),
+      });
+
+      const authData = await authRes.json();
+      const authErrors = authData.data?.customerAccessTokenCreate?.customerUserErrors;
+
+      if (authErrors && authErrors.length > 0) {
+        setAuthError("Correo o contraseña incorrectos."); // Mensaje de Shopify traducido
+        setAuthLoading(false);
+        return;
       }
-      return [...prev, { ...producto.node, cantidad: 1, precio: parseFloat(producto.node.variants.edges[0].node.price.amount) }];
-    });
-  };
 
-  const removerDelCarrito = (id) => {
-    setCarrito(prev => prev.filter(item => item.id !== id));
-  };
+      const customerToken = authData.data?.customerAccessTokenCreate?.customerAccessToken?.accessToken;
 
-  const totalCarrito = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
-  const totalArticulos = carrito.reduce((acc, item) => acc + item.cantidad, 0);
+      if (!customerToken) throw new Error("No se pudo generar el token.");
 
-  // SIMULACIÓN DE SESIÓN
-  const simularLogin = () => {
-    setUser({ nombre: "Carlos Minaya", telefono: "809-555-0199", direccion: "Calle Duarte #45, Cotuí" });
-    setWallet(1850.50);
+      // Paso B: Traer los datos del cliente con ese Token
+      const customerRes = await fetch(`https://${domain}/api/2024-04/graphql.json`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': token },
+        body: JSON.stringify({
+          query: `query {
+            customer(customerAccessToken: "${customerToken}") {
+              firstName lastName email phone
+              defaultAddress { address1 city }
+            }
+          }`
+        }),
+      });
+
+      const customerData = await customerRes.json();
+      const customerInfo = customerData.data?.customer;
+
+      if (customerInfo) {
+        // Formatear el nombre
+        const fullName = `${customerInfo.firstName || ''} ${customerInfo.lastName || ''}`.trim() || customerInfo.email;
+        
+        setUser({
+          nombre: fullName,
+          email: customerInfo.email,
+          telefono: customerInfo.phone || "Agrega tu teléfono en Shopify",
+          direccion: customerInfo.defaultAddress ? `${customerInfo.defaultAddress.address1}, ${customerInfo.defaultAddress.city}` : "Sin dirección guardada",
+          customerToken: customerToken
+        });
+        
+        setWallet(1850.50); // El sistema de Rewards se maneja a nivel de app o Metafields
+        setLoginEmail('');
+        setLoginPassword('');
+        setActiveTab('inicio');
+      } else {
+        setAuthError("No pudimos extraer la información de tu cuenta.");
+      }
+
+    } catch (error) {
+      console.error("Error en Auth:", error);
+      setAuthError("Problema de conexión con Shopify. Intenta de nuevo.");
+    }
+    setAuthLoading(false);
   };
 
   const cerrarSesion = () => {
     setUser(null);
     setWallet(0);
+    setAuthError('');
     setActiveTab('inicio');
   };
 
-  // FLUJO DE PAGO (CHECKOUT)
+  // ==================================================================
+  // LÓGICA DEL CARRITO Y PAGOS
+  // ==================================================================
+  const agregarAlCarrito = (producto, e) => {
+    e.stopPropagation(); 
+    setCarrito(prev => {
+      const existe = prev.find(item => item.id === producto.node.id);
+      if (existe) return prev.map(item => item.id === producto.node.id ? { ...item, cantidad: item.cantidad + 1 } : item);
+      return [...prev, { ...producto.node, cantidad: 1, precio: parseFloat(producto.node.variants.edges[0].node.price.amount) }];
+    });
+  };
+
+  const removerDelCarrito = (id) => setCarrito(prev => prev.filter(item => item.id !== id));
+  const totalCarrito = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+  const totalArticulos = carrito.reduce((acc, item) => acc + item.cantidad, 0);
+
   const procesarPago = () => {
     if (!user) {
       setIsCartOpen(false);
-      setActiveTab('perfil'); // Redirige a iniciar sesión
+      setActiveTab('perfil'); 
       return;
     }
-    
     setIsProcessingPago(true);
-    
-    // Simula el proceso de pago (2 segundos)
     setTimeout(() => {
       const nuevoPedido = {
         id: `KOL-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -143,12 +219,11 @@ export default function KolmaPremium() {
         hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         estado: 'EN CAMINO'
       };
-
       setMisPedidos(prev => [nuevoPedido, ...prev]);
-      setCarrito([]); // VACIAR CARRITO
+      setCarrito([]); 
       setIsProcessingPago(false);
       setIsCartOpen(false);
-      setActiveTab('pedidos'); // REDIRIGIR A PEDIDOS
+      setActiveTab('pedidos');
     }, 2000);
   };
 
@@ -158,34 +233,69 @@ export default function KolmaPremium() {
   // VISTAS DE LA APLICACIÓN (PANTALLAS)
   // ==========================================
 
-  // PANTALLA PARA SOLICITAR LOGIN
-  const renderLoginPrompt = (mensaje) => (
-    <section style={{ maxWidth: '600px', margin: '0 auto', padding: '60px 25px', textAlign: 'center', animation: 'fadeInUp 0.4s ease-out' }}>
+  // PANTALLA DE LOGIN CON FORMULARIO (Conectado a Shopify)
+  const renderLoginPrompt = () => (
+    <section style={{ maxWidth: '400px', margin: '0 auto', padding: '60px 25px', textAlign: 'center', animation: 'fadeInUp 0.4s ease-out' }}>
       <div style={{ color: '#E31E24', display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
         <IconLock />
       </div>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', marginBottom: '15px' }}>{mensaje}</h2>
-      <p style={{ color: '#6B7280', marginBottom: '30px', fontSize: '1.05rem' }}>Inicia sesión para disfrutar de todos los beneficios de Kolma RD.</p>
-      <button 
-        onClick={simularLogin}
-        style={{ width: '100%', backgroundColor: '#E31E24', color: '#FFF', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '800', fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 8px 20px rgba(227,30,36,0.3)', transition: transicionSuave }}
-      >
-        Iniciar Sesión
-      </button>
+      <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', marginBottom: '10px' }}>Bienvenido de nuevo</h2>
+      <p style={{ color: '#6B7280', marginBottom: '30px', fontSize: '0.95rem' }}>Ingresa tus credenciales para acceder a tus pedidos y beneficios.</p>
+      
+      <form onSubmit={procesarLoginShopify} style={{ textAlign: 'left' }}>
+        {authError && (
+          <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', padding: '12px', borderRadius: '8px', fontSize: '0.9rem', marginBottom: '20px', textAlign: 'center', fontWeight: 'bold' }}>
+            {authError}
+          </div>
+        )}
+        
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Correo Electrónico</label>
+          <input 
+            type="email" 
+            value={loginEmail}
+            onChange={(e) => setLoginEmail(e.target.value)}
+            required
+            placeholder="tu@correo.com"
+            style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '1rem', outline: 'none', transition: transicionSuave }}
+            onFocus={(e) => e.target.style.borderColor = '#E31E24'}
+            onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
+          />
+        </div>
+        
+        <div style={{ marginBottom: '30px' }}>
+          <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Contraseña</label>
+          <input 
+            type="password" 
+            value={loginPassword}
+            onChange={(e) => setLoginPassword(e.target.value)}
+            required
+            placeholder="••••••••"
+            style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontSize: '1rem', outline: 'none', transition: transicionSuave }}
+            onFocus={(e) => e.target.style.borderColor = '#E31E24'}
+            onBlur={(e) => e.target.style.borderColor = '#D1D5DB'}
+          />
+        </div>
+
+        <button 
+          type="submit"
+          disabled={authLoading}
+          style={{ width: '100%', backgroundColor: authLoading ? '#FCA5A5' : '#E31E24', color: '#FFF', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '800', fontSize: '1.1rem', cursor: authLoading ? 'wait' : 'pointer', boxShadow: authLoading ? 'none' : '0 8px 20px rgba(227,30,36,0.3)', transition: transicionSuave }}
+        >
+          {authLoading ? 'Verificando...' : 'Iniciar Sesión'}
+        </button>
+      </form>
+      
+      <div style={{ marginTop: '25px', fontSize: '0.9rem', color: '#6B7280' }}>
+        ¿No tienes cuenta? <a href="#" style={{ color: '#E31E24', fontWeight: 'bold', textDecoration: 'none' }}>Regístrate</a>
+      </div>
     </section>
   );
 
   const renderInicio = () => (
     <>
       <section style={{ backgroundColor: '#000000', padding: '70px 25px', color: '#FFFFFF', position: 'relative', overflow: 'hidden', borderBottom: '1px solid #222' }}>
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0,
-          backgroundImage: 'url(https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80)',
-          backgroundSize: 'cover',
-          opacity: 0.15,
-          mixBlendMode: 'luminosity',
-          animation: 'subtlePan 30s linear infinite alternate'
-        }}></div>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, backgroundImage: 'url(https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&q=80)', backgroundSize: 'cover', opacity: 0.15, mixBlendMode: 'luminosity', animation: 'subtlePan 30s linear infinite alternate' }}></div>
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(135deg, rgba(227,30,36,0.3) 0%, rgba(0,0,0,0.9) 100%)', zIndex: 1 }}></div>
         
         <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'left', position: 'relative', zIndex: 10, animation: 'fadeInUp 0.8s ease-out' }}>
@@ -218,19 +328,7 @@ export default function KolmaPremium() {
             <button
               key={node.id}
               onClick={() => setCategoriaActiva(node.title)}
-              style={{
-                whiteSpace: 'nowrap',
-                padding: '10px 22px',
-                borderRadius: '10px',
-                fontWeight: '700',
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                transition: transicionSuave,
-                border: categoriaActiva === node.title ? '1px solid #E31E24' : '1px solid #E5E7EB',
-                backgroundColor: categoriaActiva === node.title ? '#E31E24' : '#F9FAFB',
-                color: categoriaActiva === node.title ? '#FFFFFF' : '#4B5563',
-                boxShadow: categoriaActiva === node.title ? '0 4px 12px rgba(227, 30, 36, 0.25)' : 'none'
-              }}
+              style={{ whiteSpace: 'nowrap', padding: '10px 22px', borderRadius: '10px', fontWeight: '700', fontSize: '0.95rem', cursor: 'pointer', transition: transicionSuave, border: categoriaActiva === node.title ? '1px solid #E31E24' : '1px solid #E5E7EB', backgroundColor: categoriaActiva === node.title ? '#E31E24' : '#F9FAFB', color: categoriaActiva === node.title ? '#FFFFFF' : '#4B5563', boxShadow: categoriaActiva === node.title ? '0 4px 12px rgba(227, 30, 36, 0.25)' : 'none' }}
             >
               {node.title}
             </button>
@@ -285,7 +383,7 @@ export default function KolmaPremium() {
   );
 
   const renderPedidos = () => {
-    if (!user) return renderLoginPrompt("Inicia sesión para ver tus pedidos");
+    if (!user) return renderLoginPrompt();
 
     return (
       <section style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
@@ -325,42 +423,22 @@ export default function KolmaPremium() {
   };
 
   const renderWallet = () => {
-    if (!user) return renderLoginPrompt("Inicia sesión para ver tu Billetera Kolma");
+    if (!user) return renderLoginPrompt();
 
     return (
       <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
         <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', marginBottom: '30px' }}>Kolma Rewards</h2>
         
-        {/* TARJETA PREMIUM ESTILO CREDIT CARD (BLACK CARD) */}
-        <div style={{ 
-          background: 'linear-gradient(135deg, #1C1E26 0%, #000000 100%)', 
-          borderRadius: '20px', 
-          padding: '30px', 
-          color: '#FFF', 
-          boxShadow: '0 20px 40px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.1)', 
-          position: 'relative', 
-          overflow: 'hidden',
-          border: '1px solid #333'
-        }}>
-          {/* Reflejo estilo metálico */}
+        <div style={{ background: 'linear-gradient(135deg, #1C1E26 0%, #000000 100%)', borderRadius: '20px', padding: '30px', color: '#FFF', boxShadow: '0 20px 40px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden', border: '1px solid #333' }}>
           <div style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'linear-gradient(to bottom right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 40%)', transform: 'rotate(30deg)', pointerEvents: 'none' }}></div>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '25px', position: 'relative', zIndex: 2 }}>
-            {/* Chip de Tarjeta */}
             <svg width="45" height="35" viewBox="0 0 45 35" fill="none">
               <rect width="45" height="35" rx="6" fill="url(#goldGradient)"/>
               <path d="M12 0v35M33 0v35M0 12h45M0 23h45" stroke="#B89B48" strokeWidth="1.5" opacity="0.6"/>
-              <defs>
-                <linearGradient id="goldGradient" x1="0" y1="0" x2="45" y2="35" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#F9DB88" />
-                  <stop offset="1" stopColor="#D4AF37" />
-                </linearGradient>
-              </defs>
+              <defs><linearGradient id="goldGradient" x1="0" y1="0" x2="45" y2="35" gradientUnits="userSpaceOnUse"><stop stopColor="#F9DB88" /><stop offset="1" stopColor="#D4AF37" /></linearGradient></defs>
             </svg>
-            
-            <div style={{ fontSize: '1.1rem', fontWeight: '900', fontStyle: 'italic', letterSpacing: '1px', color: '#D4AF37' }}>
-              KOLMA <span style={{ color: '#FFF' }}>BLACK</span>
-            </div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '900', fontStyle: 'italic', letterSpacing: '1px', color: '#D4AF37' }}>KOLMA <span style={{ color: '#FFF' }}>BLACK</span></div>
           </div>
           
           <div style={{ fontSize: '1.6rem', letterSpacing: '4px', fontFamily: '"Courier New", Courier, monospace', marginBottom: '25px', textShadow: '0 2px 4px rgba(0,0,0,0.5)', position: 'relative', zIndex: 2 }}>
@@ -379,17 +457,14 @@ export default function KolmaPremium() {
           </div>
         </div>
 
-        {/* Historial */}
         <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#4B5563', margin: '40px 0 15px' }}>Historial de Beneficios</h3>
-        <div style={{ textAlign: 'center', color: '#6B7280', marginTop: '30px' }}>
-          No hay movimientos recientes.
-        </div>
+        <div style={{ textAlign: 'center', color: '#6B7280', marginTop: '30px' }}>No hay movimientos recientes.</div>
       </section>
     );
   };
 
   const renderPerfil = () => {
-    if (!user) return renderLoginPrompt("Inicia sesión para gestionar tu cuenta");
+    if (!user) return renderLoginPrompt();
 
     return (
       <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
@@ -399,6 +474,7 @@ export default function KolmaPremium() {
           </div>
           <div>
             <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', margin: 0 }}>{user.nombre}</h2>
+            <div style={{ color: '#6B7280', fontWeight: '500' }}>{user.email}</div>
             <div style={{ color: '#6B7280', fontWeight: '500' }}>{user.telefono}</div>
             <div style={{ color: '#D97706', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '5px' }}><IconStar /> Cliente VIP</div>
           </div>
@@ -417,10 +493,7 @@ export default function KolmaPremium() {
           </div>
         </div>
         
-        <button 
-          onClick={cerrarSesion}
-          style={{ marginTop: '30px', width: '100%', padding: '15px', border: '1px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', fontWeight: '700', borderRadius: '12px', cursor: 'pointer', transition: transicionSuave }}
-        >
+        <button onClick={cerrarSesion} style={{ marginTop: '30px', width: '100%', padding: '15px', border: '1px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', fontWeight: '700', borderRadius: '12px', cursor: 'pointer', transition: transicionSuave }}>
           Cerrar Sesión
         </button>
       </section>
@@ -447,17 +520,12 @@ export default function KolmaPremium() {
                 <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#E31E24' }}>RD$ {wallet.toLocaleString()}</div>
               </div>
             ) : (
-              <button 
-                onClick={() => setActiveTab('perfil')}
-                style={{ background: 'none', border: 'none', color: '#E31E24', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', display: 'none' }} className="desktop-wallet">
+              <button onClick={() => setActiveTab('perfil')} style={{ background: 'none', border: 'none', color: '#E31E24', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', display: 'none' }} className="desktop-wallet">
                 Iniciar Sesión
               </button>
             )}
 
-            <button 
-              onClick={() => setIsCartOpen(true)}
-              style={{ position: 'relative', background: '#F9FAFB', border: '1px solid #E5E7EB', padding: '10px', borderRadius: '50%', cursor: 'pointer', color: '#111', transition: transicionSuave }}
-            >
+            <button onClick={() => setIsCartOpen(true)} style={{ position: 'relative', background: '#F9FAFB', border: '1px solid #E5E7EB', padding: '10px', borderRadius: '50%', cursor: 'pointer', color: '#111', transition: transicionSuave }}>
               <IconCart />
               {totalArticulos > 0 && (
                 <span style={{ position: 'absolute', top: '-5px', right: '-5px', backgroundColor: '#E31E24', color: '#FFF', fontSize: '0.7rem', fontWeight: 'bold', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', border: '2px solid #FFF', animation: 'pulse 2s infinite' }}>
@@ -476,13 +544,7 @@ export default function KolmaPremium() {
       {activeTab === 'perfil' && renderPerfil()}
 
       {/* MODAL DEL CARRITO */}
-      <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: '400px', backgroundColor: '#FFF',
-        boxShadow: '-10px 0 30px rgba(0,0,0,0.1)', zIndex: 2000,
-        transform: isCartOpen ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1)',
-        display: 'flex', flexDirection: 'column'
-      }}>
+      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: '400px', backgroundColor: '#FFF', boxShadow: '-10px 0 30px rgba(0,0,0,0.1)', zIndex: 2000, transform: isCartOpen ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '20px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: '1.4rem', fontWeight: '900', margin: 0, color: '#111' }}>Tu Pedido</h2>
           <button onClick={() => setIsCartOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280' }}><IconClose /></button>
@@ -490,10 +552,7 @@ export default function KolmaPremium() {
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           {carrito.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#9CA3AF', marginTop: '50px' }}>
-              <div style={{ opacity: 0.2, marginBottom: '15px' }}><IconCart /></div>
-              Tu carrito está vacío.
-            </div>
+            <div style={{ textAlign: 'center', color: '#9CA3AF', marginTop: '50px' }}><div style={{ opacity: 0.2, marginBottom: '15px' }}><IconCart /></div>Tu carrito está vacío.</div>
           ) : (
             carrito.map((item, idx) => (
               <div key={idx} style={{ display: 'flex', gap: '15px', marginBottom: '20px', borderBottom: '1px solid #F3F4F6', paddingBottom: '20px' }}>
@@ -519,15 +578,11 @@ export default function KolmaPremium() {
 
             {user && wallet > 0 && (
               <div style={{ backgroundColor: '#000', borderRadius: '12px', padding: '12px', marginBottom: '20px', fontSize: '0.85rem', color: '#FFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: '#D4AF37' }}><IconStar /></span> Tienes crédito disponible en Wallet.
+                <span style={{ color: '#D4AF37' }}><IconStar /></span> Kolma Black cubre este pedido.
               </div>
             )}
 
-            <button 
-              onClick={procesarPago}
-              disabled={isProcessingPago}
-              style={{ width: '100%', backgroundColor: isProcessingPago ? '#9CA3AF' : '#E31E24', color: '#FFF', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: '800', fontSize: '1.1rem', cursor: isProcessingPago ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'space-between', boxShadow: isProcessingPago ? 'none' : '0 4px 15px rgba(227,30,36,0.3)', transition: transicionSuave }}
-            >
+            <button onClick={procesarPago} disabled={isProcessingPago} style={{ width: '100%', backgroundColor: isProcessingPago ? '#9CA3AF' : '#E31E24', color: '#FFF', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: '800', fontSize: '1.1rem', cursor: isProcessingPago ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'space-between', boxShadow: isProcessingPago ? 'none' : '0 4px 15px rgba(227,30,36,0.3)', transition: transicionSuave }}>
               <span>{isProcessingPago ? 'Procesando...' : (user ? 'Confirmar Pedido' : 'Inicia Sesión para Pagar')}</span>
               {!isProcessingPago && <span>RD$ {(totalCarrito + 50).toFixed(2)}</span>}
             </button>
@@ -537,18 +592,8 @@ export default function KolmaPremium() {
       
       {isCartOpen && <div onClick={() => setIsCartOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1999, backdropFilter: 'blur(2px)' }}></div>}
 
-      {/* MENÚ INFERIOR (PERFECCIONADO) */}
-      <nav style={{ 
-        position: 'fixed', bottom: 0, left: 0, right: 0, 
-        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
-        backdropFilter: 'blur(10px)',
-        borderTop: '1px solid #E5E7EB', 
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '12px 10px', 
-        paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', 
-        zIndex: 1000, 
-        boxShadow: '0 -10px 25px rgba(0,0,0,0.06)' 
-      }}>
+      {/* MENÚ INFERIOR */}
+      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(255, 255, 255, 0.98)', backdropFilter: 'blur(10px)', borderTop: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 10px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', zIndex: 1000, boxShadow: '0 -10px 25px rgba(0,0,0,0.06)' }}>
         <div onClick={() => setActiveTab('inicio')} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '0.7rem', color: activeTab === 'inicio' ? '#E31E24' : '#9CA3AF', fontWeight: '800', cursor: 'pointer', transition: transicionSuave }}>
           <IconHome active={activeTab === 'inicio'} /><span style={{ marginTop: '5px' }}>Inicio</span>
         </div>
