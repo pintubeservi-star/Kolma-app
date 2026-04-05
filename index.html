@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KOLMARD | Premium Store</title>
+    <title>KOLMARD | Wallet Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -13,11 +13,11 @@
         .nav-dock { bottom: 20px; left: 20px; right: 20px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
         .side-panel { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform: translateX(100%); }
         .side-panel.active { transform: translateX(0); }
-        /* Fix iPhone zoom */
-        input { font-size: 16px !important; transition: all 0.3s ease; }
+        input { font-size: 16px !important; }
         .loader { border-top-color: transparent; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .dark-banner { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        .dark-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+        .wallet-gradient { background: linear-gradient(90deg, #f43f5e 0%, #fb7185 100%); }
     </style>
 </head>
 <body class="pb-36">
@@ -25,96 +25,94 @@
     <header class="sticky top-0 z-40 px-6 pt-10 pb-4 bg-white/90 backdrop-blur-xl border-b border-gray-100">
         <div class="flex justify-between items-center mb-5">
             <div>
-                <span class="text-[9px] font-bold text-rose-600 uppercase tracking-[0.3em] block">Cotuí Express</span>
+                <span class="text-[9px] font-bold text-rose-600 uppercase tracking-[0.3em] block">Cotuí Digital</span>
                 <h1 class="text-3xl font-black tracking-tighter text-slate-900 italic uppercase">KOLMA<span class="text-rose-600">RD</span></h1>
             </div>
             <button onclick="toggleProfile()" class="p-3 bg-slate-50 rounded-2xl text-slate-400 relative">
-                <i data-lucide="user" class="w-6 h-6"></i>
+                <i data-lucide="wallet" class="w-6 h-6"></i>
                 <span id="user-dot" class="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white hidden"></span>
             </button>
         </div>
         
-        <div class="relative group">
-            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-rose-500 transition-colors"></i>
-            <input type="text" id="search-input" oninput="filterProducts()" placeholder="¿Qué necesitas pedir?" class="w-full bg-slate-100 p-4 pl-12 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-rose-100 focus:bg-white shadow-sm">
+        <div class="relative">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+            <input type="text" id="search-input" oninput="filterProducts()" placeholder="Busca en el colmado..." class="w-full bg-slate-100 p-4 pl-12 rounded-2xl outline-none font-bold text-slate-700 border-2 border-transparent focus:border-rose-100 focus:bg-white shadow-sm">
         </div>
     </header>
 
     <section class="px-6 mt-6">
-        <div class="w-full dark-banner rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
+        <div class="w-full dark-card rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
             <div class="relative z-10">
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="bg-rose-600 text-[9px] font-black px-2 py-1 rounded-md uppercase">Vip Delivery</span>
-                </div>
-                <h2 class="text-2xl font-black uppercase italic leading-tight">Tus compras<br>al instante.</h2>
-                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2">Abierto ahora en Cotuí</p>
+                <h2 class="text-2xl font-black uppercase italic leading-tight">Tu Pedido<br>En 30 Minutos.</h2>
+                <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2">Delivery Express Cotuí</p>
             </div>
-            <i data-lucide="shopping-bag" class="absolute right-[-15px] bottom-[-15px] w-32 h-32 text-white/5 -rotate-12"></i>
+            <i data-lucide="zap" class="absolute right-[-10px] bottom-[-10px] w-32 h-32 text-white/5 rotate-12"></i>
         </div>
     </section>
 
     <main class="px-6 mt-8">
-        <div id="product-grid" class="grid grid-cols-2 gap-4">
-            </div>
+        <div id="product-grid" class="grid grid-cols-2 gap-4"></div>
     </main>
 
     <nav class="fixed nav-dock glass flex justify-around items-center py-4 z-50 border border-white/50">
         <button onclick="location.reload()" class="text-rose-600"><i data-lucide="home" class="w-6 h-6"></i></button>
-        <button onclick="toggleCart()" class="bg-slate-900 text-white p-4 rounded-2xl shadow-xl relative -mt-12 border-4 border-white active:scale-95 transition-transform">
+        <button onclick="toggleCart()" class="bg-slate-900 text-white p-4 rounded-2xl shadow-xl relative -mt-12 border-4 border-white">
             <i data-lucide="shopping-cart" class="w-6 h-6"></i>
             <span id="cart-badge" class="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-black h-5 w-5 rounded-full flex items-center justify-center border-2 border-white hidden">0</span>
         </button>
-        <button onclick="toggleProfile()" class="text-slate-400"><i data-lucide="layout-grid" class="w-6 h-6"></i></button>
+        <button onclick="toggleProfile()" class="text-slate-400"><i data-lucide="user" class="w-6 h-6"></i></button>
     </nav>
 
     <div id="profile-panel" class="fixed inset-0 z-[70] side-panel">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="toggleProfile()"></div>
-        <div class="absolute right-0 top-0 bottom-0 w-[88%] bg-white p-8 flex flex-col shadow-2xl">
+        <div class="absolute right-0 top-0 bottom-0 w-[88%] bg-white p-8 flex flex-col shadow-2xl overflow-y-auto">
             
             <div class="flex justify-between items-center mb-8">
-                <h2 id="auth-title" class="text-2xl font-black uppercase italic text-slate-900">Bienvenido</h2>
-                <button onclick="toggleProfile()" class="text-3xl text-slate-300 font-light">&times;</button>
+                <h2 class="text-2xl font-black uppercase italic text-slate-900">Mi Cuenta</h2>
+                <button onclick="toggleProfile()" class="text-3xl text-slate-300">&times;</button>
             </div>
 
             <div id="auth-box" class="space-y-4">
-                <button onclick="loginConGoogle()" class="w-full flex items-center justify-center gap-3 border-2 border-slate-100 py-4 rounded-2xl font-bold text-slate-700 active:bg-slate-50 transition-colors">
+                <button onclick="loginConGoogle()" class="w-full flex items-center justify-center gap-3 border-2 border-slate-100 py-4 rounded-2xl font-bold text-slate-700">
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5">
-                    <span>Acceso con Google</span>
+                    <span>Entrar con Google</span>
                 </button>
-
-                <div class="flex items-center gap-3 py-4">
-                    <div class="h-[1px] bg-slate-100 flex-grow"></div>
-                    <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">o con tu email</span>
-                    <div class="h-[1px] bg-slate-100 flex-grow"></div>
-                </div>
-
-                <div id="field-name" class="hidden">
-                    <input type="text" id="auth-fname" placeholder="Tu nombre" class="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-rose-500">
-                </div>
-                
+                <div class="h-[1px] bg-slate-100 w-full my-4"></div>
                 <input type="email" id="auth-email" placeholder="Email" class="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-rose-500">
-                
-                <div id="field-pass">
-                    <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-rose-500">
-                </div>
-
-                <button onclick="ejecutarAuth()" id="btn-auth" class="w-full bg-slate-900 py-5 rounded-2xl text-white font-black uppercase shadow-lg mt-2 active:scale-95 transition-transform">Entrar ahora</button>
-                
-                <div class="pt-6 text-center">
-                    <button id="btn-toggle" onclick="cambiarModo('register')" class="text-[11px] font-black text-rose-600 uppercase tracking-tight">¿No tienes cuenta? Regístrate aquí</button>
-                </div>
+                <input type="password" id="auth-pass" placeholder="Contraseña" class="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none border-2 border-transparent focus:border-rose-500">
+                <button onclick="ejecutarAuth()" id="btn-auth" class="w-full bg-slate-900 py-5 rounded-2xl text-white font-black uppercase shadow-lg">Entrar</button>
             </div>
 
             <div id="auth-welcome" class="hidden space-y-6">
-                <div class="p-8 dark-banner rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
-                    <p class="text-[10px] font-bold uppercase opacity-50 mb-1">Sesión Iniciada</p>
-                    <p id="user-email-display" class="font-black text-lg truncate italic"></p>
-                    <i data-lucide="check-circle" class="absolute right-[-10px] top-[-10px] w-20 h-20 text-white/5"></i>
+                <div class="dark-card p-6 rounded-[2rem] text-white shadow-2xl relative overflow-hidden">
+                    <div class="flex justify-between items-start relative z-10">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase opacity-60 tracking-tighter">Balance Disponible</p>
+                            <p class="text-3xl font-black italic tracking-tighter mt-1">RD$ 0.00</p>
+                        </div>
+                        <div class="bg-white/10 p-2 rounded-xl">
+                            <i data-lucide="plus" class="w-5 h-5 text-rose-400"></i>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex justify-between items-end relative z-10">
+                        <p id="user-email-display" class="text-[9px] font-bold opacity-40 truncate w-32 uppercase tracking-widest"></p>
+                        <span class="bg-rose-600 text-[8px] px-2 py-1 rounded-md font-black uppercase italic">KolmaCard</span>
+                    </div>
+                    <div class="absolute top-[-20px] right-[-20px] w-32 h-32 bg-white/5 rounded-full blur-3xl"></div>
                 </div>
-                <div class="bg-rose-50 p-4 rounded-2xl border border-rose-100">
-                    <p class="text-[10px] font-bold text-rose-700 uppercase leading-relaxed">Ahora puedes comprar más rápido y ver el historial de tus pedidos.</p>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <button class="bg-slate-50 p-4 rounded-2xl text-center border border-slate-100">
+                        <i data-lucide="history" class="w-5 h-5 mx-auto mb-2 text-slate-400"></i>
+                        <span class="text-[9px] font-black uppercase text-slate-600">Historial</span>
+                    </button>
+                    <button class="bg-slate-50 p-4 rounded-2xl text-center border border-slate-100">
+                        <i data-lucide="arrow-up-right" class="w-5 h-5 mx-auto mb-2 text-slate-400"></i>
+                        <span class="text-[9px] font-black uppercase text-slate-600">Recargar</span>
+                    </button>
                 </div>
-                <button onclick="logout()" class="w-full py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-400 uppercase text-[10px] mt-auto">Cerrar Sesión</button>
+
+                <button onclick="logout()" class="w-full py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-300 uppercase text-[10px] mt-10">Cerrar Sesión</button>
             </div>
         </div>
     </div>
@@ -122,23 +120,20 @@
     <div id="cart-modal" class="fixed inset-0 bg-slate-900/40 z-[60] hidden flex items-end">
         <div class="absolute inset-0" onclick="toggleCart()"></div>
         <div class="relative bg-white w-full rounded-t-[3rem] p-8 max-h-[85vh] flex flex-col z-10 shadow-2xl">
-            <div class="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-6"></div>
-            <h2 class="text-2xl font-black uppercase italic mb-6 text-slate-900">Tu Pedido</h2>
+            <h2 class="text-2xl font-black uppercase italic mb-6">Mi Carrito</h2>
             <div id="cart-items" class="flex-grow overflow-y-auto space-y-4 mb-6"></div>
-            <div class="flex justify-between items-center mb-6 px-2">
-                <span class="text-slate-400 font-bold uppercase text-xs">Total a pagar</span>
-                <span id="cart-total" class="text-3xl font-black text-rose-600 tracking-tighter">RD$0</span>
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-slate-400 font-bold uppercase text-xs">Total</span>
+                <span id="cart-total" class="text-3xl font-black text-rose-600">RD$0</span>
             </div>
-            <button onclick="checkout()" class="w-full bg-rose-600 py-5 rounded-2xl font-black text-white text-lg uppercase italic shadow-xl active:scale-95 transition-transform">Finalizar Compra</button>
+            <button onclick="checkout()" class="w-full bg-rose-600 py-5 rounded-2xl font-black text-white text-lg uppercase italic shadow-xl">Pagar Orden</button>
         </div>
     </div>
 
     <script>
         const CONFIG = { shop: 'q0q09e-cp.myshopify.com', token: 'a171ee1eaf68d9b7ca5234b4c45a9b0c' };
         let allProducts = [], cart = JSON.parse(localStorage.getItem('kolmard_cart')) || [];
-        let modo = 'login';
 
-        // CARGA DE DATOS
         async function loadShop() {
             const query = `{ products(first: 50) { edges { node { id title images(first: 1) { edges { node { url } } } variants(first: 1) { edges { node { id price { amount } } } } } } } }`;
             try {
@@ -158,21 +153,18 @@
                 renderProducts(allProducts);
                 updateCartUI();
                 checkUser();
-            } catch (err) { console.error("Shopify error:", err); }
+            } catch (err) { console.error(err); }
         }
 
         function renderProducts(list) {
-            const grid = document.getElementById('product-grid');
-            grid.innerHTML = list.map(p => `
+            document.getElementById('product-grid').innerHTML = list.map(p => `
                 <div class="bg-white p-4 rounded-[2.5rem] shadow-sm border border-slate-50 flex flex-col items-center">
-                    <div class="w-full h-28 flex items-center justify-center mb-4">
-                        <img src="${p.image}" class="max-w-full max-h-full object-contain">
-                    </div>
+                    <img src="${p.image}" class="w-24 h-24 object-contain mb-4">
                     <div class="w-full">
                         <h3 class="text-[10px] font-black text-slate-800 uppercase truncate mb-1">${p.name}</h3>
                         <div class="flex justify-between items-center">
                             <span class="text-rose-600 font-black text-sm">RD$${p.price.toLocaleString()}</span>
-                            <button onclick="addToCart('${p.id}')" class="bg-slate-900 text-white p-2.5 rounded-xl shadow-lg active:scale-90 transition-transform"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                            <button onclick="addToCart('${p.id}')" class="bg-slate-900 text-white p-2.5 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
                         </div>
                     </div>
                 </div>
@@ -185,57 +177,29 @@
             renderProducts(allProducts.filter(p => p.name.toLowerCase().includes(val)));
         }
 
-        // --- AUTH LOGIC ---
-        function cambiarModo(m) {
-            modo = m;
-            document.getElementById('field-name').classList.toggle('hidden', m !== 'register');
-            document.getElementById('auth-title').innerText = m === 'login' ? 'Bienvenido' : 'Nueva Cuenta';
-            document.getElementById('btn-auth').innerText = m === 'login' ? 'Entrar ahora' : 'Registrarme';
-            document.getElementById('btn-toggle').innerText = m === 'login' ? '¿No tienes cuenta? Regístrate aquí' : 'Ya tengo cuenta • Entrar';
-            document.getElementById('btn-toggle').onclick = () => cambiarModo(m === 'login' ? 'register' : 'login');
-        }
-
+        // AUTH & WALLET
         async function ejecutarAuth() {
             const email = document.getElementById('auth-email').value;
             const pass = document.getElementById('auth-pass').value;
-            const name = document.getElementById('auth-fname').value;
             const btn = document.getElementById('btn-auth');
-
-            if(!email || !pass) return alert("Completa los campos");
+            if(!email || !pass) return alert("Completa los datos");
+            
             btn.innerHTML = `<div class="w-5 h-5 border-2 border-white loader rounded-full mx-auto"></div>`;
+            const query = `mutation { customerAccessTokenCreate(input: {email: "${email}", password: "${pass}"}) { customerAccessToken { accessToken } customerUserErrors { message } } }`;
 
-            let query = modo === 'login' 
-                ? `mutation { customerAccessTokenCreate(input: {email: "${email}", password: "${pass}"}) { customerAccessToken { accessToken } customerUserErrors { message } } }`
-                : `mutation { customerCreate(input: {firstName: "${name}", email: "${email}", password: "${pass}"}) { customer { id } customerUserErrors { message } } }`;
-
-            try {
-                const response = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token },
-                    body: JSON.stringify({ query })
-                });
-                const res = await response.json();
-
-                if(modo === 'login') {
-                    const token = res.data.customerAccessTokenCreate?.customerAccessToken?.accessToken;
-                    if(token) { loginExitoso(token, email); }
-                    else alert("Error: Verifica tus datos");
-                } else {
-                    const errors = res.data.customerCreate?.customerUserErrors;
-                    if(errors && errors.length > 0) alert(errors[0].message);
-                    else { alert("¡Cuenta lista!"); modo = 'login'; ejecutarAuth(); }
-                }
-            } catch (e) { alert("Error de red"); }
-            btn.innerText = modo === 'login' ? 'Entrar ahora' : 'Registrarme';
+            const response = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': CONFIG.token },
+                body: JSON.stringify({ query })
+            });
+            const res = await response.json();
+            const token = res.data.customerAccessTokenCreate?.customerAccessToken?.accessToken;
+            
+            if(token) { localStorage.setItem('k_token', token); localStorage.setItem('k_email', email); location.reload(); }
+            else { alert("Error de acceso"); btn.innerText = "Entrar"; }
         }
 
         function loginConGoogle() { window.location.href = `https://${CONFIG.shop}/account/login`; }
-
-        function loginExitoso(token, email) {
-            localStorage.setItem('k_token', token);
-            localStorage.setItem('k_email', email);
-            location.reload();
-        }
 
         function checkUser() {
             const token = localStorage.getItem('k_token');
@@ -251,7 +215,7 @@
         function toggleProfile() { document.getElementById('profile-panel').classList.toggle('active'); }
         function toggleCart() { document.getElementById('cart-modal').classList.toggle('hidden'); }
 
-        // --- CARRITO LOGIC ---
+        // CART
         function addToCart(id) {
             const p = allProducts.find(i => i.id === id);
             cart.push({ ...p, cid: Date.now() });
@@ -265,9 +229,8 @@
             badge.classList.toggle('hidden', cart.length === 0);
             document.getElementById('cart-items').innerHTML = cart.map(i => `
                 <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-[2rem] border border-white">
-                    <img src="${i.image}" class="w-12 h-12 object-contain bg-white rounded-xl p-1">
-                    <div class="flex-grow"><p class="text-[10px] font-black uppercase text-slate-800 truncate">${i.name}</p><p class="text-rose-600 font-bold">RD$${i.price.toLocaleString()}</p></div>
-                    <button onclick="removeFromCart(${i.cid})" class="text-slate-300 active:text-rose-500"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                    <div class="flex-grow"><p class="text-[10px] font-black uppercase text-slate-800">${i.name}</p><p class="text-rose-600 font-bold">RD$${i.price.toLocaleString()}</p></div>
+                    <button onclick="removeFromCart(${i.cid})" class="text-slate-300"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
                 </div>`).join('');
             document.getElementById('cart-total').innerText = `RD$${cart.reduce((s, i) => s + i.price, 0).toLocaleString()}`;
             lucide.createIcons();
@@ -281,7 +244,6 @@
 
         async function checkout() {
             if(!localStorage.getItem('k_token')) { toggleCart(); toggleProfile(); return; }
-            if(cart.length === 0) return alert("Añade algo al carrito");
             const lines = cart.map(item => ({ merchandiseId: item.variantId, quantity: 1 }));
             const mutation = `mutation { cartCreate(input: { lines: ${JSON.stringify(lines).replace(/"([^"]+)":/g, '$1:')} }) { cart { checkoutUrl } } }`;
             const response = await fetch(`https://${CONFIG.shop}/api/2024-01/graphql.json`, {
