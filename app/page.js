@@ -14,42 +14,48 @@ const IconCart = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="non
 const IconClose = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 const IconTrash = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path></svg>;
 const IconStar = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
+const IconLock = () => <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
 
 export default function KolmaPremium() {
   const [productos, setProductos] = useState([]);
   const [colecciones, setColecciones] = useState([{ node: { id: 'all', title: 'Todas' } }]);
   const [loading, setLoading] = useState(true);
   
-  // ESTADO DEL USUARIO
-  const [user, setUser] = useState({ 
-    nombre: "Cliente Kolma", 
-    telefono: "Registra tu número", 
-    direccion: "Añadir dirección de entrega",
-  });
+  // ESTADOS DEL USUARIO Y PEDIDOS
+  const [user, setUser] = useState(null); // SESIÓN CERRADA POR DEFECTO
   const [wallet, setWallet] = useState(0.00); 
+  const [misPedidos, setMisPedidos] = useState([]); // Historial de pedidos
   
+  // ESTADOS DE LA UI
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('inicio');
   const [categoriaActiva, setCategoriaActiva] = useState('Todas');
-  
   const [carrito, setCarrito] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isProcessingPago, setIsProcessingPago] = useState(false);
 
   useEffect(() => {
-    // ==================================================================
     // CONEXIÓN REAL A SHOPIFY STOREFRONT API
-    // ==================================================================
     async function fetchShopifyData() {
       try {
         const domain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
         const token = process.env.NEXT_PUBLIC_SHOPIFY_ACCESS_TOKEN;
 
+        // Fallback de datos de prueba si no hay tokens configurados (Para previsualizar en Canvas)
         if (!domain || !token) {
-          console.warn("⚠️ Faltan las variables NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN y/o NEXT_PUBLIC_SHOPIFY_ACCESS_TOKEN");
+          const mockData = [
+            { node: { id: 1, productType: 'Despensa', title: 'Arroz Premium La Garza 10 Lbs', images: { edges: [{ node: { url: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=300' } }] }, variants: { edges: [{ node: { price: { amount: '450.00' } } }] } } },
+            { node: { id: 2, productType: 'Lácteos', title: 'Leche Rica Entera 1 Litro', images: { edges: [{ node: { url: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&q=80&w=300' } }] }, variants: { edges: [{ node: { price: { amount: '75.00' } } }] } } },
+            { node: { id: 3, productType: 'Víveres', title: 'Plátano Verde Fresco (Unidad)', images: { edges: [{ node: { url: 'https://images.unsplash.com/photo-1528825871115-3581a5387919?auto=format&fit=crop&q=80&w=300' } }] }, variants: { edges: [{ node: { price: { amount: '25.00' } } }] } } },
+            { node: { id: 4, productType: 'Despensa', title: 'Aceite de Soya Crisol 64 oz', images: { edges: [{ node: { url: 'https://images.unsplash.com/photo-1620619894458-150244435133?auto=format&fit=crop&q=80&w=300' } }] }, variants: { edges: [{ node: { price: { amount: '295.00' } } }] } } },
+          ];
+          setProductos(mockData);
+          setColecciones([{ node: { id: 'all', title: 'Todas' } }, { node: { id: 'c1', title: 'Despensa' } }, { node: { id: 'c2', title: 'Lácteos' } }, { node: { id: 'c3', title: 'Víveres' } }]);
           setLoading(false);
           return;
         }
 
+        // Petición real
         const response = await fetch(`https://${domain}/api/2024-04/graphql.json`, {
           method: 'POST',
           headers: {
@@ -57,19 +63,7 @@ export default function KolmaPremium() {
             'X-Shopify-Storefront-Access-Token': token,
           },
           body: JSON.stringify({
-            query: `{
-              products(first: 40) {
-                edges {
-                  node {
-                    id
-                    title
-                    productType
-                    images(first: 1) { edges { node { url } } }
-                    variants(first: 1) { edges { node { price { amount } } } }
-                  }
-                }
-              }
-            }`
+            query: `{ products(first: 40) { edges { node { id title productType images(first: 1) { edges { node { url } } } variants(first: 1) { edges { node { price { amount } } } } } } } }`
           }),
         });
 
@@ -79,7 +73,6 @@ export default function KolmaPremium() {
           const fetchedProducts = data.products.edges;
           setProductos(fetchedProducts);
 
-          // Generador automático de categorías basado en 'productType'
           const types = [...new Set(fetchedProducts.map(p => p.node.productType).filter(Boolean))];
           const dynamicCollections = [
             { node: { id: 'all', title: 'Todas' } },
@@ -92,7 +85,7 @@ export default function KolmaPremium() {
         }
         setLoading(false);
       } catch (error) {
-        console.error("Error al conectar con el cerebro de Shopify:", error);
+        console.error("Error al conectar con Shopify:", error);
         setLoading(false);
       }
     }
@@ -100,6 +93,7 @@ export default function KolmaPremium() {
     fetchShopifyData();
   }, []);
 
+  // LÓGICA DEL CARRITO
   const agregarAlCarrito = (producto, e) => {
     e.stopPropagation(); 
     setCarrito(prev => {
@@ -118,11 +112,68 @@ export default function KolmaPremium() {
   const totalCarrito = carrito.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
   const totalArticulos = carrito.reduce((acc, item) => acc + item.cantidad, 0);
 
+  // SIMULACIÓN DE SESIÓN
+  const simularLogin = () => {
+    setUser({ nombre: "Carlos Minaya", telefono: "809-555-0199", direccion: "Calle Duarte #45, Cotuí" });
+    setWallet(1850.50);
+  };
+
+  const cerrarSesion = () => {
+    setUser(null);
+    setWallet(0);
+    setActiveTab('inicio');
+  };
+
+  // FLUJO DE PAGO (CHECKOUT)
+  const procesarPago = () => {
+    if (!user) {
+      setIsCartOpen(false);
+      setActiveTab('perfil'); // Redirige a iniciar sesión
+      return;
+    }
+    
+    setIsProcessingPago(true);
+    
+    // Simula el proceso de pago (2 segundos)
+    setTimeout(() => {
+      const nuevoPedido = {
+        id: `KOL-${Math.floor(1000 + Math.random() * 9000)}`,
+        total: totalCarrito + 50,
+        articulos: totalArticulos,
+        hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        estado: 'EN CAMINO'
+      };
+
+      setMisPedidos(prev => [nuevoPedido, ...prev]);
+      setCarrito([]); // VACIAR CARRITO
+      setIsProcessingPago(false);
+      setIsCartOpen(false);
+      setActiveTab('pedidos'); // REDIRIGIR A PEDIDOS
+    }, 2000);
+  };
+
   const transicionSuave = 'all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1)';
 
   // ==========================================
   // VISTAS DE LA APLICACIÓN (PANTALLAS)
   // ==========================================
+
+  // PANTALLA PARA SOLICITAR LOGIN
+  const renderLoginPrompt = (mensaje) => (
+    <section style={{ maxWidth: '600px', margin: '0 auto', padding: '60px 25px', textAlign: 'center', animation: 'fadeInUp 0.4s ease-out' }}>
+      <div style={{ color: '#E31E24', display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+        <IconLock />
+      </div>
+      <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', marginBottom: '15px' }}>{mensaje}</h2>
+      <p style={{ color: '#6B7280', marginBottom: '30px', fontSize: '1.05rem' }}>Inicia sesión para disfrutar de todos los beneficios de Kolma RD.</p>
+      <button 
+        onClick={simularLogin}
+        style={{ width: '100%', backgroundColor: '#E31E24', color: '#FFF', border: 'none', padding: '16px', borderRadius: '12px', fontWeight: '800', fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 8px 20px rgba(227,30,36,0.3)', transition: transicionSuave }}
+      >
+        Iniciar Sesión
+      </button>
+    </section>
+  );
 
   const renderInicio = () => (
     <>
@@ -233,107 +284,148 @@ export default function KolmaPremium() {
     </>
   );
 
-  const renderPedidos = () => (
-    <section style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', marginBottom: '30px' }}>Mis Pedidos</h2>
-      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '20px', border: '1px solid #E5E7EB', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', marginBottom: '20px', textAlign: 'center', color: '#6B7280' }}>
-         Aún no tienes pedidos activos.
-      </div>
-    </section>
-  );
+  const renderPedidos = () => {
+    if (!user) return renderLoginPrompt("Inicia sesión para ver tus pedidos");
 
-  // VISTA BILLETERA (BLACK CARD PREMIUM SIN BOTÓN DE RECARGA)
-  const renderWallet = () => (
-    <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
-      <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', marginBottom: '30px' }}>Kolma Rewards</h2>
-      
-      {/* TARJETA PREMIUM ESTILO CREDIT CARD (BLACK CARD) */}
-      <div style={{ 
-        background: 'linear-gradient(135deg, #1C1E26 0%, #000000 100%)', 
-        borderRadius: '20px', 
-        padding: '30px', 
-        color: '#FFF', 
-        boxShadow: '0 20px 40px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.1)', 
-        position: 'relative', 
-        overflow: 'hidden',
-        border: '1px solid #333'
-      }}>
-        {/* Reflejo estilo metálico */}
-        <div style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'linear-gradient(to bottom right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 40%)', transform: 'rotate(30deg)', pointerEvents: 'none' }}></div>
+    return (
+      <section style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
+        <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', marginBottom: '30px' }}>Mis Pedidos</h2>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '25px', position: 'relative', zIndex: 2 }}>
-          {/* Chip de Tarjeta */}
-          <svg width="45" height="35" viewBox="0 0 45 35" fill="none">
-            <rect width="45" height="35" rx="6" fill="url(#goldGradient)"/>
-            <path d="M12 0v35M33 0v35M0 12h45M0 23h45" stroke="#B89B48" strokeWidth="1.5" opacity="0.6"/>
-            <defs>
-              <linearGradient id="goldGradient" x1="0" y1="0" x2="45" y2="35" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#F9DB88" />
-                <stop offset="1" stopColor="#D4AF37" />
-              </linearGradient>
-            </defs>
-          </svg>
+        {misPedidos.length === 0 ? (
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '40px 20px', border: '1px solid #E5E7EB', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', textAlign: 'center', color: '#6B7280' }}>
+            Aún no tienes pedidos activos.
+          </div>
+        ) : (
+          misPedidos.map((pedido, i) => (
+            <div key={i} style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '20px', border: '1px solid #E5E7EB', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '1px solid #F3F4F6', paddingBottom: '15px' }}>
+                <div>
+                  <span style={{ backgroundColor: '#ECFDF5', color: '#059669', padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '800' }}>{pedido.estado}</span>
+                  <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '5px' }}>Pedido #{pedido.id}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: '900', fontSize: '1.2rem', color: '#111' }}>RD$ {pedido.total.toFixed(2)}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>Hoy, {pedido.hora}</div>
+                </div>
+              </div>
+              <div style={{ fontSize: '0.9rem', color: '#374151', display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <div style={{ width: '40px', height: '40px', backgroundColor: '#FEE2E2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E31E24', animation: 'pulse 2s infinite' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </div>
+                <div>
+                  <span style={{ fontWeight: 'bold' }}>Llegando en ~45 minutos</span>
+                  <div style={{ color: '#6B7280', fontSize: '0.85rem' }}>{pedido.articulos} Artículos • Pago Seguro</div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+    );
+  };
+
+  const renderWallet = () => {
+    if (!user) return renderLoginPrompt("Inicia sesión para ver tu Billetera Kolma");
+
+    return (
+      <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
+        <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', marginBottom: '30px' }}>Kolma Rewards</h2>
+        
+        {/* TARJETA PREMIUM ESTILO CREDIT CARD (BLACK CARD) */}
+        <div style={{ 
+          background: 'linear-gradient(135deg, #1C1E26 0%, #000000 100%)', 
+          borderRadius: '20px', 
+          padding: '30px', 
+          color: '#FFF', 
+          boxShadow: '0 20px 40px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.1)', 
+          position: 'relative', 
+          overflow: 'hidden',
+          border: '1px solid #333'
+        }}>
+          {/* Reflejo estilo metálico */}
+          <div style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'linear-gradient(to bottom right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 40%)', transform: 'rotate(30deg)', pointerEvents: 'none' }}></div>
           
-          <div style={{ fontSize: '1.1rem', fontWeight: '900', fontStyle: 'italic', letterSpacing: '1px', color: '#D4AF37' }}>
-            KOLMA <span style={{ color: '#FFF' }}>BLACK</span>
-          </div>
-        </div>
-        
-        <div style={{ fontSize: '1.6rem', letterSpacing: '4px', fontFamily: '"Courier New", Courier, monospace', marginBottom: '25px', textShadow: '0 2px 4px rgba(0,0,0,0.5)', position: 'relative', zIndex: 2 }}>
-          **** **** **** 8924
-        </div>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: 'relative', zIndex: 2 }}>
-          <div>
-            <div style={{ fontSize: '0.65rem', opacity: 0.6, letterSpacing: '1px', marginBottom: '4px' }}>TITULAR</div>
-            <div style={{ fontSize: '1.05rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px', color: '#E5E7EB' }}>{user.nombre}</div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.65rem', color: '#D4AF37', letterSpacing: '1px', marginBottom: '4px', fontWeight: 'bold' }}>SALDO DISPONIBLE</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>RD$ {wallet.toLocaleString('es-DO', {minimumFractionDigits: 2})}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Historial */}
-      <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#4B5563', margin: '40px 0 15px' }}>Historial de Beneficios</h3>
-      <div style={{ textAlign: 'center', color: '#6B7280', marginTop: '30px' }}>
-        No hay movimientos recientes.
-      </div>
-    </section>
-  );
-
-  const renderPerfil = () => (
-    <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' }}>
-        <div style={{ width: '80px', height: '80px', backgroundColor: '#FEE2E2', border: '3px solid #E31E24', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E31E24', fontWeight: '900', fontSize: '2rem' }}>
-          {user.nombre.charAt(0)}
-        </div>
-        <div>
-          <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', margin: 0 }}>{user.nombre}</h2>
-          <div style={{ color: '#6B7280', fontWeight: '500' }}>{user.telefono}</div>
-          <div style={{ color: '#D97706', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '5px' }}><IconStar /> Cliente VIP</div>
-        </div>
-      </div>
-
-      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-        <div style={{ padding: '20px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <div style={{ color: '#E31E24' }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>
-            <div>
-              <div style={{ fontWeight: '700', color: '#111' }}>Dirección de Entrega</div>
-              <div style={{ fontSize: '0.85rem', color: '#6B7280' }}>{user.direccion}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '25px', position: 'relative', zIndex: 2 }}>
+            {/* Chip de Tarjeta */}
+            <svg width="45" height="35" viewBox="0 0 45 35" fill="none">
+              <rect width="45" height="35" rx="6" fill="url(#goldGradient)"/>
+              <path d="M12 0v35M33 0v35M0 12h45M0 23h45" stroke="#B89B48" strokeWidth="1.5" opacity="0.6"/>
+              <defs>
+                <linearGradient id="goldGradient" x1="0" y1="0" x2="45" y2="35" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#F9DB88" />
+                  <stop offset="1" stopColor="#D4AF37" />
+                </linearGradient>
+              </defs>
+            </svg>
+            
+            <div style={{ fontSize: '1.1rem', fontWeight: '900', fontStyle: 'italic', letterSpacing: '1px', color: '#D4AF37' }}>
+              KOLMA <span style={{ color: '#FFF' }}>BLACK</span>
             </div>
           </div>
-          <button style={{ color: '#E31E24', background: 'none', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Editar</button>
+          
+          <div style={{ fontSize: '1.6rem', letterSpacing: '4px', fontFamily: '"Courier New", Courier, monospace', marginBottom: '25px', textShadow: '0 2px 4px rgba(0,0,0,0.5)', position: 'relative', zIndex: 2 }}>
+            **** **** **** 8924
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: 'relative', zIndex: 2 }}>
+            <div>
+              <div style={{ fontSize: '0.65rem', opacity: 0.6, letterSpacing: '1px', marginBottom: '4px' }}>TITULAR</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px', color: '#E5E7EB' }}>{user.nombre}</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.65rem', color: '#D4AF37', letterSpacing: '1px', marginBottom: '4px', fontWeight: 'bold' }}>SALDO DISPONIBLE</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>RD$ {wallet.toLocaleString('es-DO', {minimumFractionDigits: 2})}</div>
+            </div>
+          </div>
         </div>
-      </div>
-      
-      <button style={{ marginTop: '30px', width: '100%', padding: '15px', border: '1px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', fontWeight: '700', borderRadius: '12px', cursor: 'pointer' }}>
-        Cerrar Sesión
-      </button>
-    </section>
-  );
+
+        {/* Historial */}
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#4B5563', margin: '40px 0 15px' }}>Historial de Beneficios</h3>
+        <div style={{ textAlign: 'center', color: '#6B7280', marginTop: '30px' }}>
+          No hay movimientos recientes.
+        </div>
+      </section>
+    );
+  };
+
+  const renderPerfil = () => {
+    if (!user) return renderLoginPrompt("Inicia sesión para gestionar tu cuenta");
+
+    return (
+      <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeInUp 0.4s ease-out' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' }}>
+          <div style={{ width: '80px', height: '80px', backgroundColor: '#FEE2E2', border: '3px solid #E31E24', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E31E24', fontWeight: '900', fontSize: '2rem' }}>
+            {user.nombre.charAt(0)}
+          </div>
+          <div>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#111', margin: 0 }}>{user.nombre}</h2>
+            <div style={{ color: '#6B7280', fontWeight: '500' }}>{user.telefono}</div>
+            <div style={{ color: '#D97706', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '5px' }}><IconStar /> Cliente VIP</div>
+          </div>
+        </div>
+
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ color: '#E31E24' }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></div>
+              <div>
+                <div style={{ fontWeight: '700', color: '#111' }}>Dirección de Entrega</div>
+                <div style={{ fontSize: '0.85rem', color: '#6B7280' }}>{user.direccion}</div>
+              </div>
+            </div>
+            <button style={{ color: '#E31E24', background: 'none', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>Editar</button>
+          </div>
+        </div>
+        
+        <button 
+          onClick={cerrarSesion}
+          style={{ marginTop: '30px', width: '100%', padding: '15px', border: '1px solid #FECACA', backgroundColor: '#FEF2F2', color: '#DC2626', fontWeight: '700', borderRadius: '12px', cursor: 'pointer', transition: transicionSuave }}
+        >
+          Cerrar Sesión
+        </button>
+      </section>
+    );
+  };
 
   return (
     <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh', fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: '#1F2937', paddingBottom: '100px', width: '100%', height: '100%', overflowY: 'auto' }}>
@@ -349,10 +441,18 @@ export default function KolmaPremium() {
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ textAlign: 'right', display: 'none' }} className="desktop-wallet">
-              <div style={{ fontSize: '0.65rem', color: '#6B7280', fontWeight: '700', letterSpacing: '0.5px' }}>CRÉDITO DISPONIBLE</div>
-              <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#E31E24' }}>RD$ {wallet.toLocaleString()}</div>
-            </div>
+            {user ? (
+              <div style={{ textAlign: 'right', display: 'none' }} className="desktop-wallet">
+                <div style={{ fontSize: '0.65rem', color: '#6B7280', fontWeight: '700', letterSpacing: '0.5px' }}>CRÉDITO DISPONIBLE</div>
+                <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#E31E24' }}>RD$ {wallet.toLocaleString()}</div>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setActiveTab('perfil')}
+                style={{ background: 'none', border: 'none', color: '#E31E24', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', display: 'none' }} className="desktop-wallet">
+                Iniciar Sesión
+              </button>
+            )}
 
             <button 
               onClick={() => setIsCartOpen(true)}
@@ -417,9 +517,19 @@ export default function KolmaPremium() {
               <span>Costo de Envío</span><span>RD$ 50.00</span>
             </div>
 
-            <button style={{ width: '100%', backgroundColor: '#E31E24', color: '#FFF', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: '800', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', boxShadow: '0 4px 15px rgba(227,30,36,0.3)' }}>
-              <span>Ir a Pagar</span>
-              <span>RD$ {(totalCarrito + 50).toFixed(2)}</span>
+            {user && wallet > 0 && (
+              <div style={{ backgroundColor: '#000', borderRadius: '12px', padding: '12px', marginBottom: '20px', fontSize: '0.85rem', color: '#FFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: '#D4AF37' }}><IconStar /></span> Tienes crédito disponible en Wallet.
+              </div>
+            )}
+
+            <button 
+              onClick={procesarPago}
+              disabled={isProcessingPago}
+              style={{ width: '100%', backgroundColor: isProcessingPago ? '#9CA3AF' : '#E31E24', color: '#FFF', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: '800', fontSize: '1.1rem', cursor: isProcessingPago ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'space-between', boxShadow: isProcessingPago ? 'none' : '0 4px 15px rgba(227,30,36,0.3)', transition: transicionSuave }}
+            >
+              <span>{isProcessingPago ? 'Procesando...' : (user ? 'Confirmar Pedido' : 'Inicia Sesión para Pagar')}</span>
+              {!isProcessingPago && <span>RD$ {(totalCarrito + 50).toFixed(2)}</span>}
             </button>
           </div>
         )}
@@ -427,7 +537,7 @@ export default function KolmaPremium() {
       
       {isCartOpen && <div onClick={() => setIsCartOpen(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1999, backdropFilter: 'blur(2px)' }}></div>}
 
-      {/* MENÚ INFERIOR (PERFECCIONADO Y A PRUEBA DE ERRORES) */}
+      {/* MENÚ INFERIOR (PERFECCIONADO) */}
       <nav style={{ 
         position: 'fixed', bottom: 0, left: 0, right: 0, 
         backgroundColor: 'rgba(255, 255, 255, 0.98)', 
