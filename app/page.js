@@ -13,6 +13,7 @@ const IconProfile = ({ active }) => <svg width="24" height="24" viewBox="0 0 24 
 const IconCart = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>;
 const IconClose = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 const IconLogout = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
+const IconEdit = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
 
 export default function App() {
   // ==========================================
@@ -30,7 +31,11 @@ export default function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login', 'register', 'recovery'
 
-  // Formulario Auth (Incluida Dirección)
+  // Estados Perfil y Validación
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isMissingInfoOpen, setIsMissingInfoOpen] = useState(false);
+
+  // Formulario Auth / Perfil
   const [formData, setFormData] = useState({ 
     nombre: '', 
     email: '', 
@@ -97,13 +102,21 @@ export default function App() {
   }, []);
 
   // ==========================================
-  // LÓGICA AUTH SHOPIFY
+  // LÓGICA AUTH Y PERFIL
   // ==========================================
   const fixPhone = (tel) => {
     let clean = tel.replace(/\D/g, '');
     if (clean.length === 10) return `+1${clean}`;
     if (clean.length === 11 && clean.startsWith('1')) return `+${clean}`;
     return clean;
+  };
+
+  const saveUserData = (data) => {
+    localStorage.setItem('kolma_user_name', data.nombre);
+    localStorage.setItem('kolma_user_email', data.email);
+    localStorage.setItem('kolma_user_phone', data.telefono);
+    localStorage.setItem('kolma_user_address', data.direccion);
+    setUser(data);
   };
 
   const handleAuth = async (e) => {
@@ -133,14 +146,9 @@ export default function App() {
         const { data } = await res.json();
         if (data.customerCreate.customerUserErrors.length) throw new Error(data.customerCreate.customerUserErrors[0].message);
         
-        // Guardamos dirección localmente ya que Shopify pide registro de dirección aparte
-        localStorage.setItem('kolma_user_address', formData.direccion);
-        localStorage.setItem('kolma_user_name', formData.nombre);
-        localStorage.setItem('kolma_user_phone', tel);
-        localStorage.setItem('kolma_user_email', formData.email);
-
+        saveUserData({ ...formData, telefono: tel, id: data.customerCreate.customer.id });
         setAuthMode('login');
-        setErrorAuth('¡Cuenta creada! Ahora inicia sesión para confirmar.');
+        setErrorAuth('¡Cuenta creada! Inicia sesión para entrar.');
       } 
       
       else if (authMode === 'login') {
@@ -166,6 +174,7 @@ export default function App() {
           nombre: localStorage.getItem('kolma_user_name') || formData.email.split('@')[0], 
           email: formData.email, 
           direccion: localStorage.getItem('kolma_user_address'),
+          telefono: localStorage.getItem('kolma_user_phone'),
           id: token 
         });
         setIsAuthOpen(false);
@@ -193,6 +202,15 @@ export default function App() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleUpdateProfile = (e) => {
+    e.preventDefault();
+    const tel = fixPhone(formData.telefono);
+    const updatedUser = { ...user, ...formData, telefono: tel };
+    saveUserData(updatedUser);
+    setIsEditingProfile(false);
+    setIsMissingInfoOpen(false);
   };
 
   const handleLogout = () => {
@@ -224,6 +242,14 @@ export default function App() {
 
   const procesarCheckout = async () => {
     if (!user) { setIsCartOpen(false); setIsAuthOpen(true); return; }
+    
+    // VALIDACIÓN DE DATOS FALTANTES ANTES DE PAGAR
+    if (!user.nombre || !user.telefono || !user.direccion || user.direccion.length < 5) {
+      setIsCartOpen(false);
+      setIsMissingInfoOpen(true);
+      return;
+    }
+
     try {
       const lineItems = carrito.map(item => ({ merchandiseId: item.variantId, quantity: item.quantity }));
       const res = await fetch(`https://${domain}/api/2024-04/graphql.json`, {
@@ -282,7 +308,6 @@ export default function App() {
             </div>
           </section>
 
-          {/* GRID COMPACTO */}
           <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px 15px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '12px' }}>
               {loading ? <p>Cargando pasillos...</p> : productos.filter(p => p.node.title.toLowerCase().includes(searchTerm.toLowerCase())).map(({ node }) => (
@@ -314,42 +339,111 @@ export default function App() {
         </section>
       )}
 
-      {/* VISTA PERFIL - CORREGIDA CON DATOS REALES */}
+      {/* VISTA PERFIL - REDISEÑO PROFESIONAL */}
       {activeTab === 'perfil' && (
-        <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px' }}>
+        <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.4s ease-out' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-            <h2 style={{ fontWeight: '900', fontSize: '1.8rem', margin: 0 }}>Mi Perfil</h2>
-            {user && <button onClick={handleLogout} style={{ color: '#E31E24', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}><IconLogout /> Salir</button>}
+            <h2 style={{ fontWeight: '900', fontSize: '1.8rem', margin: 0, color: '#111' }}>Mi Perfil</h2>
+            {user && (
+              <button onClick={handleLogout} style={{ color: '#E31E24', background: '#FEE2E2', border: 'none', padding: '8px 15px', borderRadius: '10px', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <IconLogout /> Cerrar Sesión
+              </button>
+            )}
           </div>
+
           {user ? (
-            <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '30px', border: '1px solid #eee' }}>
-              <div style={{ marginBottom: '15px' }}>
-                <span style={{ fontSize: '0.75rem', color: '#999', fontWeight: '800' }}>NOMBRE</span>
-                <p style={{ margin: '5px 0 0 0', fontWeight: '700', color: '#333' }}>{user.nombre}</p>
-              </div>
-              <div style={{ marginBottom: '15px' }}>
-                <span style={{ fontSize: '0.75rem', color: '#999', fontWeight: '800' }}>EMAIL</span>
-                <p style={{ margin: '5px 0 0 0', fontWeight: '700', color: '#333' }}>{user.email}</p>
-              </div>
-              <div style={{ marginBottom: '15px' }}>
-                <span style={{ fontSize: '0.75rem', color: '#999', fontWeight: '800' }}>TELÉFONO</span>
-                <p style={{ margin: '5px 0 0 0', fontWeight: '700', color: '#333' }}>{user.telefono || 'No registrado'}</p>
-              </div>
-              <div style={{ marginBottom: '0px' }}>
-                <span style={{ fontSize: '0.75rem', color: '#999', fontWeight: '800' }}>DIRECCIÓN DE ENTREGA</span>
-                <p style={{ margin: '5px 0 0 0', fontWeight: '700', color: '#333' }}>{user.direccion || 'Sin dirección guardada'}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Card de Usuario */}
+              <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '25px', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', position: 'relative' }}>
+                {!isEditingProfile && (
+                  <button onClick={() => setIsEditingProfile(true)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: '#E31E24', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '700', fontSize: '0.85rem' }}>
+                    <IconEdit /> Editar
+                  </button>
+                )}
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px' }}>
+                  <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: '#E31E24', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', fontWeight: '900' }}>
+                    {user.nombre.charAt(0)}
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800' }}>{user.nombre}</h3>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#6B7280' }}>Cliente Kolma RD</p>
+                  </div>
+                </div>
+
+                {isEditingProfile ? (
+                  <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', fontWeight: '800', color: '#9CA3AF' }}>NOMBRE</label>
+                      <input name="nombre" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #E5E7EB', marginTop: '5px', fontSize: '1rem' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', fontWeight: '800', color: '#9CA3AF' }}>TELÉFONO</label>
+                      <input name="telefono" value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #E5E7EB', marginTop: '5px', fontSize: '1rem' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', fontWeight: '800', color: '#9CA3AF' }}>DIRECCIÓN (COTUÍ)</label>
+                      <textarea name="direccion" value={formData.direccion} onChange={e => setFormData({...formData, direccion: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #E5E7EB', marginTop: '5px', fontSize: '1rem', height: '80px', resize: 'none' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button type="submit" style={{ flex: 1, backgroundColor: '#E31E24', color: '#fff', padding: '12px', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: 'pointer' }}>Guardar Cambios</button>
+                      <button type="button" onClick={() => setIsEditingProfile(false)} style={{ flex: 1, backgroundColor: '#F3F4F6', color: '#4B5563', padding: '12px', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: 'pointer' }}>Cancelar</button>
+                    </div>
+                  </form>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '15px' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#9CA3AF' }}>CORREO ELECTRÓNICO</span>
+                      <p style={{ margin: '5px 0 0 0', fontWeight: '600', color: '#111' }}>{user.email}</p>
+                    </div>
+                    <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '15px' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#9CA3AF' }}>TELÉFONO</span>
+                      <p style={{ margin: '5px 0 0 0', fontWeight: '600', color: '#111' }}>{user.telefono || 'No registrado'}</p>
+                    </div>
+                    <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '15px' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#9CA3AF' }}>DIRECCIÓN DE ENTREGA</span>
+                      <p style={{ margin: '5px 0 0 0', fontWeight: '600', color: '#111', lineHeight: '1.4' }}>{user.direccion || 'No registrada'}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          ) : <div style={{ textAlign: 'center' }}><button onClick={() => setIsAuthOpen(true)} style={{ backgroundColor: '#E31E24', color: '#fff', padding: '12px 30px', borderRadius: '12px', border: 'none', fontWeight: 'bold' }}>Ingresar</button></div>}
+          ) : (
+            <div style={{ textAlign: 'center', padding: '60px 20px', backgroundColor: '#fff', borderRadius: '24px', border: '1px solid #eee' }}>
+              <div style={{ backgroundColor: '#F3F4F6', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                <IconProfile active={false} />
+              </div>
+              <h3 style={{ fontWeight: '800', fontSize: '1.2rem', marginBottom: '10px' }}>¡Hola! Únete a Kolma</h3>
+              <p style={{ color: '#6B7280', fontSize: '0.95rem', marginBottom: '25px' }}>Regístrate para gestionar tus pedidos y recibir beneficios exclusivos en Cotuí.</p>
+              <button onClick={() => { setAuthMode('register'); setIsAuthOpen(true); }} style={{ backgroundColor: '#E31E24', color: '#fff', padding: '14px 30px', borderRadius: '15px', border: 'none', fontWeight: '800', cursor: 'pointer', transition: transicionSuave }}>
+                Crear mi cuenta ahora
+              </button>
+            </div>
+          )}
         </section>
       )}
 
-      {/* ==========================================
-          MODAL AUTH (CON NOMBRE, TELÉFONO Y DIRECCIÓN)
-          ========================================== */}
+      {/* MODAL DE INFORMACIÓN FALTANTE (NOTIFICACIÓN) */}
+      {isMissingInfoOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
+          <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', width: '90%', maxWidth: '400px', animation: 'fadeInUp 0.3s ease-out' }}>
+            <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '900', color: '#E31E24', marginBottom: '15px' }}>¡Faltan datos importantes!</h3>
+            <p style={{ color: '#4B5563', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '25px' }}>Para que tu pedido llegue correctamente a Cotuí, necesitamos que completes tu **Teléfono** y **Dirección** en tu perfil.</p>
+            
+            <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <input placeholder="Teléfono (809...)" required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #E5E7EB' }} value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} />
+              <textarea placeholder="Dirección exacta en Cotuí" required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #E5E7EB', height: '80px', resize: 'none' }} value={formData.direccion} onChange={e => setFormData({...formData, direccion: e.target.value})} />
+              <button type="submit" style={{ backgroundColor: '#111', color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: '800', cursor: 'pointer' }}>Guardar y Continuar al Pago</button>
+              <button type="button" onClick={() => setIsMissingInfoOpen(false)} style={{ color: '#9CA3AF', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer' }}>Cerrar</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* REGISTRO MODAL */}
       {isAuthOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
-          <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', width: '90%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ backgroundColor: '#fff', padding: '35px', borderRadius: '24px', width: '90%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '900' }}>
                 {authMode === 'login' ? 'Iniciar Sesión' : authMode === 'register' ? 'Crear Cuenta' : 'Recuperar Contraseña'}
@@ -417,7 +511,7 @@ export default function App() {
       {/* CARRITO DRAWER */}
       {isCartOpen && (
         <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', justifyContent: 'flex-end', backdropFilter: 'blur(3px)' }}>
-          <div style={{ backgroundColor: '#fff', width: '100%', maxWidth: '400px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ backgroundColor: '#fff', width: '100%', maxWidth: '400px', height: '100%', display: 'flex', flexDirection: 'column', animation: 'slideInRight 0.3s ease-out' }}>
             <div style={{ padding: '20px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><h3 style={{ margin: 0, fontWeight: '900' }}>Tu Canasta</h3><div onClick={() => setIsCartOpen(false)} style={{ cursor: 'pointer' }}><IconClose /></div></div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
               {carrito.length === 0 ? <p style={{ textAlign: 'center', marginTop: '50px', color: '#999' }}>Canasta vacía.</p> : carrito.map((item, i) => (
@@ -457,6 +551,9 @@ export default function App() {
 
       <style>{`
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        @keyframes slideInRight { 0% { transform: translateX(100%); } 100% { transform: translateX(0); } }
+        @keyframes fadeInUp { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         ::-webkit-scrollbar { width: 0px; background: transparent; }
       `}</style>
     </div>
