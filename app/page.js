@@ -172,8 +172,10 @@ export default function App() {
   };
 
   // ==========================================
-  // CARRITO Y PROCESAMIENTO DE ORDEN (Interno)
+  // CARRITO Y PROCESAMIENTO DE ORDEN (Ruta Vercel)
   // ==========================================
+  const totalCarrito = carrito.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
   const agregarAlCarrito = (producto) => {
     const variantId = producto.node.variants.edges[0]?.node.id;
     setCarrito(prev => {
@@ -196,10 +198,15 @@ export default function App() {
 
     setIsProcessingOrder(true);
     try {
+      // Conexión a tu API Route en Vercel
       const res = await fetch('/api/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: carrito, customer: user })
+        body: JSON.stringify({ 
+          items: carrito, 
+          customer: user,
+          total: totalCarrito.toFixed(2) 
+        })
       });
       const data = await res.json();
       if (data.success) {
@@ -215,8 +222,6 @@ export default function App() {
       setIsProcessingOrder(false); 
     }
   };
-
-  const totalCarrito = carrito.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   // ==========================================
   // RENDER UI (Diseño Premium)
@@ -256,7 +261,7 @@ export default function App() {
                 ENTREGA EN 45 MINUTOS
               </div>
               <h2 style={{ fontSize: '2.8rem', fontWeight: '900', margin: '0 0 10px 0', lineHeight: 1.1 }}>El súper de Cotuí<br/>en 45 minutos.</h2>
-              <p style={{ fontSize: '1.1rem', opacity: 0.8, margin: '0 0 25px 0' }}>Fresco, rápido y directo a tu puerta.</p>
+              <h1 style={{fontSize: '1.1rem', opacity: 0.8, margin: '0 0 25px 0'}}>Fresco, rápido y directo a tu puerta.</h1>
               
               {/* BARRA DE BÚSQUEDA CORREGIDA (Más corta, diseño píldora blanca, no se pierde) */}
               <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '10px 18px', display: 'flex', alignItems: 'center', marginTop: '10px', maxWidth: '320px', boxShadow: '0 8px 25px rgba(0,0,0,0.4)' }}>
