@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 
 // ==========================================
-// ICONOS SVG PROFESIONALES (Diseño Premium)
+// ICONOS SVG PROFESIONALES
 // ==========================================
 const IconAdd = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
 const IconSearch = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
@@ -22,6 +22,9 @@ export default function App() {
   const [productos, setProductos] = useState([]);
   const [colecciones, setColecciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errorShopify, setErrorShopify] = useState(''); // Nuevo estado para ver errores
+  const [categoriaActiva, setCategoriaActiva] = useState('Todas'); // Nuevo estado para el pasillo
+  
   const [user, setUser] = useState(null);
   const [wallet, setWallet] = useState(0.00); 
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,12 +40,11 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
 
-  // Credenciales de Entorno Originales (¡RESTABLECIDAS!)
   const domain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN || "q0q09e-cp.myshopify.com";
   const accessToken = process.env.NEXT_PUBLIC_SHOPIFY_ACCESS_TOKEN || "c9bda45020488455d7fe2d8b7e22f352";
 
   // ==========================================
-  // PERSISTENCIA Y CARGA INICIAL
+  // CARGA INICIAL Y CONEXIÓN A SHOPIFY
   // ==========================================
   useEffect(() => {
     const token = localStorage.getItem('kolma_access_token');
@@ -57,29 +59,55 @@ export default function App() {
     }
 
     async function fetchData() {
-      if(!domain || !accessToken) { setLoading(false); return; }
+      if(!domain || !accessToken) { 
+        setErrorShopify("Faltan las credenciales de Shopify (Dominio o Token).");
+        setLoading(false); 
+        return; 
+      }
+      
       try {
+        // Query actualizada para traer a qué colección pertenece cada producto
         const res = await fetch(`https://${domain}/api/2024-04/graphql.json`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': accessToken },
           body: JSON.stringify({ 
             query: `{ 
-              collections(first: 10) { edges { node { id title } } }
-              products(first: 40) { edges { node { id title images(first: 1) { edges { node { url } } } variants(first: 1) { edges { node { id price { amount } } } } } } } 
+              collections(first: 20) { edges { node { id title } } }
+              products(first: 50) { edges { node { id title collections(first: 5) { edges { node { title } } } images(first: 1) { edges { node { url } } } variants(first: 1) { edges { node { id price { amount } } } } } } } 
             }` 
           }),
         });
-        const { data } = await res.json();
-        if(data?.collections) setColecciones([{node: {id: 'all', title: 'Todas'}}, ...data.collections.edges]);
-        if(data?.products) setProductos(data.products.edges);
+        
+        const { data, errors } = await res.json();
+        
+        if (errors) {
+          setErrorShopify("Error de Shopify: " + errors[0].message);
+          setLoading(false);
+          return;
+        }
+
+        if(data?.collections) {
+          setColecciones([{node: {id: 'all', title: 'Todas'}}, ...data.collections.edges]);
+        }
+        
+        if(data?.products) {
+          if (data.products.edges.length === 0) {
+            setErrorShopify("Tu tienda se conectó, pero no hay productos. Asegúrate de marcarlos como 'Activos' para la app en Shopify.");
+          } else {
+            setProductos(data.products.edges);
+          }
+        }
         setLoading(false);
-      } catch (e) { setLoading(false); }
+      } catch (e) { 
+        setErrorShopify("Error de red conectando a Shopify. Revisa tu internet.");
+        setLoading(false); 
+      }
     }
     fetchData();
   }, [domain, accessToken]);
 
   // ==========================================
-  // LÓGICA AUTH Y PERFIL (Con Cloud Sync)
+  // LÓGICA AUTH Y PERFIL
   // ==========================================
   const fixPhone = (tel) => {
     let clean = tel.replace(/\D/g, '');
@@ -89,10 +117,10 @@ export default function App() {
   };
 
   const saveUserData = (data) => {
-    localStorage.setItem('kolma_user_name', data.nombre);
-    localStorage.setItem('kolma_user_email', data.email);
-    localStorage.setItem('kolma_user_phone', data.telefono);
-    localStorage.setItem('kolma_user_address', data.direccion);
+    localStorage.setItem('kolma_user_name', data.nombre || "");
+    localStorage.setItem('kolma_user_email', data.email || "");
+    localStorage.setItem('kolma_user_phone', data.telefono || "");
+    localStorage.setItem('kolma_user_address', data.direccion || "");
     setUser(data);
   };
 
@@ -106,9 +134,6 @@ export default function App() {
     try {
       if (authMode === 'register') {
         const tel = fixPhone(formData.telefono);
-        if (tel.length < 11) throw new Error("Teléfono inválido (10 dígitos requeridos)");
-        if (formData.direccion.length < 5) throw new Error("Por favor ingresa una dirección clara");
-        
         const res = await fetch(shopifyUrl, {
           method: 'POST', headers,
           body: JSON.stringify({
@@ -120,10 +145,8 @@ export default function App() {
         });
         const { data } = await res.json();
         if (data.customerCreate.customerUserErrors.length) throw new Error(data.customerCreate.customerUserErrors[0].message);
-        
-        saveUserData({ ...formData, telefono: tel, id: data.customerCreate.customer.id });
         setAuthMode('login');
-        setErrorAuth('¡Cuenta creada! Inicia sesión para entrar.');
+        setErrorAuth('¡Cuenta creada! Inicia sesión ahora.');
       } else if (authMode === 'login') {
         const res = await fetch(shopifyUrl, {
           method: 'POST', headers,
@@ -136,39 +159,20 @@ export default function App() {
         });
         const { data } = await res.json();
         if (data.customerAccessTokenCreate.customerUserErrors.length) throw new Error(data.customerAccessTokenCreate.customerUserErrors[0].message);
-        
         const token = data.customerAccessTokenCreate.customerAccessToken.accessToken;
         
-        // SINCRONIZACIÓN CON SHOPIFY (Trae los datos desde cualquier teléfono)
+        // SINCRONIZACIÓN CLOUD
         const resInfo = await fetch(shopifyUrl, {
           method: 'POST', headers,
-          body: JSON.stringify({
-            query: `{ customer(customerAccessToken: "${token}") { firstName email phone defaultAddress { address1 } } }`
-          })
+          body: JSON.stringify({ query: `{ customer(customerAccessToken: "${token}") { firstName email phone defaultAddress { address1 } } }` })
         });
         const infoData = await resInfo.json();
         const c = infoData.data.customer;
 
-        const completeUser = {
-          id: token,
-          nombre: c.firstName || formData.email.split('@')[0],
-          email: c.email,
-          telefono: c.phone || "",
-          direccion: c.defaultAddress?.address1 || ""
-        };
-
+        const completeUser = { id: token, nombre: c.firstName || formData.email.split('@')[0], email: c.email, telefono: c.phone || "", direccion: c.defaultAddress?.address1 || "" };
         localStorage.setItem('kolma_access_token', token);
         saveUserData(completeUser);
         setIsAuthOpen(false);
-      } else if (authMode === 'recovery') {
-        const res = await fetch(shopifyUrl, {
-          method: 'POST', headers,
-          body: JSON.stringify({ query: `mutation customerRecover($email: String!) { customerRecover(email: $email) { customerUserErrors { message } } }`, variables: { email: formData.email } })
-        });
-        const { data } = await res.json();
-        if (data.customerRecover.customerUserErrors.length) throw new Error(data.customerRecover.customerUserErrors[0].message);
-        setErrorAuth('Correo de recuperación enviado.');
-        setTimeout(() => setAuthMode('login'), 3000);
       }
     } catch (err) { setErrorAuth(err.message); } finally { setIsSubmitting(false); }
   };
@@ -179,27 +183,21 @@ export default function App() {
     const tel = fixPhone(formData.telefono);
     const token = localStorage.getItem('kolma_access_token');
 
-    // Guarda en la nube de Shopify
-    if (token) {
-      try {
+    try {
+      if (token) {
         await fetch(`https://${domain}/api/2024-04/graphql.json`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': accessToken },
           body: JSON.stringify({
-            query: `mutation customerUpdate($customerAccessToken: String!, $customer: CustomerUpdateInput!) {
-              customerUpdate(customerAccessToken: $customerAccessToken, customer: $customer) { customer { firstName phone } }
-            }`,
+            query: `mutation customerUpdate($customerAccessToken: String!, $customer: CustomerUpdateInput!) { customerUpdate(customerAccessToken: $customerAccessToken, customer: $customer) { customer { firstName } } }`,
             variables: { customerAccessToken: token, customer: { firstName: formData.nombre, phone: tel } }
           })
         });
-      } catch (err) { console.error("Error al guardar en Shopify", err); }
-    }
-
-    const updatedUser = { ...user, ...formData, telefono: tel };
-    saveUserData(updatedUser);
-    setIsEditingProfile(false);
-    setIsMissingInfoOpen(false);
-    setIsSubmitting(false);
+      }
+      saveUserData({ ...user, nombre: formData.nombre, telefono: tel, direccion: formData.direccion });
+      setIsEditingProfile(false);
+      setIsMissingInfoOpen(false);
+    } catch (err) { console.error(err); } finally { setIsSubmitting(false); }
   };
 
   const handleLogout = () => {
@@ -210,7 +208,7 @@ export default function App() {
   };
 
   // ==========================================
-  // CARRITO Y PROCESAMIENTO DE ORDEN (Ruta Vercel)
+  // CARRITO Y PAGO (Vercel Route)
   // ==========================================
   const agregarAlCarrito = (producto) => {
     const variantId = producto.node.variants.edges[0]?.node.id;
@@ -226,42 +224,25 @@ export default function App() {
 
   const procesarCheckout = async () => {
     if (!user) { setIsCartOpen(false); setIsAuthOpen(true); return; }
-    
-    // Validación estricta para envíos en Cotuí
     if (!user.nombre || !user.telefono || !user.direccion || user.direccion.length < 5) {
-      setIsCartOpen(false); 
-      setIsMissingInfoOpen(true); 
-      return;
+      setIsCartOpen(false); setIsMissingInfoOpen(true); return;
     }
-
     setIsProcessingOrder(true);
     try {
       const res = await fetch('/api/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          items: carrito, 
-          customer: user,
-          total: totalCarrito.toFixed(2)
-        })
+        body: JSON.stringify({ items: carrito, customer: user, total: totalCarrito.toFixed(2) })
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.ok) {
         alert("✅ ¡Pedido recibido con éxito!\nLo estaremos entregando en Cotuí en aprox. 45 minutos.");
-        setCarrito([]); 
-        setIsCartOpen(false);
-      } else { 
-        alert("Hubo un error al crear la orden. Intenta nuevamente."); 
-      }
-    } catch (e) { 
-      alert("Error de conexión al servidor. Revisa tu internet."); 
-    } finally { 
-      setIsProcessingOrder(false); 
-    }
+        setCarrito([]); setIsCartOpen(false);
+      } else { alert("Error al conectar con el servidor de correos."); }
+    } catch (e) { alert("Error de conexión."); } finally { setIsProcessingOrder(false); }
   };
 
   // ==========================================
-  // RENDER UI (Diseño Premium Exacto)
+  // RENDER UI
   // ==========================================
   return (
     <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#1F2937', paddingBottom: '100px', overflowX: 'hidden' }}>
@@ -290,7 +271,7 @@ export default function App() {
       {/* VISTA INICIO */}
       {activeTab === 'inicio' && (
         <>
-          {/* BANER OSCURO PREMIUM */}
+          {/* BANER OSCURO */}
           <section style={{ backgroundColor: '#000000', padding: '60px 25px', color: '#FFFFFF', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(135deg, rgba(227,30,36,0.12) 0%, rgba(0,0,0,1) 100%)', zIndex: 1 }}></div>
             <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'left', position: 'relative', zIndex: 10 }}>
@@ -298,28 +279,61 @@ export default function App() {
                 ENTREGA EN 45 MINUTOS
               </div>
               <h2 style={{ fontSize: '2.8rem', fontWeight: '900', margin: '0 0 10px 0', lineHeight: 1.1 }}>El súper de Cotuí<br/>en 45 minutos.</h2>
-              <p style={{ fontSize: '1.1rem', opacity: 0.8, margin: '0 0 25px 0' }}>Fresco, rápido y directo a tu puerta.</p>
               
-              {/* BARRA DE BÚSQUEDA */}
               <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '10px 18px', display: 'flex', alignItems: 'center', marginTop: '10px', maxWidth: '320px', boxShadow: '0 8px 25px rgba(0,0,0,0.4)' }}>
                 <div style={{ color: '#E31E24', display: 'flex', alignItems: 'center' }}><IconSearch /></div>
-                <input 
-                  type="text" 
-                  placeholder="¿Qué necesitas hoy?" 
-                  value={searchTerm} 
-                  onChange={(e) => setSearchTerm(e.target.value)} 
-                  style={{ flex: 1, border: 'none', outline: 'none', padding: '8px 10px', fontSize: '1.05rem', color: '#111', background: 'transparent', fontWeight: '600' }} 
-                />
+                <input type="text" placeholder="¿Qué necesitas hoy?" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, border: 'none', outline: 'none', padding: '8px 10px', fontSize: '1.05rem', color: '#111', background: 'transparent', fontWeight: '600' }} />
               </div>
             </div>
           </section>
 
-          {/* GRID DE PRODUCTOS (RESTABLECIDO) */}
-          <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '30px 15px' }}>
+          {/* MENÚ DE PASILLOS (CATEGORÍAS) */}
+          <section style={{ maxWidth: '1200px', margin: '20px auto 0', padding: '0 15px' }}>
+            <div style={{ display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px', scrollbarWidth: 'none' }}>
+              {colecciones.map((col, index) => (
+                <button 
+                  key={index}
+                  onClick={() => setCategoriaActiva(col.node.title)}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '25px',
+                    whiteSpace: 'nowrap',
+                    fontWeight: 'bold',
+                    fontSize: '0.9rem',
+                    border: categoriaActiva === col.node.title ? 'none' : '1px solid #E5E7EB',
+                    backgroundColor: categoriaActiva === col.node.title ? '#E31E24' : '#FFFFFF',
+                    color: categoriaActiva === col.node.title ? '#FFFFFF' : '#4B5563',
+                    cursor: 'pointer',
+                    boxShadow: categoriaActiva === col.node.title ? '0 4px 10px rgba(227,30,36,0.3)' : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {col.node.title}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* GRID DE PRODUCTOS */}
+          <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 15px' }}>
+            
+            {/* MANEJO DE ERRORES VISIBLES */}
+            {errorShopify && (
+              <div style={{ backgroundColor: '#FEE2E2', border: '1px solid #FCA5A5', color: '#B91C1C', padding: '20px', borderRadius: '15px', textAlign: 'center', width: '100%' }}>
+                <h3 style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>No pudimos cargar tu tienda</h3>
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>{errorShopify}</p>
+              </div>
+            )}
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '12px' }}>
-              {loading ? (
+              {loading && !errorShopify ? (
                 <p style={{ textAlign: 'center', width: '100%', gridColumn: '1 / -1', padding: '40px', fontWeight: 'bold', color: '#9CA3AF' }}>Cargando pasillos...</p>
-              ) : productos.filter(p => p.node.title.toLowerCase().includes(searchTerm.toLowerCase())).map(({ node }) => (
+              ) : productos.filter(p => {
+                // Filtro doble: Por texto de búsqueda y por pasillo
+                const matchSearch = p.node.title.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchCategory = categoriaActiva === 'Todas' || p.node.collections.edges.some(c => c.node.title === categoriaActiva);
+                return matchSearch && matchCategory;
+              }).map(({ node }) => (
                 <div key={node.id} style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '15px', border: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                   <div style={{ height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
                     <img src={node.images.edges[0]?.node.url} style={{ maxWidth: '100%', maxHeight: '120px', objectFit: 'contain' }} alt={node.title} />
@@ -424,4 +438,175 @@ export default function App() {
                 <IconProfile active={false} />
               </div>
               <h3 style={{ fontWeight: '800', fontSize: '1.2rem', marginBottom: '10px' }}>¡Hola! Únete a Kolma</h3>
-              <p style={{ color: '#6B7280', fontSize: '0.95rem', marginBottom: '25px' }}>Regístrate para
+              <p style={{ color: '#6B7280', fontSize: '0.95rem', marginBottom: '25px' }}>Regístrate para gestionar tus pedidos y recibir beneficios exclusivos en Cotuí.</p>
+              <button onClick={() => { setAuthMode('register'); setIsAuthOpen(true); }} style={{ backgroundColor: '#E31E24', color: '#fff', padding: '14px 30px', borderRadius: '15px', border: 'none', fontWeight: '800', cursor: 'pointer' }}>
+                Crear mi cuenta ahora
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* MODAL: INFORMACIÓN FALTANTE PARA EL CHECKOUT */}
+      {isMissingInfoOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
+          <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '24px', width: '90%', maxWidth: '400px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '900', color: '#E31E24', marginBottom: '15px' }}>¡Faltan datos importantes!</h3>
+            <p style={{ color: '#4B5563', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '25px' }}>Para que tu pedido llegue correctamente a Cotuí, necesitamos que completes tu **Teléfono** y **Dirección**.</p>
+            
+            <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <input placeholder="Teléfono (Ej: 8090000000)" required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '1rem' }} value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} />
+              <textarea placeholder="Dirección exacta en Cotuí" required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #E5E7EB', height: '80px', resize: 'none', fontSize: '1rem' }} value={formData.direccion} onChange={e => setFormData({...formData, direccion: e.target.value})} />
+              <button type="submit" disabled={isSubmitting} style={{ backgroundColor: '#111', color: '#fff', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: '800', cursor: 'pointer' }}>{isSubmitting ? 'Guardando...' : 'Guardar y Continuar al Pago'}</button>
+              <button type="button" onClick={() => setIsMissingInfoOpen(false)} style={{ color: '#9CA3AF', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer', padding: '10px' }}>Cerrar</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: LOGIN / REGISTRO */}
+      {isAuthOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
+          <div style={{ backgroundColor: '#fff', padding: '35px', borderRadius: '24px', width: '90%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '900' }}>
+                {authMode === 'login' ? 'Iniciar Sesión' : authMode === 'register' ? 'Crear Cuenta' : 'Recuperar'}
+              </h3>
+              <div onClick={() => setIsAuthOpen(false)} style={{ cursor: 'pointer', color: '#999' }}><IconClose /></div>
+            </div>
+            
+            <form onSubmit={handleAuth}>
+              {authMode === 'register' && (
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#666' }}>NOMBRE COMPLETO</label>
+                  <input placeholder="Ej: Juan Pérez" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #ddd', marginTop: '5px' }} onChange={e => setFormData({...formData, nombre: e.target.value})} />
+                </div>
+              )}
+
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#666' }}>CORREO ELECTRÓNICO</label>
+                <input type="email" placeholder="juan@email.com" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #ddd', marginTop: '5px' }} onChange={e => setFormData({...formData, email: e.target.value})} />
+              </div>
+              
+              {authMode === 'register' && (
+                <>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#666' }}>TELÉFONO</label>
+                    <div style={{ display: 'flex', border: '1px solid #ddd', borderRadius: '10px', overflow: 'hidden', marginTop: '5px' }}>
+                      <div style={{ background: '#f5f5f5', padding: '12px', fontWeight: 'bold' }}>+1</div>
+                      <input placeholder="809 000 0000" required style={{ width: '100%', padding: '12px', border: 'none' }} onChange={e => setFormData({...formData, telefono: e.target.value})} />
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#666' }}>DIRECCIÓN EN COTUÍ</label>
+                    <input placeholder="Calle, sector, casa" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #ddd', marginTop: '5px' }} onChange={e => setFormData({...formData, direccion: e.target.value})} />
+                  </div>
+                </>
+              )}
+
+              {authMode !== 'recovery' && (
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: '800', color: '#666' }}>CONTRASEÑA</label>
+                  <input type="password" placeholder="Mínimo 6 caracteres" required style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #ddd', marginTop: '5px' }} onChange={e => setFormData({...formData, password: e.target.value})} />
+                </div>
+              )}
+
+              {errorAuth && <p style={{ color: '#E31E24', fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '15px' }}>⚠️ {errorAuth}</p>}
+
+              <button type="submit" disabled={isSubmitting} style={{ width: '100%', backgroundColor: '#E31E24', color: '#fff', padding: '14px', borderRadius: '12px', border: 'none', fontWeight: '900', cursor: 'pointer' }}>
+                {isSubmitting ? 'Cargando...' : authMode === 'login' ? 'ENTRAR' : authMode === 'register' ? 'CREAR MI CUENTA' : 'ENVIAR CORREO'}
+              </button>
+            </form>
+
+            <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '0.85rem' }}>
+              {authMode === 'login' ? (
+                <>
+                  <p onClick={() => setAuthMode('recovery')} style={{ color: '#E31E24', cursor: 'pointer', marginBottom: '10px', fontWeight: '600' }}>¿Olvidaste tu contraseña?</p>
+                  <p>¿No tienes cuenta? <span onClick={() => setAuthMode('register')} style={{ color: '#E31E24', fontWeight: 'bold', cursor: 'pointer' }}>Regístrate aquí</span></p>
+                </>
+              ) : (
+                <p>¿Ya tienes cuenta? <span onClick={() => setAuthMode('login')} style={{ color: '#E31E24', fontWeight: 'bold', cursor: 'pointer' }}>Inicia Sesión</span></p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DRAWER DEL CARRITO */}
+      {isCartOpen && (
+        <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', justifyContent: 'flex-end', backdropFilter: 'blur(3px)' }}>
+          <div style={{ backgroundColor: '#fff', width: '100%', maxWidth: '400px', height: '100%', display: 'flex', flexDirection: 'column', animation: 'slideInRight 0.3s ease-out' }}>
+            <div style={{ padding: '20px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontWeight: '900', fontSize: '1.4rem' }}>Tu Canasta</h3>
+              <div onClick={() => setIsCartOpen(false)} style={{ cursor: 'pointer' }}><IconClose /></div>
+            </div>
+            
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+              {carrito.length === 0 ? (
+                <div style={{ textAlign: 'center', marginTop: '50px', color: '#9CA3AF' }}>
+                  <IconCart />
+                  <p style={{ marginTop: '15px', fontWeight: '600' }}>Tu canasta está vacía.</p>
+                </div>
+              ) : (
+                carrito.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', gap: '15px', marginBottom: '20px', alignItems: 'center' }}>
+                    <img src={item.image} style={{ width: '60px', height: '60px', objectFit: 'contain', border: '1px solid #F3F4F6', borderRadius: '10px', padding: '4px' }} alt={item.title} />
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: '700', color: '#111' }}>{item.title}</h4>
+                      <p style={{ margin: '5px 0 0', color: '#E31E24', fontWeight: '800' }}>RD${item.price} <span style={{ color: '#9CA3AF', fontWeight: '500', fontSize: '0.8rem' }}>x {item.quantity}</span></p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div style={{ padding: '25px', borderTop: '1px solid #eee', background: '#F9FAFB' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontWeight: '900', fontSize: '1.2rem' }}>
+                <span>Total estimado:</span>
+                <span style={{ color: '#E31E24' }}>RD$ {totalCarrito.toFixed(2)}</span>
+              </div>
+              <button 
+                onClick={procesarCheckout} 
+                disabled={isProcessingOrder || carrito.length === 0}
+                style={{ width: '100%', backgroundColor: (isProcessingOrder || carrito.length === 0) ? '#D1D5DB' : '#E31E24', color: '#fff', padding: '18px', borderRadius: '15px', border: 'none', fontWeight: '900', fontSize: '1.1rem', cursor: (isProcessingOrder || carrito.length === 0) ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 15px rgba(227,30,36,0.2)' }}
+              >
+                {isProcessingOrder ? 'PROCESANDO...' : 'PAGAR PEDIDO'}
+              </button>
+              <p style={{ textAlign: 'center', fontSize: '0.75rem', color: '#9CA3AF', marginTop: '15px', fontWeight: '600' }}>Pago en efectivo al recibir en Cotuí</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MENÚ INFERIOR (Tabs) */}
+      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: '#FFFFFF', borderTop: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-around', alignItems: 'center', height: '75px', zIndex: 1000, paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div onClick={() => setActiveTab('inicio')} style={{ textAlign: 'center', color: activeTab === 'inicio' ? '#E31E24' : '#9CA3AF', cursor: 'pointer', flex: 1 }}>
+          <IconHome active={activeTab === 'inicio'} />
+          <div style={{ fontSize: '0.75rem', fontWeight: activeTab === 'inicio' ? '800' : '600', marginTop: '4px' }}>Inicio</div>
+        </div>
+        <div onClick={() => setIsCartOpen(true)} style={{ textAlign: 'center', color: '#9CA3AF', cursor: 'pointer', flex: 1, position: 'relative' }}>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <IconOrders active={false} />
+            {carrito.length > 0 && <span style={{ position: 'absolute', top: '-5px', right: '-8px', backgroundColor: '#E31E24', color: '#fff', fontSize: '0.6rem', fontWeight: 'bold', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{carrito.length}</span>}
+          </div>
+          <div style={{ fontSize: '0.75rem', marginTop: '4px', fontWeight: '600' }}>Canasta</div>
+        </div>
+        <div onClick={() => setActiveTab('wallet')} style={{ textAlign: 'center', color: activeTab === 'wallet' ? '#E31E24' : '#9CA3AF', cursor: 'pointer', flex: 1 }}>
+          <IconWallet active={activeTab === 'wallet'} />
+          <div style={{ fontSize: '0.75rem', fontWeight: activeTab === 'wallet' ? '800' : '600', marginTop: '4px' }}>Billetera</div>
+        </div>
+        <div onClick={() => setActiveTab('perfil')} style={{ textAlign: 'center', color: activeTab === 'perfil' ? '#E31E24' : '#9CA3AF', cursor: 'pointer', flex: 1 }}>
+          <IconProfile active={activeTab === 'perfil'} />
+          <div style={{ fontSize: '0.75rem', fontWeight: activeTab === 'perfil' ? '800' : '600', marginTop: '4px' }}>Perfil</div>
+        </div>
+      </nav>
+
+      <style>{`
+        @keyframes slideInRight { 0% { transform: translateX(100%); } 100% { transform: translateX(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        input::placeholder, textarea::placeholder { color: '#9CA3AF'; opacity: 1; }
+      `}</style>
+    </div>
+  );
+}
