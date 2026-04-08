@@ -22,6 +22,10 @@ const IconHome = ({ active }) => (
 const IconTruck = ({ active }) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? "#E31E24" : "#9CA3AF"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
 );
+// AQUI ESTA EL ICONO QUE FALTABA
+const IconOrders = ({ active }) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? "#E31E24" : "#9CA3AF"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+);
 const IconProfile = ({ active }) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? "#E31E24" : "#9CA3AF"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
 );
@@ -55,7 +59,7 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Navegación
-  const [activeTab, setActiveTab] = useState('inicio'); // inicio | pedidos | perfil
+  const [activeTab, setActiveTab] = useState('inicio'); 
   
   // Usuario y Perfil
   const [user, setUser] = useState(null);
@@ -98,7 +102,6 @@ export default function App() {
   // 3. EFECTO DE CARGA INICIAL (Mount)
   // ==========================================
   useEffect(() => {
-    // A. Recuperar datos locales de sesión y pedidos
     const token = localStorage.getItem('kolma_access_token');
     const savedName = localStorage.getItem('kolma_user_name');
     const savedEmail = localStorage.getItem('kolma_user_email');
@@ -131,7 +134,6 @@ export default function App() {
       }
     }
 
-    // B. Descargar Catálogo de Shopify
     async function fetchData() {
       if(!domain || !accessToken) { 
         setErrorShopify("Faltan las credenciales de Shopify.");
@@ -226,7 +228,6 @@ export default function App() {
         if (telefonoValido.length < 11) throw new Error("Por favor, ingresa un teléfono válido de 10 dígitos.");
         if (formData.direccion.length < 5) throw new Error("Por favor, ingresa una dirección completa en Cotuí.");
         
-        // TRUCO: Guardamos la dirección en el Apellido (lastName) para evitar los bloqueos de Shopify
         const registerResponse = await fetch(shopifyUrl, {
           method: 'POST', 
           headers,
@@ -284,7 +285,6 @@ export default function App() {
         
         const userToken = data.customerAccessTokenCreate.customerAccessToken.accessToken;
         
-        // DESCARGAR DATOS DE LA NUBE
         const profileResponse = await fetch(shopifyUrl, {
           method: 'POST', 
           headers,
@@ -308,7 +308,7 @@ export default function App() {
           nombre: customerInfo.firstName || formData.email.split('@')[0],
           email: customerInfo.email,
           telefono: customerInfo.phone || "",
-          direccion: customerInfo.lastName || "" // Recuperamos la dirección del Apellido
+          direccion: customerInfo.lastName || "" 
         };
 
         localStorage.setItem('kolma_access_token', userToken);
@@ -418,17 +418,12 @@ export default function App() {
       return prevCarrito.map(item => {
         if (item.variantId === variantId) {
           const nuevaCantidad = item.quantity + cambio;
-          // Si la cantidad llega a cero, el item se convierte en null para luego filtrarlo
           if (nuevaCantidad <= 0) return null;
           return { ...item, quantity: nuevaCantidad };
         }
         return item;
-      }).filter(item => item !== null); // Elimina los productos con cantidad 0
+      }).filter(item => item !== null); 
     });
-  };
-
-  const eliminarDelCarrito = (variantId) => {
-    setCarrito(prev => prev.filter(item => item.variantId !== variantId));
   };
 
   const calcularSubtotal = () => {
@@ -460,7 +455,7 @@ export default function App() {
   const aplicarCupon = () => {
     if (cupon.toUpperCase() === 'KOLMA10') {
       setDescuentoAplicado(calcularSubtotal() * 0.10);
-      alert("¡Cupón del 10% aplicado!");
+      alert("¡Cupón del 10% aplicado exitosamente!");
     } else {
       alert("Cupón inválido o expirado.");
       setDescuentoAplicado(0);
@@ -473,7 +468,6 @@ export default function App() {
     const totalVenta = calcularTotalFinal();
     
     try {
-      // Enviar a la ruta de Vercel para el correo
       const res = await fetch('/api/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -486,7 +480,6 @@ export default function App() {
         })
       });
       
-      // Crear registro de pedido local
       const nuevoPedido = { 
         id: `KRD-${Math.floor(Math.random() * 900000) + 100000}`, 
         items: [...carrito], 
@@ -501,14 +494,12 @@ export default function App() {
       setPedidoActual(nuevoPedido);
       localStorage.setItem('kolma_last_order', JSON.stringify(nuevoPedido));
       
-      // Limpiar estados
       setCarrito([]); 
       setCupon('');
       setDescuentoAplicado(0);
       setIsCartOpen(false);
       setCheckoutStep('cart');
       
-      // Mostrar Modal de Éxito
       setShowSuccessModal(true);
       
     } catch (e) { 
@@ -697,7 +688,6 @@ export default function App() {
       {activeTab === 'inicio' && (
         <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
           
-          {/* Hero Banner Oscuro */}
           <section 
             style={{ 
               backgroundColor: '#000000', 
@@ -767,7 +757,6 @@ export default function App() {
             </div>
           </section>
 
-          {/* Menú de Pasillos (Categorías Deslizables) */}
           <section style={{ maxWidth: '1200px', margin: '25px auto 0', padding: '0 20px' }}>
             <div 
               style={{ 
@@ -803,10 +792,8 @@ export default function App() {
             </div>
           </section>
 
-          {/* Grid Principal de Productos */}
           <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
             
-            {/* Aviso de Error si Shopify falla */}
             {errorShopify && (
               <div 
                 style={{ 
@@ -934,7 +921,6 @@ export default function App() {
                 boxShadow: '0 10px 30px rgba(0,0,0,0.05)' 
               }}
             >
-              {/* Cabecera del Pedido */}
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #E5E7EB', paddingBottom: '20px', marginBottom: '20px' }}>
                 <div>
                   <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ORDEN NO.</span>
@@ -949,7 +935,6 @@ export default function App() {
                 </div>
               </div>
               
-              {/* Barra de Progreso Visual */}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', position: 'relative' }}>
                 <div style={{ position: 'absolute', top: '10px', left: '10%', right: '10%', height: '3px', backgroundColor: '#F3F4F6', zIndex: 1 }}></div>
                 <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
@@ -966,7 +951,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Lista de Artículos */}
               <div style={{ marginBottom: '25px' }}>
                 <p style={{ fontSize: '0.9rem', color: '#111', fontWeight: '800', margin: '0 0 15px 0' }}>Resumen de compra</p>
                 {pedidoActual.items.map((item, i) => (
@@ -977,7 +961,6 @@ export default function App() {
                 ))}
               </div>
               
-              {/* Totales */}
               <div style={{ backgroundColor: '#F9FAFB', padding: '20px', borderRadius: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem', color: '#6B7280', fontWeight: '600' }}>
                   <span>Subtotal</span>
@@ -1240,7 +1223,6 @@ export default function App() {
               animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)' 
             }}
           >
-            {/* Header del Drawer */}
             <div 
               style={{ 
                 padding: '25px', 
@@ -1272,7 +1254,6 @@ export default function App() {
               </div>
             </div>
             
-            {/* Contenido Deslizable */}
             <div 
               style={{ 
                 flex: 1, 
@@ -1318,7 +1299,6 @@ export default function App() {
                           </p>
                         </div>
                         
-                        {/* Controles de Cantidad Completos (+ / - / Trash) */}
                         <div 
                           style={{ 
                             display: 'flex', 
@@ -1374,7 +1354,6 @@ export default function App() {
               {checkoutStep === 'payment' && (
                 <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
                   
-                  {/* Resumen de Envío */}
                   <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', marginBottom: '25px', border: '1px solid #E5E7EB', boxShadow: '0 4px 10px rgba(0,0,0,0.02)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                       <h4 style={{ margin: 0, fontWeight: '900', color: '#111', fontSize: '1.1rem' }}>Enviar a:</h4>
@@ -1385,7 +1364,6 @@ export default function App() {
                     <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', color: '#6B7280', fontWeight: '700' }}>Cel: {user.telefono}</p>
                   </div>
 
-                  {/* Sección de Cupón */}
                   <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', marginBottom: '25px', border: '1px solid #E5E7EB', boxShadow: '0 4px 10px rgba(0,0,0,0.02)' }}>
                     <h4 style={{ margin: '0 0 15px 0', fontWeight: '900', color: '#111', fontSize: '1.1rem' }}>Código de Descuento</h4>
                     <div style={{ display: 'flex', gap: '10px' }}>
@@ -1406,10 +1384,8 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Selección de Método de Pago */}
                   <h4 style={{ margin: '0 0 15px 0', fontWeight: '900', fontSize: '1.1rem', color: '#111' }}>Método de Pago</h4>
                   
-                  {/* Opción Efectivo (Activa) */}
                   <div 
                     onClick={() => setMetodoPago('efectivo')} 
                     style={{ 
@@ -1433,7 +1409,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Opción Tarjeta (Deshabilitada con Mensaje) */}
                   <div 
                     onClick={() => setMetodoPago('tarjeta')} 
                     style={{ 
@@ -1465,7 +1440,6 @@ export default function App() {
               )}
             </div>
 
-            {/* Footer Fijo del Drawer (Totales y Botones) */}
             <div 
               style={{ 
                 padding: '25px', 
@@ -1474,7 +1448,6 @@ export default function App() {
                 boxShadow: '0 -4px 20px rgba(0,0,0,0.05)'
               }}
             >
-              {/* Desglose de Totales solo visible en el paso de pago */}
               {checkoutStep === 'payment' && (
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#6B7280', fontWeight: '600' }}>
