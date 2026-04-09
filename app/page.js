@@ -944,7 +944,7 @@ export default function App() {
       {/* ------------------------------------------- */}
       {/* VISTA 2: MIS PEDIDOS (Reemplazo de Billetera) */}
       {/* ------------------------------------------- */}
-    {activeTab === 'pedidos' && (
+{activeTab === 'pedidos' && (
   <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
     <h2 style={{ fontWeight: '900', marginBottom: '25px', fontSize: '2.4rem', color: '#111', letterSpacing: '-1px' }}>
       Mi Pedido en Vivo
@@ -966,7 +966,7 @@ export default function App() {
             onClick={() => window.open(pedidoActual.trackingUrl, '_blank')} 
             style={{ 
               width: '100%', 
-              backgroundColor: '#E31E24', // Rojo vibrante para que resalte
+              backgroundColor: '#E31E24', 
               color: '#fff', 
               padding: '22px', 
               borderRadius: '20px', 
@@ -983,12 +983,12 @@ export default function App() {
               transition: 'transform 0.2s'
             }}
           >
-            <IconTruck active={true} /> 📍 RASTREAR MOTORISTA EN EL MAPA
+            <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
           </button>
         ) : (
           <div style={{ padding: '15px', backgroundColor: '#F9FAFB', borderRadius: '15px', textAlign: 'center', marginBottom: '30px', border: '1px dashed #E5E7EB' }}>
             <p style={{ margin: 0, fontSize: '0.9rem', color: '#6B7280', fontWeight: '700' }}>
-              Esperando asignación de motorista para el mapa...
+              Esperando asignación de motorista para habilitar mapa...
             </p>
           </div>
         )}
@@ -998,12 +998,19 @@ export default function App() {
             <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>NÚMERO DE ORDEN</span>
             <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.4rem', color: '#111' }}>#{pedidoActual.id}</p>
             
-            {/* FIX DE HORA: Forzamos la zona horaria de RD para evitar que salga en el futuro */}
-            <p style={{ margin: '8px 0 0 0', fontSize: '0.9rem', color: '#E31E24', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            {/* FIX DE HORA: Si la fecha guardada es inválida o futura, forzamos la de RD ahora mismo */}
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', color: '#E31E24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '1.2rem' }}>⏰</span> {
-                pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM') 
+                pedidoActual.fecha && (pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM'))
                 ? pedidoActual.fecha 
-                : new Date().toLocaleString("es-DO", {timeZone: "America/Santo_Domingo"})
+                : new Date().toLocaleString("es-DO", {
+                    timeZone: "America/Santo_Domingo",
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    hour12: true,
+                    day: '2-digit',
+                    month: '2-digit'
+                  })
               }
             </p>
           </div>
@@ -1037,7 +1044,8 @@ export default function App() {
             <div style={{ 
               width: '26px', height: '26px', borderRadius: '50%', 
               backgroundColor: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', 
-              border: '5px solid #fff', margin: '0 auto 10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' 
+              border: '5px solid #fff', margin: '0 auto 10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+              transition: 'background-color 0.5s'
             }}></div>
             <span style={{ fontSize: '0.75rem', fontWeight: '800', color: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>Preparando</span>
           </div>
@@ -1046,7 +1054,8 @@ export default function App() {
             <div style={{ 
               width: '26px', height: '26px', borderRadius: '50%', 
               backgroundColor: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', 
-              border: '5px solid #fff', margin: '0 auto 10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' 
+              border: '5px solid #fff', margin: '0 auto 10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+              transition: 'background-color 0.5s'
             }}></div>
             <span style={{ fontSize: '0.75rem', fontWeight: '800', color: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>En camino</span>
           </div>
@@ -1055,7 +1064,7 @@ export default function App() {
         {/* --- RESUMEN DE PRODUCTOS --- */}
         <div style={{ marginBottom: '30px', backgroundColor: '#F9FAFB', padding: '25px', borderRadius: '24px' }}>
           <p style={{ fontSize: '1rem', color: '#111', fontWeight: '900', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            🛒 Resumen de tu compra
+            <IconOrders active={true} /> Resumen de tu compra
           </p>
           {pedidoActual.items.map((item, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', marginBottom: '12px', color: '#4B5563' }}>
@@ -1076,7 +1085,7 @@ export default function App() {
 
         <div style={{ textAlign: 'center', borderTop: '1px solid #F3F4F6', paddingTop: '20px' }}>
           <p style={{ fontSize: '0.8rem', fontWeight: '900', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
-            Método: {pedidoActual.metodo === 'efectivo' ? 'Efectivo al recibir' : 'Tarjeta Online'}
+            Método: {pedidoActual.metodo === 'efectivo' ? 'Efectivo al recibir' : 'Pago Online'}
           </p>
         </div>
       </div>
@@ -1099,7 +1108,6 @@ export default function App() {
       </div>
     )}
   </section>
-)}
 )}
       {/* ------------------------------------------- */}
       {/* VISTA 3: PERFIL DE USUARIO */}
