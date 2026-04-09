@@ -5,27 +5,21 @@ export async function POST(request) {
     const body = await request.json();
     const { items, customer, total, metodoPago } = body;
 
-    // 1. ID Único Maestro
+    // Generar ID único para Kolma
     const orderId = `KRD-${Math.floor(Math.random() * 900000) + 100000}`;
-    const listaProductosTexto = items.map(i => `${i.quantity}x ${i.title}`).join(', ');
 
-    // 2. Formatear productos para Shipday
+    // Limpiar productos para Shipday
     const shipdayItems = items.map(item => ({
       name: item.title.substring(0, 50),
       unitPrice: parseFloat(item.price),
       quantity: parseInt(item.quantity)
     }));
 
-    // 3. Obtener fecha y hora actual (ISO) para evitar el error de los "10 días"
-    const ahora = new Date().toISOString();
-    const fechaISO = ahora.split('T')[0];
-    const horaISO = ahora.split('T')[1].split('.')[0];
-
-    // 4. Envío a Shipday
-    const shipdayPromise = fetch("https://api.shipday.com/orders", {
+    // LLAMADA A SHIPDAY
+    const shipdayRes = await fetch("https://api.shipday.com/orders", {
       method: "POST",
       headers: {
-        "Authorization": "Basic FzKmvwy7mB.DgaRNOaMv19P28urcMEb",
+        "Authorization": "Basic FzKmvwy7mB.DgaRNOaMv19P28urcMEb", // Tu Key
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -37,26 +31,29 @@ export async function POST(request) {
         restaurantName: "Kolma RD",
         restaurantAddress: "Cotuí, RD", 
         totalOrderCost: parseFloat(total),
-        deliveryInstruction: metodoPago === 'efectivo' ? 'COBRAR EFECTIVO EN COTUÍ' : 'PAGADO',
-        orderItem: shipdayItems,
-        expectedDeliveryDate: fechaISO,
-        expectedDeliveryTime: horaISO,
-        orderStatus: 'OPEN' 
+        deliveryInstruction: metodoPago === 'efectivo' ? 'COBRAR EFECTIVO' : 'YA PAGADO',
+        orderItem: shipdayItems
       })
     });
 
-    // 5. Envío a Formspree (Correo)
-    const formspreePromise = fetch("https://formspree.io/f/xjgpldag", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({
-        Pedido: orderId, Cliente: customer.nombre, WhatsApp: customer.telefono,
-        Direccion: customer.direccion, Productos: listaProductosTexto, Total: total
-      })
-    });
+    const shipdayData = await shipdayRes.json();
 
-    await Promise.all([formspreePromise, shipdayPromise]);
-    return NextResponse.json({ success: true, orderId: orderId });
+    if (shipdayRes.ok) {
+      // ENVIAR TAMBIÉN A FORMSPREE (Opcional para respaldo)
+      await fetch("https://formspree.io/f/xjgpldag", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ID: orderId, Cliente: customer.nombre, Total: total })
+      });
+
+      return NextResponse.json({ 
+        success: true, 
+        orderId: orderId,
+        trackingUrl: shipdayData.trackingLink // ESTE ES EL LINK DEL MAPA
+      });
+    } else {
+      return NextResponse.json({ success: false, error: "Error en Shipday" }, { status: 400 });
+    }
 
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
