@@ -944,114 +944,185 @@ export default function App() {
       {/* ------------------------------------------- */}
       {/* VISTA 2: MIS PEDIDOS (Reemplazo de Billetera) */}
       {/* ------------------------------------------- */}
-      {activeTab === 'pedidos' && (
-        <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
-          <h2 style={{ fontWeight: '900', marginBottom: '25px', fontSize: '2rem', color: '#111' }}>
-            Mis Pedidos
-          </h2>
+     {activeTab === 'pedidos' && (
+  <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
+    <h2 style={{ fontWeight: '900', marginBottom: '25px', fontSize: '2.4rem', color: '#111', letterSpacing: '-1px' }}>
+      Mi Pedido en Vivo
+    </h2>
+    
+    {pedidoActual ? (
+      <div 
+        style={{ 
+          backgroundColor: '#fff', 
+          borderRadius: '32px', 
+          padding: '35px', 
+          border: '1px solid #E5E7EB', 
+          boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
+        }}
+      >
+        {/* --- BOTÓN DE RASTREO SHIPDAY (EL MÁS IMPORTANTE) --- */}
+        {pedidoActual.trackingUrl && (
+          <button 
+            onClick={() => window.open(pedidoActual.trackingUrl, '_blank')} 
+            style={{ 
+              width: '100%', 
+              backgroundColor: '#111', 
+              color: '#fff', 
+              padding: '22px', 
+              borderRadius: '20px', 
+              border: 'none', 
+              fontWeight: '900', 
+              fontSize: '1.1rem', 
+              marginBottom: '30px', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '12px',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+              transition: 'transform 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
+          </button>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #F3F4F6', paddingBottom: '20px', marginBottom: '25px' }}>
+          <div>
+            <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ORDEN EN CURSO</span>
+            <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.4rem', color: '#111' }}>#{pedidoActual.id}</p>
+            <p style={{ margin: '5px 0 0 0', fontSize: '0.85rem', color: '#6B7280', fontWeight: '600' }}>{pedidoActual.fecha}</p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ESTATUS ACTUAL</span>
+            <div style={{ 
+              backgroundColor: pedidoActual.estado === 'Entregado' ? '#DCFCE7' : '#FEF2F2', 
+              color: pedidoActual.estado === 'Entregado' ? '#16A34A' : '#E31E24', 
+              padding: '8px 16px', 
+              borderRadius: '12px', 
+              fontWeight: '900', 
+              fontSize: '0.9rem', 
+              marginTop: '8px', 
+              display: 'inline-block',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.03)'
+            }}>
+              {pedidoActual.estado.toUpperCase()}
+            </div>
+          </div>
+        </div>
+        
+        {/* --- BARRA DE PROGRESO DINÁMICA --- */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', position: 'relative' }}>
+          <div style={{ position: 'absolute', top: '12px', left: '10%', right: '10%', height: '4px', backgroundColor: '#F3F4F6', zIndex: 1 }}></div>
           
-          {pedidoActual ? (
-            <div 
-              style={{ 
-                backgroundColor: '#fff', 
-                borderRadius: '24px', 
-                padding: '30px', 
-                border: '1px solid #E5E7EB', 
-                boxShadow: '0 10px 30px rgba(0,0,0,0.05)' 
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #E5E7EB', paddingBottom: '20px', marginBottom: '20px' }}>
-                <div>
-                  <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ORDEN NO.</span>
-                  <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.2rem', color: '#111' }}>{pedidoActual.id}</p>
-                  <p style={{ margin: '5px 0 0 0', fontSize: '0.8rem', color: '#6B7280' }}>{pedidoActual.fecha}</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ESTATUS</span>
-                  <div style={{ backgroundColor: pedidoActual.estado === 'Entregado' ? '#DCFCE7' : '#FEF2F2', color: pedidoActual.estado === 'Entregado' ? '#16A34A' : '#E31E24', padding: '6px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', marginTop: '5px', display: 'inline-block' }}>
-                    {pedidoActual.estado}
-                  </div>
-                </div>
-              </div>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '10px', left: '10%', right: '10%', height: '3px', backgroundColor: '#F3F4F6', zIndex: 1 }}></div>
-                <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: ['Recibido', 'Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', border: '3px solid #fff', margin: '0 auto 8px', transition: 'all 0.5s' }}></div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#111' }}>Recibido</span>
-                </div>
-                <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', border: '3px solid #fff', margin: '0 auto 8px', transition: 'all 0.5s' }}></div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>Preparando</span>
-                </div>
-                <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', border: '3px solid #fff', margin: '0 auto 8px', transition: 'all 0.5s' }}></div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>En camino</span>
-                </div>
-              </div>
+          {/* Paso 1: Recibido */}
+          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
+            <div style={{ 
+              width: '26px', height: '26px', borderRadius: '50%', 
+              backgroundColor: '#E31E24', 
+              border: '5px solid #fff', margin: '0 auto 10px', 
+              boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+              transition: 'all 0.5s ease'
+            }}></div>
+            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#111' }}>Recibido</span>
+          </div>
 
-              <div style={{ marginBottom: '25px' }}>
-                <p style={{ fontSize: '0.9rem', color: '#111', fontWeight: '800', margin: '0 0 15px 0' }}>Resumen de compra</p>
-                {pedidoActual.items.map((item, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', marginBottom: '10px', color: '#4B5563' }}>
-                    <span style={{ fontWeight: '600' }}><span style={{ color: '#E31E24', fontWeight: '900', marginRight: '5px' }}>{item.quantity}x</span> {item.title}</span>
-                    <span style={{ fontWeight: '800', color: '#111' }}>RD${(item.price * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-              
-              <div style={{ backgroundColor: '#F9FAFB', padding: '20px', borderRadius: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem', color: '#6B7280', fontWeight: '600' }}>
-                  <span>Subtotal</span>
-                  <span>RD$ {pedidoActual.subtotal.toFixed(2)}</span>
-                </div>
-                {pedidoActual.descuento > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.9rem', color: '#22C55E', fontWeight: '800' }}>
-                    <span>Descuento Aplicado</span>
-                    <span>- RD$ {pedidoActual.descuento.toFixed(2)}</span>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #E5E7EB' }}>
-                  <span style={{ fontWeight: '900', color: '#111' }}>TOTAL A PAGAR</span>
-                  <span style={{ fontWeight: '900', fontSize: '1.4rem', color: '#E31E24' }}>RD$ {pedidoActual.total.toFixed(2)}</span>
-                </div>
-                <div style={{ textAlign: 'center', marginTop: '15px' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase' }}>
-                    MÉTODO: {pedidoActual.metodo === 'efectivo' ? 'Pago al recibir' : 'Tarjeta'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '60px 20px', backgroundColor: '#fff', borderRadius: '24px', border: '1px solid #E5E7EB' }}>
-              <div style={{ backgroundColor: '#F3F4F6', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#9CA3AF' }}>
-                <IconTruck active={false} />
-              </div>
-              <h3 style={{ margin: '0 0 10px 0', color: '#111', fontWeight: '900', fontSize: '1.3rem' }}>No tienes pedidos activos</h3>
-              <p style={{ fontSize: '1rem', color: '#6B7280', marginBottom: '25px', lineHeight: '1.5' }}>
-                Tus compras recientes y su estatus de envío aparecerán en esta sección.
-              </p>
-              <button 
-                onClick={() => setActiveTab('inicio')} 
-                style={{ 
-                  backgroundColor: '#111', 
-                  color: '#fff', 
-                  padding: '16px 30px', 
-                  borderRadius: '15px', 
-                  border: 'none', 
-                  fontWeight: '900', 
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
-                }}
-              >
-                Ir a comprar
-              </button>
-            </div>
-          )}
-        </section>
-      )}
+          {/* Paso 2: Preparando (Se activa con ACCEPTED o STARTED en Shipday) */}
+          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
+            <div style={{ 
+              width: '26px', height: '26px', borderRadius: '50%', 
+              backgroundColor: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', 
+              border: '5px solid #fff', margin: '0 auto 10px', 
+              boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+              transition: 'all 0.5s ease'
+            }}></div>
+            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>Preparando</span>
+          </div>
 
+          {/* Paso 3: En camino (Se activa con PICKED_UP en Shipday) */}
+          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
+            <div style={{ 
+              width: '26px', height: '26px', borderRadius: '50%', 
+              backgroundColor: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', 
+              border: '5px solid #fff', margin: '0 auto 10px', 
+              boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+              transition: 'all 0.5s ease'
+            }}></div>
+            <span style={{ fontSize: '0.75rem', fontWeight: '800', color: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>En camino</span>
+          </div>
+        </div>
+
+        {/* --- RESUMEN DE PRODUCTOS --- */}
+        <div style={{ marginBottom: '30px', backgroundColor: '#F9FAFB', padding: '25px', borderRadius: '24px' }}>
+          <p style={{ fontSize: '1rem', color: '#111', fontWeight: '900', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <IconOrders active={true} /> Resumen de tu canasta
+          </p>
+          {pedidoActual.items.map((item, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', marginBottom: '12px', color: '#4B5563' }}>
+              <span style={{ fontWeight: '600' }}>
+                <b style={{ color: '#E31E24', fontWeight: '900', marginRight: '8px' }}>{item.quantity}x</b> 
+                {item.title}
+              </span>
+              <span style={{ fontWeight: '900', color: '#111' }}>RD${(item.price * item.quantity).toFixed(0)}</span>
+            </div>
+          ))}
+          
+          <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.95rem', color: '#6B7280', fontWeight: '700' }}>
+              <span>Subtotal</span>
+              <span>RD$ {pedidoActual.subtotal.toFixed(0)}</span>
+            </div>
+            {pedidoActual.descuento > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.95rem', color: '#22C55E', fontWeight: '900' }}>
+                <span>Ahorro con Cupón</span>
+                <span>- RD$ {pedidoActual.descuento.toFixed(0)}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
+              <span style={{ fontWeight: '900', color: '#111', fontSize: '1.2rem' }}>TOTAL</span>
+              <span style={{ fontWeight: '900', fontSize: '1.8rem', color: '#E31E24', letterSpacing: '-1px' }}>RD$ {pedidoActual.total.toFixed(0)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'center', borderTop: '1px solid #F3F4F6', paddingTop: '20px' }}>
+          <p style={{ fontSize: '0.8rem', fontWeight: '900', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
+            Pago: {pedidoActual.metodo === 'efectivo' ? 'Efectivo al recibir' : 'Tarjeta Online'}
+          </p>
+        </div>
+      </div>
+    ) : (
+      /* --- ESTADO VACÍO --- */
+      <div style={{ textAlign: 'center', padding: '80px 30px', backgroundColor: '#fff', borderRadius: '32px', border: '1px solid #E5E7EB', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+        <div style={{ backgroundColor: '#FEE2E2', width: '100px', height: '100px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 30px', color: '#E31E24' }}>
+          <IconTruck active={true} />
+        </div>
+        <h3 style={{ margin: '0 0 15px 0', color: '#111', fontWeight: '900', fontSize: '1.6rem', letterSpacing: '-0.5px' }}>¿Tienes hambre?</h3>
+        <p style={{ fontSize: '1.1rem', color: '#6B7280', marginBottom: '35px', lineHeight: '1.6' }}>
+          Aún no tienes pedidos en camino. ¡Pide ahora en Kolma RD y recíbelo en minutos!
+        </p>
+        <button 
+          onClick={() => setActiveTab('inicio')} 
+          style={{ 
+            backgroundColor: '#111', 
+            color: '#fff', 
+            padding: '20px 40px', 
+            borderRadius: '20px', 
+            border: 'none', 
+            fontWeight: '900', 
+            fontSize: '1.1rem',
+            cursor: 'pointer',
+            boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
+          }}
+        >
+          Explorar Productos
+        </button>
+      </div>
+    )}
+  </section>
+)}
       {/* ------------------------------------------- */}
       {/* VISTA 3: PERFIL DE USUARIO */}
       {/* ------------------------------------------- */}
