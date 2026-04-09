@@ -8,21 +8,19 @@ export async function POST(request) {
     const orderId = `KRD-${Math.floor(Math.random() * 900000) + 100000}`;
     const listaProductosTexto = items.map(i => `${i.quantity}x ${i.title}`).join(', ');
 
+    // --- CÁLCULO DE HORA DOMINICANA (GMT-4) ---
+    const ahora = new Date();
+    // Ajustamos manualmente a la zona horaria de RD por si el servidor está en otro país
+    const offsetRD = -4; 
+    const horaRD = new Date(ahora.getTime() + (offsetRD * 3600000));
+    const fechaISO = ahora.toISOString().split('T')[0]; // YYYY-MM-DD
+    const horaISO = ahora.toISOString().split('T')[1].split('.')[0]; // HH:MM:SS
+
     const shipdayItems = items.map(item => ({
       name: item.title.substring(0, 50),
       unitPrice: parseFloat(item.price),
       quantity: parseInt(item.quantity)
     }));
-
-    const formspreePromise = fetch("https://formspree.io/f/xjgpldag", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({
-        Pedido_ID: orderId, Cliente: customer.nombre, WhatsApp: customer.telefono,
-        Direccion: customer.direccion, Productos: listaProductosTexto, Total: total,
-        Metodo: metodoPago === 'efectivo' ? 'Efectivo' : 'Tarjeta'
-      })
-    });
 
     const shipdayPromise = fetch("https://api.shipday.com/orders", {
       method: "POST",
@@ -41,9 +39,18 @@ export async function POST(request) {
         totalOrderCost: parseFloat(total),
         deliveryInstruction: metodoPago === 'efectivo' ? 'COBRAR EFECTIVO' : 'YA PAGADO',
         orderItem: shipdayItems,
-        // ESTO ES LO QUE IMPORTA:
+        // FORZAMOS LA HORA ACTUAL PARA QUE NO SE VAYA AL FUTURO
+        expectedDeliveryDate: fechaISO,
+        expectedDeliveryTime: horaISO,
         orderStatus: 'OPEN' 
       })
+    });
+
+    // Disparamos Shipday y el correo
+    const formspreePromise = fetch("https://formspree.io/f/xjgpldag", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ Pedido_ID: orderId, Cliente: customer.nombre, Productos: listaProductosTexto, Total: total })
     });
 
     const [resForm, resShip] = await Promise.all([formspreePromise, shipdayPromise]);
@@ -52,10 +59,11 @@ export async function POST(request) {
     if (resShip.ok) {
       return NextResponse.json({ success: true, orderId: orderId });
     } else {
-      return NextResponse.json({ success: false, error: "Shipday rechazo el pedido" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Error en Shipday" }, { status: 400 });
     }
 
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+  
