@@ -1103,16 +1103,18 @@ export default function App() {
           onClick={() => setActiveTab('inicio')} 
           style={{ backgroundColor: '#111', color: '#fff', padding: '20px 40px', borderRadius: '20px', border: 'none', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer' }}
         >
-   Ir a la tienda
+// ... viene del botón de "Ir a comprar"
+        Ir a la tienda
         </button>
       </div>
     )}
   </section>
 )}
 
+{/* Aquí ya no debe haber NINGÚN ")}" extra */}
+
 {/* ------------------------------------------- */}
 {/* VISTA 3: PERFIL DE USUARIO */}
-{/* ------------------------------------------- */}
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
             <h2 style={{ fontWeight: '900', fontSize: '2rem', margin: 0, color: '#111' }}>Mi Perfil</h2>
