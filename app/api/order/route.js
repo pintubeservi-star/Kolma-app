@@ -3,43 +3,38 @@ import { NextResponse } from 'next/server';
 export async function POST(request) {
   try {
     const body = await request.json();
-    // Extraemos todos los datos que nos mandó la App
     const { items, customer, total, metodoPago } = body;
 
-    // 1. CREAMOS UN NÚMERO DE PEDIDO MAESTRO
-    // Este número será el mismo para el correo, para Shipday y para la App del cliente
+    // 1. Generamos el ID único para que todos hablen el mismo idioma
     const orderId = `KRD-${Math.floor(Math.random() * 900000) + 100000}`;
 
-    // Preparamos el resumen de texto para tu correo
-    const listaProductos = items.map(i => `${i.quantity}x ${i.title}`).join(', ');
+    // 2. Preparamos la lista de productos para el correo (Formspree)
+    const listaProductosTexto = items.map(i => `${i.quantity}x ${i.title}`).join(', ');
 
-    // 2. TAREA A: ENVIAR EL CORREO A FORMSPREE
+    // 3. PREPARAMOS LOS PRODUCTOS PARA SHIPDAY (Paso crítico)
+    // Shipday exige que 'unitPrice' sea número y 'quantity' sea número entero.
+    const shipdayItems = items.map(item => ({
+      name: item.title.substring(0, 50), // Limitamos el nombre por si es muy largo
+      unitPrice: parseFloat(item.price),
+      quantity: parseInt(item.quantity)
+    }));
+
+    // 4. TAREA A: Enviar a Formspree (Tu correo)
     const formspreePromise = fetch("https://formspree.io/f/xjgpldag", {
       method: "POST",
-      headers: { 
-        "Content-Type": "application/json", 
-        "Accept": "application/json" 
-      },
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({
         Pedido_ID: orderId,
         Cliente: customer.nombre,
         WhatsApp: customer.telefono,
-        Direccion_Entrega: customer.direccion,
-        Productos: listaProductos,
-        Total: total || "0.00",
-        Metodo_Pago: metodoPago === 'efectivo' ? 'Pago contra entrega' : 'Tarjeta',
-        Nota: "PEDIDO DESDE APP"
+        Direccion: customer.direccion,
+        Productos: listaProductosTexto,
+        Total: total,
+        Metodo: metodoPago === 'efectivo' ? 'Efectivo (Contra entrega)' : 'Tarjeta'
       })
     });
 
-    // 3. TAREA B: ENVIAR LA ORDEN DIRECTA A SHIPDAY
-    // Convertimos la canasta al formato que el repartidor lee en su celular
-    const shipdayItems = items.map(item => ({
-      name: item.title,
-      unitPrice: parseFloat(item.price),
-      quantity: item.quantity
-    }));
-
+    // 5. TAREA B: Enviar a Shipday (Con los datos limpios)
     const shipdayPromise = fetch("https://api.shipday.com/orders", {
       method: "POST",
       headers: {
@@ -51,26 +46,31 @@ export async function POST(request) {
         customerName: customer.nombre,
         customerAddress: customer.direccion, 
         customerPhoneNumber: customer.telefono,
-        customerEmail: customer.email || "contacto@kolmard.com",
+        customerEmail: customer.email || "cliente@kolmard.com",
         restaurantName: "Kolma RD",
-        restaurantAddress: "Cotuí, República Dominicana", // Punto de origen
-        expectedDeliveryDate: "TODAY",
-        expectedDeliveryTime: "ASAP",
+        restaurantAddress: "Cotuí, República Dominicana", 
         totalOrderCost: parseFloat(total),
-        deliveryFee: 0,
-        orderItem: shipdayItems,
-        paymentMethod: metodoPago === 'efectivo' ? 'cash' : 'credit_card'
+        deliveryInstruction: metodoPago === 'efectivo' ? 'COBRAR EFECTIVO' : 'YA PAGADO',
+        orderItem: shipdayItems
       })
     });
 
-    // 4. EJECUTAMOS AMBAS TAREAS A LA VEZ (Para que la app no se quede cargando)
-    await Promise.all([formspreePromise, shipdayPromise]);
+    // Ejecutamos ambos al mismo tiempo
+    const [resForm, resShip] = await Promise.all([formspreePromise, shipdayPromise]);
 
-    // 5. RESPONDEMOS A LA APP CONFIRMANDO EL ÉXITO Y ENVIANDO EL NÚMERO DE PEDIDO
-    return NextResponse.json({ success: true, orderId: orderId });
+    // Log para que tú veas en la consola de Vercel si Shipday dio error
+    const shipDayData = await resShip.json();
+    console.log("Respuesta de Shipday:", shipDayData);
+
+    if (resShip.ok) {
+      return NextResponse.json({ success: true, orderId: orderId });
+    } else {
+      // Si Shipday falla, devolvemos el error para saber qué pasó
+      return NextResponse.json({ success: false, error: "Shipday rechazó el pedido" }, { status: 400 });
+    }
 
   } catch (error) {
-    console.error("Error procesando pedido:", error);
-    return NextResponse.json({ success: false, error: "Error en el servidor" }, { status: 500 });
+    console.error("Error crítico:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
