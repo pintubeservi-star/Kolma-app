@@ -194,6 +194,39 @@ export default function App() {
   }, [domain, accessToken]);
 
   // ==========================================
+  // NUEVO: RADAR DE SHIPDAY (Auto-Refresh de Estatus)
+  // ==========================================
+  useEffect(() => {
+    if (!pedidoActual || pedidoActual.estado === 'Entregado') return;
+
+    const rastreador = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/status?id=${pedidoActual.id}`);
+        const data = await res.json();
+        
+        if (data.success && data.shipdayStatus) {
+           let nuevoEstado = pedidoActual.estado;
+           const status = data.shipdayStatus;
+           
+           if (status === 'ACCEPTED' || status === 'STARTED') nuevoEstado = 'Preparando';
+           if (status === 'PICKED_UP' || status === 'READY_TO_DELIVER') nuevoEstado = 'En camino';
+           if (status === 'ALREADY_DELIVERED' || status === 'SUCCESSFUL') nuevoEstado = 'Entregado';
+
+           if (nuevoEstado !== pedidoActual.estado) {
+              const pedidoActualizado = { ...pedidoActual, estado: nuevoEstado };
+              setPedidoActual(pedidoActualizado);
+              localStorage.setItem('kolma_last_order', JSON.stringify(pedidoActualizado));
+           }
+        }
+      } catch(e) {
+        console.error("Error consultando estatus", e);
+      }
+    }, 15000); 
+
+    return () => clearInterval(rastreador);
+  }, [pedidoActual]);
+
+  // ==========================================
   // 4. LÓGICA DE USUARIOS Y AUTENTICACIÓN
   // ==========================================
   const formatPhone = (tel) => {
@@ -436,7 +469,7 @@ export default function App() {
   };
 
   // ==========================================
-  // 6. LÓGICA DE CHECKOUT Y PEDIDOS
+  // 6. LÓGICA DE CHECKOUT Y PEDIDOS ACTUALIZADA PARA SHIPDAY
   // ==========================================
   const avanzarAPago = () => {
     if (!user) { 
@@ -480,14 +513,20 @@ export default function App() {
         })
       });
       
+      const data = await res.json();
+      
+      if(!data.success) {
+        throw new Error("El servidor falló al procesar");
+      }
+      
       const nuevoPedido = { 
-        id: `KRD-${Math.floor(Math.random() * 900000) + 100000}`, 
+        id: data.orderId, // AHORA USAMOS EL ID DE VERCEL/SHIPDAY
         items: [...carrito], 
         subtotal: calcularSubtotal(),
         descuento: descuentoAplicado,
         total: totalVenta, 
         fecha: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(), 
-        estado: 'Recibido - Preparando',
+        estado: 'Recibido', // AHORA ARRANCA EN RECIBIDO LIMPIO
         metodo: metodoPago
       };
 
@@ -929,7 +968,7 @@ export default function App() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ESTATUS</span>
-                  <div style={{ backgroundColor: '#FEF2F2', color: '#E31E24', padding: '6px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', marginTop: '5px', display: 'inline-block' }}>
+                  <div style={{ backgroundColor: pedidoActual.estado === 'Entregado' ? '#DCFCE7' : '#FEF2F2', color: pedidoActual.estado === 'Entregado' ? '#16A34A' : '#E31E24', padding: '6px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', marginTop: '5px', display: 'inline-block' }}>
                     {pedidoActual.estado}
                   </div>
                 </div>
@@ -938,16 +977,16 @@ export default function App() {
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', position: 'relative' }}>
                 <div style={{ position: 'absolute', top: '10px', left: '10%', right: '10%', height: '3px', backgroundColor: '#F3F4F6', zIndex: 1 }}></div>
                 <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#E31E24', border: '3px solid #fff', margin: '0 auto 8px' }}></div>
+                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: ['Recibido', 'Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', border: '3px solid #fff', margin: '0 auto 8px', transition: 'all 0.5s' }}></div>
                   <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#111' }}>Recibido</span>
                 </div>
                 <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#F3F4F6', border: '3px solid #fff', margin: '0 auto 8px' }}></div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#9CA3AF' }}>Preparando</span>
+                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', border: '3px solid #fff', margin: '0 auto 8px', transition: 'all 0.5s' }}></div>
+                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>Preparando</span>
                 </div>
                 <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#F3F4F6', border: '3px solid #fff', margin: '0 auto 8px' }}></div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#9CA3AF' }}>En camino</span>
+                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', border: '3px solid #fff', margin: '0 auto 8px', transition: 'all 0.5s' }}></div>
+                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>En camino</span>
                 </div>
               </div>
 
