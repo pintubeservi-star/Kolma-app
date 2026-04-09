@@ -1103,18 +1103,16 @@ export default function App() {
           onClick={() => setActiveTab('inicio')} 
           style={{ backgroundColor: '#111', color: '#fff', padding: '20px 40px', borderRadius: '20px', border: 'none', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer' }}
         >
-          Ir a la tienda
+   Ir a la tienda
         </button>
       </div>
     )}
   </section>
 )}
 
-     {/* ------------------------------------------- */}
-      {/* VISTA 3: PERFIL DE USUARIO */}
-      {/* ------------------------------------------- */}
-      {activeTab === 'perfil' && (
-        <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
+{/* ------------------------------------------- */}
+{/* VISTA 3: PERFIL DE USUARIO */}
+{/* ------------------------------------------- */}
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
             <h2 style={{ fontWeight: '900', fontSize: '2rem', margin: 0, color: '#111' }}>Mi Perfil</h2>
