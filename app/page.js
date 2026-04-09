@@ -944,7 +944,7 @@ export default function App() {
       {/* ------------------------------------------- */}
       {/* VISTA 2: MIS PEDIDOS (Reemplazo de Billetera) */}
       {/* ------------------------------------------- */}
-     {activeTab === 'pedidos' && (
+    {activeTab === 'pedidos' && (
   <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
     <h2 style={{ fontWeight: '900', marginBottom: '25px', fontSize: '2.4rem', color: '#111', letterSpacing: '-1px' }}>
       Mi Pedido en Vivo
@@ -960,13 +960,13 @@ export default function App() {
           boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
         }}
       >
-        {/* --- BOTÓN DE RASTREO SHIPDAY (EL MÁS IMPORTANTE) --- */}
-        {pedidoActual.trackingUrl && (
+        {/* --- BOTÓN DE RASTREO SHIPDAY: MAPA EN VIVO --- */}
+        {pedidoActual.trackingUrl ? (
           <button 
             onClick={() => window.open(pedidoActual.trackingUrl, '_blank')} 
             style={{ 
               width: '100%', 
-              backgroundColor: '#111', 
+              backgroundColor: '#E31E24', // Rojo vibrante para que resalte
               color: '#fff', 
               padding: '22px', 
               borderRadius: '20px', 
@@ -979,24 +979,36 @@ export default function App() {
               alignItems: 'center', 
               justifyContent: 'center', 
               gap: '12px',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+              boxShadow: '0 10px 25px rgba(227,30,36,0.3)',
               transition: 'transform 0.2s'
             }}
-            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
+            <IconTruck active={true} /> 📍 RASTREAR MOTORISTA EN EL MAPA
           </button>
+        ) : (
+          <div style={{ padding: '15px', backgroundColor: '#F9FAFB', borderRadius: '15px', textAlign: 'center', marginBottom: '30px', border: '1px dashed #E5E7EB' }}>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#6B7280', fontWeight: '700' }}>
+              Esperando asignación de motorista para el mapa...
+            </p>
+          </div>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #F3F4F6', paddingBottom: '20px', marginBottom: '25px' }}>
           <div>
-            <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ORDEN EN CURSO</span>
+            <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>NÚMERO DE ORDEN</span>
             <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.4rem', color: '#111' }}>#{pedidoActual.id}</p>
-            <p style={{ margin: '5px 0 0 0', fontSize: '0.85rem', color: '#6B7280', fontWeight: '600' }}>{pedidoActual.fecha}</p>
+            
+            {/* FIX DE HORA: Forzamos la zona horaria de RD para evitar que salga en el futuro */}
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.9rem', color: '#E31E24', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ fontSize: '1.2rem' }}>⏰</span> {
+                pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM') 
+                ? pedidoActual.fecha 
+                : new Date().toLocaleString("es-DO", {timeZone: "America/Santo_Domingo"})
+              }
+            </p>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ESTATUS ACTUAL</span>
+            <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ESTATUS</span>
             <div style={{ 
               backgroundColor: pedidoActual.estado === 'Entregado' ? '#DCFCE7' : '#FEF2F2', 
               color: pedidoActual.estado === 'Entregado' ? '#16A34A' : '#E31E24', 
@@ -1005,50 +1017,36 @@ export default function App() {
               fontWeight: '900', 
               fontSize: '0.9rem', 
               marginTop: '8px', 
-              display: 'inline-block',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.03)'
+              display: 'inline-block'
             }}>
               {pedidoActual.estado.toUpperCase()}
             </div>
           </div>
         </div>
         
-        {/* --- BARRA DE PROGRESO DINÁMICA --- */}
+        {/* --- BARRA DE PROGRESO SHIPDAY --- */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', position: 'relative' }}>
           <div style={{ position: 'absolute', top: '12px', left: '10%', right: '10%', height: '4px', backgroundColor: '#F3F4F6', zIndex: 1 }}></div>
           
-          {/* Paso 1: Recibido */}
           <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
-            <div style={{ 
-              width: '26px', height: '26px', borderRadius: '50%', 
-              backgroundColor: '#E31E24', 
-              border: '5px solid #fff', margin: '0 auto 10px', 
-              boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-              transition: 'all 0.5s ease'
-            }}></div>
+            <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#E31E24', border: '5px solid #fff', margin: '0 auto 10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}></div>
             <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#111' }}>Recibido</span>
           </div>
 
-          {/* Paso 2: Preparando (Se activa con ACCEPTED o STARTED en Shipday) */}
           <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
             <div style={{ 
               width: '26px', height: '26px', borderRadius: '50%', 
               backgroundColor: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', 
-              border: '5px solid #fff', margin: '0 auto 10px', 
-              boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-              transition: 'all 0.5s ease'
+              border: '5px solid #fff', margin: '0 auto 10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' 
             }}></div>
             <span style={{ fontSize: '0.75rem', fontWeight: '800', color: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>Preparando</span>
           </div>
 
-          {/* Paso 3: En camino (Se activa con PICKED_UP en Shipday) */}
           <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
             <div style={{ 
               width: '26px', height: '26px', borderRadius: '50%', 
               backgroundColor: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', 
-              border: '5px solid #fff', margin: '0 auto 10px', 
-              boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-              transition: 'all 0.5s ease'
+              border: '5px solid #fff', margin: '0 auto 10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' 
             }}></div>
             <span style={{ fontSize: '0.75rem', fontWeight: '800', color: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>En camino</span>
           </div>
@@ -1057,71 +1055,51 @@ export default function App() {
         {/* --- RESUMEN DE PRODUCTOS --- */}
         <div style={{ marginBottom: '30px', backgroundColor: '#F9FAFB', padding: '25px', borderRadius: '24px' }}>
           <p style={{ fontSize: '1rem', color: '#111', fontWeight: '900', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <IconOrders active={true} /> Resumen de tu canasta
+            🛒 Resumen de tu compra
           </p>
           {pedidoActual.items.map((item, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', marginBottom: '12px', color: '#4B5563' }}>
               <span style={{ fontWeight: '600' }}>
-                <b style={{ color: '#E31E24', fontWeight: '900', marginRight: '8px' }}>{item.quantity}x</b> 
-                {item.title}
+                <b style={{ color: '#E31E24', fontWeight: '900', marginRight: '8px' }}>{item.quantity}x</b> {item.title}
               </span>
               <span style={{ fontWeight: '900', color: '#111' }}>RD${(item.price * item.quantity).toFixed(0)}</span>
             </div>
           ))}
           
           <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.95rem', color: '#6B7280', fontWeight: '700' }}>
-              <span>Subtotal</span>
-              <span>RD$ {pedidoActual.subtotal.toFixed(0)}</span>
-            </div>
-            {pedidoActual.descuento > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.95rem', color: '#22C55E', fontWeight: '900' }}>
-                <span>Ahorro con Cupón</span>
-                <span>- RD$ {pedidoActual.descuento.toFixed(0)}</span>
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
-              <span style={{ fontWeight: '900', color: '#111', fontSize: '1.2rem' }}>TOTAL</span>
-              <span style={{ fontWeight: '900', fontSize: '1.8rem', color: '#E31E24', letterSpacing: '-1px' }}>RD$ {pedidoActual.total.toFixed(0)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: '900', color: '#111', fontSize: '1.2rem' }}>TOTAL PAGADO</span>
+              <span style={{ fontWeight: '900', fontSize: '1.8rem', color: '#E31E24' }}>RD$ {pedidoActual.total.toFixed(0)}</span>
             </div>
           </div>
         </div>
 
         <div style={{ textAlign: 'center', borderTop: '1px solid #F3F4F6', paddingTop: '20px' }}>
           <p style={{ fontSize: '0.8rem', fontWeight: '900', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
-            Pago: {pedidoActual.metodo === 'efectivo' ? 'Efectivo al recibir' : 'Tarjeta Online'}
+            Método: {pedidoActual.metodo === 'efectivo' ? 'Efectivo al recibir' : 'Tarjeta Online'}
           </p>
         </div>
       </div>
     ) : (
       /* --- ESTADO VACÍO --- */
-      <div style={{ textAlign: 'center', padding: '80px 30px', backgroundColor: '#fff', borderRadius: '32px', border: '1px solid #E5E7EB', boxShadow: '0 10px 30px rgba(0,0,0,0.02)' }}>
+      <div style={{ textAlign: 'center', padding: '80px 30px', backgroundColor: '#fff', borderRadius: '32px', border: '1px solid #E5E7EB' }}>
         <div style={{ backgroundColor: '#FEE2E2', width: '100px', height: '100px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 30px', color: '#E31E24' }}>
           <IconTruck active={true} />
         </div>
-        <h3 style={{ margin: '0 0 15px 0', color: '#111', fontWeight: '900', fontSize: '1.6rem', letterSpacing: '-0.5px' }}>¿Tienes hambre?</h3>
-        <p style={{ fontSize: '1.1rem', color: '#6B7280', marginBottom: '35px', lineHeight: '1.6' }}>
-          Aún no tienes pedidos en camino. ¡Pide ahora en Kolma RD y recíbelo en minutos!
+        <h3 style={{ margin: '0 0 15px 0', color: '#111', fontWeight: '900', fontSize: '1.6rem' }}>¿Qué pediremos hoy?</h3>
+        <p style={{ fontSize: '1.1rem', color: '#6B7280', marginBottom: '35px' }}>
+          Tus pedidos aparecerán aquí para que los sigas en tiempo real.
         </p>
         <button 
           onClick={() => setActiveTab('inicio')} 
-          style={{ 
-            backgroundColor: '#111', 
-            color: '#fff', 
-            padding: '20px 40px', 
-            borderRadius: '20px', 
-            border: 'none', 
-            fontWeight: '900', 
-            fontSize: '1.1rem',
-            cursor: 'pointer',
-            boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
-          }}
+          style={{ backgroundColor: '#111', color: '#fff', padding: '20px 40px', borderRadius: '20px', border: 'none', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer' }}
         >
-          Explorar Productos
+          Ir a la tienda
         </button>
       </div>
     )}
   </section>
+)}
 )}
       {/* ------------------------------------------- */}
       {/* VISTA 3: PERFIL DE USUARIO */}
