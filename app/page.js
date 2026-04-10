@@ -195,11 +195,12 @@ export default function App() {
     fetchData();
   }, [domain, accessToken]);
 
-    // ==========================================
+      // ==========================================
   // NUEVO: RADAR DE SHIPDAY (Auto-Refresh de Estatus)
   // ==========================================
   useEffect(() => {
-    if (!pedidoActual || pedidoActual.estado === 'Entregado') return;
+    // Si ya se entregó o está finalizado, no seguimos buscando en internet
+    if (!pedidoActual || ['Entregado', 'Finalizado'].includes(pedidoActual.estado)) return;
 
     const rastreador = setInterval(async () => {
       try {
@@ -209,21 +210,21 @@ export default function App() {
         if (data.success && data.shipdayStatus) {
            const status = data.shipdayStatus.toUpperCase();
            
-           // Si el pedido ya se entregó
            if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED', 'COMPLETED', 'DONE'].includes(status)) {
               clearInterval(rastreador); 
-              
-              // Actualiza visualmente a Entregado en vez de desaparecerlo
-              const pedidoFinalizado = { ...pedidoActual, estado: 'Entregado' };
-              setPedidoActual(pedidoFinalizado);
-              localStorage.setItem('kolma_last_order', JSON.stringify(pedidoFinalizado));
+              const pedidoEntregado = { 
+                ...pedidoActual, 
+                estado: 'Entregado',
+                entregadoAt: Date.now() // Guardamos la hora exacta en la que se entregó
+              };
+              setPedidoActual(pedidoEntregado);
+              localStorage.setItem('kolma_last_order', JSON.stringify(pedidoEntregado));
               return;
            }
 
-           // Si sigue en proceso
            let nuevoEstado = pedidoActual.estado;
-           if (['ACCEPTED', 'STARTED'].includes(status)) nuevoEstado = 'Preparando';
-           if (['ASSIGNED', 'PICKED_UP', 'READY_TO_DELIVER', 'ACTIVE', 'ON_THE_WAY'].includes(status)) nuevoEstado = 'En camino';
+           if (['UNASSIGNED', 'ACCEPTED', 'PENDING'].includes(status)) nuevoEstado = 'Preparando';
+           if (['ASSIGNED', 'STARTED', 'PICKED_UP', 'READY_TO_DELIVER', 'ACTIVE', 'ON_THE_WAY', 'ARRIVED'].includes(status)) nuevoEstado = 'En camino';
 
            const nuevaTrackingUrl = data.trackingUrl || pedidoActual.trackingUrl;
 
@@ -239,6 +240,27 @@ export default function App() {
     }, 10000); 
 
     return () => clearInterval(rastreador);
+  }, [pedidoActual]);
+
+  // ==========================================
+  // NUEVO: TEMPORIZADOR DE 1 HORA PARA FACTURA
+  // ==========================================
+  useEffect(() => {
+    if (pedidoActual?.estado === 'Entregado' && pedidoActual.entregadoAt) {
+      const revisarExpiracion = setInterval(() => {
+        const tiempoPasado = Date.now() - pedidoActual.entregadoAt;
+        const unaHoraEnMilisegundos = 3600000; // 1 hora exacta
+        
+        if (tiempoPasado >= unaHoraEnMilisegundos) {
+          const pedidoFinalizado = { ...pedidoActual, estado: 'Finalizado' };
+          setPedidoActual(pedidoFinalizado);
+          localStorage.setItem('kolma_last_order', JSON.stringify(pedidoFinalizado));
+          clearInterval(revisarExpiracion);
+        }
+      }, 60000); // Revisa cada minuto
+
+      return () => clearInterval(revisarExpiracion);
+    }
   }, [pedidoActual]);
 
   // ==========================================
@@ -1149,32 +1171,136 @@ export default function App() {
                     <span style={{ fontWeight: '900', fontSize: '1.8rem', color: '#E31E24' }}>RD$ {pedidoActual.total.toFixed(0)}</span>
                   </div>
                 </div>
+      {/* ------------------------------------------- */}
+      {/* VISTA 2: MIS PEDIDOS */}
+      {/* ------------------------------------------- */}
+      {activeTab === 'pedidos' && (
+        <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
+          
+          {pedidoActual ? (
+            <div 
+              style={{ 
+                backgroundColor: '#fff', 
+                borderRadius: '32px', 
+                padding: '35px', 
+                border: '1px solid #E5E7EB', 
+                boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
+              }}
+            >
+              {/* CABECERA COMÚN */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #F3F4F6', paddingBottom: '20px', marginBottom: '25px' }}>
+                <div>
+                  <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>{pedidoActual.estado === 'Finalizado' ? 'FACTURA' : 'NÚMERO DE ORDEN'}</span>
+                  <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.4rem', color: '#111' }}>#{pedidoActual.id}</p>
+                  
+                  <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', color: '#E31E24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>⏰</span> {
+                      pedidoActual.fecha && (pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM'))
+                      ? pedidoActual.fecha 
+                      : new Date().toLocaleString("es-DO", { timeZone: "America/Santo_Domingo", hour: 'numeric', minute: 'numeric', hour12: true, day: '2-digit', month: '2-digit' })
+                    }
+                  </p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ESTATUS</span>
+                  <div style={{ 
+                    backgroundColor: pedidoActual.estado === 'Finalizado' ? '#F3F4F6' : (pedidoActual.estado === 'Entregado' ? '#DCFCE7' : '#FEF2F2'), 
+                    color: pedidoActual.estado === 'Finalizado' ? '#4B5563' : (pedidoActual.estado === 'Entregado' ? '#16A34A' : '#E31E24'), 
+                    padding: '8px 16px', 
+                    borderRadius: '12px', 
+                    fontWeight: '900', 
+                    fontSize: '0.9rem', 
+                    marginTop: '8px', 
+                    display: 'inline-block'
+                  }}>
+                    {pedidoActual.estado.toUpperCase()}
+                  </div>
+                </div>
               </div>
 
-              <div style={{ marginTop: '20px' }}>
-                <a
-                  href={`https://wa.me/18298558779?text=Hola,%20necesito%20ayuda%20con%20mi%20pedido%20de%20KolmaRD%20%23${pedidoActual.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '10px',
-                    backgroundColor: '#25D366',
-                    color: '#fff',
-                    textDecoration: 'none',
-                    padding: '16px',
-                    borderRadius: '16px',
-                    fontWeight: '900',
-                    fontSize: '1.05rem',
-                    boxShadow: '0 4px 15px rgba(37, 211, 102, 0.3)',
-                    transition: 'transform 0.2s'
-                  }}
-                >
-                  <IconWhatsApp /> Escribir a Soporte (WhatsApp)
-                </a>
+              {/* MODO FACTURA O MODO RASTREO (MAPA + BARRA) */}
+              {pedidoActual.estado === 'Finalizado' ? (
+                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', backgroundColor: '#DCFCE7', borderRadius: '50%', marginBottom: '15px' }}>
+                    <IconSuccess />
+                  </div>
+                  <h3 style={{ margin: 0, color: '#16A34A', fontWeight: '900', fontSize: '1.2rem' }}>Pedido Completado</h3>
+                  <p style={{ margin: '5px 0 0 0', color: '#6B7280', fontSize: '0.9rem' }}>Este pedido ha sido entregado y cerrado.</p>
+                </div>
+              ) : (
+                <>
+                  {pedidoActual.trackingUrl && pedidoActual.estado !== 'Entregado' && (
+                    <a 
+                      href={pedidoActual.trackingUrl} 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ width: '100%', backgroundColor: '#E31E24', color: '#fff', padding: '22px', borderRadius: '20px', border: 'none', fontWeight: '900', fontSize: '1.1rem', marginBottom: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxShadow: '0 10px 25px rgba(227,30,36,0.3)', textDecoration: 'none', boxSizing: 'border-box' }}
+                    >
+                      <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
+                    </a>
+                  )}
+                  
+                  {/* --- BARRA DE PROGRESO 4 PASOS --- */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '12px', left: '10%', right: '10%', height: '4px', backgroundColor: '#F3F4F6', zIndex: 1 }}></div>
+                    
+                    {/* 1. Recibido */}
+                    <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
+                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#E31E24', border: '5px solid #fff', margin: '0 auto 10px', boxShadow: pedidoActual.estado === 'Recibido' ? '0 0 0 0 rgba(227, 30, 36, 0.7)' : '0 4px 10px rgba(0,0,0,0.1)', animation: pedidoActual.estado === 'Recibido' ? 'pulseActive 1.5s infinite' : 'none' }}></div>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#111' }}>Recibido</span>
+                    </div>
+
+                    {/* 2. Preparando */}
+                    <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
+                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', border: '5px solid #fff', margin: '0 auto 10px', boxShadow: pedidoActual.estado === 'Preparando' ? '0 0 0 0 rgba(227, 30, 36, 0.7)' : '0 4px 10px rgba(0,0,0,0.1)', animation: pedidoActual.estado === 'Preparando' ? 'pulseActive 1.5s infinite' : 'none', transition: 'background-color 0.5s' }}></div>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>Preparando</span>
+                    </div>
+
+                    {/* 3. En camino */}
+                    <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
+                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', border: '5px solid #fff', margin: '0 auto 10px', boxShadow: pedidoActual.estado === 'En camino' ? '0 0 0 0 rgba(227, 30, 36, 0.7)' : '0 4px 10px rgba(0,0,0,0.1)', animation: pedidoActual.estado === 'En camino' ? 'pulseActive 1.5s infinite' : 'none', transition: 'background-color 0.5s' }}></div>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>En camino</span>
+                    </div>
+
+                    {/* 4. Entregado */}
+                    <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
+                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: pedidoActual.estado === 'Entregado' ? '#16A34A' : '#F3F4F6', border: '5px solid #fff', margin: '0 auto 10px', boxShadow: pedidoActual.estado === 'Entregado' ? '0 0 0 0 rgba(22, 163, 74, 0.7)' : '0 4px 10px rgba(0,0,0,0.1)', animation: pedidoActual.estado === 'Entregado' ? 'pulseActive 1.5s infinite' : 'none', transition: 'background-color 0.5s' }}></div>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: pedidoActual.estado === 'Entregado' ? '#16A34A' : '#9CA3AF' }}>Entregado</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* --- RESUMEN DE PRODUCTOS COMÚN --- */}
+              <div style={{ marginBottom: '20px', backgroundColor: '#F9FAFB', padding: '25px', borderRadius: '24px' }}>
+                <p style={{ fontSize: '1rem', color: '#111', fontWeight: '900', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <IconOrders active={true} /> Resumen de tu compra
+                </p>
+                {pedidoActual.items.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', marginBottom: '12px', color: '#4B5563' }}>
+                    <span style={{ fontWeight: '600' }}>
+                      <b style={{ color: '#E31E24', fontWeight: '900', marginRight: '8px' }}>{item.quantity}x</b> {item.title}
+                    </span>
+                    <span style={{ fontWeight: '900', color: '#111' }}>RD${(item.price * item.quantity).toFixed(0)}</span>
+                  </div>
+                ))}
+                
+                <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '900', color: '#111', fontSize: '1.2rem' }}>TOTAL PAGADO</span>
+                    <span style={{ fontWeight: '900', fontSize: '1.8rem', color: '#E31E24' }}>RD$ {pedidoActual.total.toFixed(0)}</span>
+                  </div>
+                </div>
               </div>
+
+              {/* WHATSAPP OCULTO SI YA ES FACTURA CERRADA */}
+              {pedidoActual.estado !== 'Finalizado' && (
+                <div style={{ marginTop: '20px' }}>
+                  <a href={`https://wa.me/18298558779?text=Hola,%20necesito%20ayuda%20con%20mi%20pedido%20de%20KolmaRD%20%23${pedidoActual.id}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', backgroundColor: '#25D366', color: '#fff', textDecoration: 'none', padding: '16px', borderRadius: '16px', fontWeight: '900', fontSize: '1.05rem', boxShadow: '0 4px 15px rgba(37, 211, 102, 0.3)', transition: 'transform 0.2s' }}>
+                    <IconWhatsApp /> Escribir a Soporte
+                  </a>
+                </div>
+              )}
 
               <div style={{ textAlign: 'center', borderTop: '1px solid #F3F4F6', paddingTop: '20px', marginTop: '20px' }}>
                 <p style={{ fontSize: '0.8rem', fontWeight: '900', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
@@ -1201,6 +1327,7 @@ export default function App() {
           )}
         </section>
       )}
+
 
       {/* ------------------------------------------- */}
       {/* VISTA 3: PERFIL DE USUARIO */}
