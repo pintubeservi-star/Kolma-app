@@ -1014,6 +1014,66 @@ export default function App() {
                     borderRadius: '12px', 
                     fontWeight: '900', 
                     fontSize: '0.9rem', 
+              {/* BOTÓN DE MAPA (Se oculta cuando ya se entregó) */}
+              {pedidoActual.trackingUrl && pedidoActual.estado !== 'Entregado' && (
+                <a 
+                  href={pedidoActual.trackingUrl} 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ 
+                    width: '100%', 
+                    backgroundColor: '#E31E24', 
+                    color: '#fff', 
+                    padding: '22px', 
+                    borderRadius: '20px', 
+                    border: 'none', 
+                    fontWeight: '900', 
+                    fontSize: '1.1rem', 
+                    marginBottom: '30px', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    gap: '12px',
+                    boxShadow: '0 10px 25px rgba(227,30,36,0.3)',
+                    transition: 'transform 0.2s',
+                    textDecoration: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
+                </a>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #F3F4F6', paddingBottom: '20px', marginBottom: '25px' }}>
+                <div>
+                  <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>NÚMERO DE ORDEN</span>
+                  <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.4rem', color: '#111' }}>#{pedidoActual.id}</p>
+                  
+                  <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', color: '#E31E24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>⏰</span> {
+                      pedidoActual.fecha && (pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM'))
+                      ? pedidoActual.fecha 
+                      : new Date().toLocaleString("es-DO", {
+                          timeZone: "America/Santo_Domingo",
+                          hour: 'numeric',
+                          minute: 'numeric',
+                          hour12: true,
+                          day: '2-digit',
+                          month: '2-digit'
+                        })
+                    }
+                  </p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ESTATUS</span>
+                  <div style={{ 
+                    backgroundColor: pedidoActual.estado === 'Entregado' ? '#DCFCE7' : '#FEF2F2', 
+                    color: pedidoActual.estado === 'Entregado' ? '#16A34A' : '#E31E24', 
+                    padding: '8px 16px', 
+                    borderRadius: '12px', 
+                    fontWeight: '900', 
+                    fontSize: '0.9rem', 
                     marginTop: '8px', 
                     display: 'inline-block'
                   }}>
@@ -1022,7 +1082,7 @@ export default function App() {
                 </div>
               </div>
               
-              {/* --- BARRA DE PROGRESO SHIPDAY --- */}
+              {/* --- BARRA DE PROGRESO SHIPDAY CORREGIDA --- */}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', position: 'relative' }}>
                 <div style={{ position: 'absolute', top: '12px', left: '10%', right: '10%', height: '4px', backgroundColor: '#F3F4F6', zIndex: 1 }}></div>
                 
@@ -1048,18 +1108,26 @@ export default function App() {
                   <span style={{ fontSize: '0.75rem', fontWeight: '800', color: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>Preparando</span>
                 </div>
 
+                {/* ÚLTIMO PASO: DINÁMICO (EN CAMINO -> ENTREGADO) */}
                 <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
                   <div style={{ 
                     width: '26px', height: '26px', borderRadius: '50%', 
-                    backgroundColor: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', 
+                    backgroundColor: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? (pedidoActual.estado === 'Entregado' ? '#16A34A' : '#E31E24') : '#F3F4F6', 
                     border: '5px solid #fff', margin: '0 auto 10px', 
                     boxShadow: pedidoActual.estado === 'En camino' ? '0 0 0 0 rgba(227, 30, 36, 0.7)' : '0 4px 10px rgba(0,0,0,0.1)',
                     animation: pedidoActual.estado === 'En camino' ? 'pulseActive 1.5s infinite' : 'none',
                     transition: 'background-color 0.5s'
                   }}></div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: '800', color: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>En camino</span>
+                  <span style={{ 
+                    fontSize: '0.75rem', 
+                    fontWeight: '800', 
+                    color: pedidoActual.estado === 'Entregado' ? '#16A34A' : (pedidoActual.estado === 'En camino' ? '#111' : '#9CA3AF') 
+                  }}>
+                    {pedidoActual.estado === 'Entregado' ? 'Entregado' : 'En camino'}
+                  </span>
                 </div>
               </div>
+
 
               {/* --- RESUMEN DE PRODUCTOS --- */}
               <div style={{ marginBottom: '20px', backgroundColor: '#F9FAFB', padding: '25px', borderRadius: '24px' }}>
