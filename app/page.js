@@ -196,10 +196,10 @@ export default function App() {
   }, [domain, accessToken]);
 
   // ==========================================
-  // NUEVO: RADAR DE SHIPDAY (Auto-Refresh de Estatus) - CORREGIDO
+  // NUEVO: RADAR DE SHIPDAY (Auto-Refresh de Estatus)
   // ==========================================
   useEffect(() => {
-    if (!pedidoActual || pedidoActual.estado === 'Entregado') return;
+    if (!pedidoActual) return;
 
     const rastreador = setInterval(async () => {
       try {
@@ -207,19 +207,21 @@ export default function App() {
         const data = await res.json();
         
         if (data.success && data.shipdayStatus) {
-           let nuevoEstado = pedidoActual.estado;
-           const status = data.shipdayStatus.toUpperCase(); // Asegurar mayúsculas
+           const status = data.shipdayStatus.toUpperCase();
            
-           // Si el pedido entró o se está armando
-           if (['ACCEPTED', 'STARTED'].includes(status)) nuevoEstado = 'Preparando';
-           
-           // Si el motorista lo tomó o va rodando en Cotuí
-           if (['ASSIGNED', 'PICKED_UP', 'READY_TO_DELIVER', 'ACTIVE', 'ON_THE_WAY'].includes(status)) nuevoEstado = 'En camino';
-           
-           // Si el cliente ya lo tiene (CORREGIDO Y OPTIMIZADO)
-           if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED', 'COMPLETED'].includes(status)) nuevoEstado = 'Entregado';
+           // CAMBIO: Quitar el pedido si se entregó
+           if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED', 'COMPLETED'].includes(status)) {
+              alert("¡Tu pedido ha sido entregado exitosamente!");
+              setPedidoActual(null);
+              localStorage.removeItem('kolma_last_order');
+              return;
+           }
 
-           // Capturar URL del mapa si llega retrasada desde el servidor
+           let nuevoEstado = pedidoActual.estado;
+           
+           if (['ACCEPTED', 'STARTED'].includes(status)) nuevoEstado = 'Preparando';
+           if (['ASSIGNED', 'PICKED_UP', 'READY_TO_DELIVER', 'ACTIVE', 'ON_THE_WAY'].includes(status)) nuevoEstado = 'En camino';
+
            const nuevaTrackingUrl = data.trackingUrl || pedidoActual.trackingUrl;
 
            if (nuevoEstado !== pedidoActual.estado || nuevaTrackingUrl !== pedidoActual.trackingUrl) {
@@ -958,14 +960,7 @@ export default function App() {
                 boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
               }}
             >
-              {/* --- BOTÓN DE RASTREO SHIPDAY / AVISO ENTREGADO --- */}
-              {pedidoActual.estado === 'Entregado' ? (
-                <div style={{ backgroundColor: '#DCFCE7', padding: '25px', borderRadius: '20px', textAlign: 'center', marginBottom: '30px', border: '2px solid #22C55E' }}>
-                  <IconSuccess />
-                  <h3 style={{ margin: '15px 0 5px 0', color: '#16A34A', fontWeight: '900', fontSize: '1.4rem' }}>¡Pedido Completado!</h3>
-                  <p style={{ margin: 0, color: '#15803D', fontWeight: '600' }}>Esperamos que disfrutes tu compra en KolmaRD.</p>
-                </div>
-              ) : pedidoActual.trackingUrl ? (
+              {pedidoActual.trackingUrl ? (
                 <a 
                   href={pedidoActual.trackingUrl} 
                   target="_blank"
@@ -993,13 +988,7 @@ export default function App() {
                 >
                   <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
                 </a>
-              ) : (
-                <div style={{ padding: '15px', backgroundColor: '#F9FAFB', borderRadius: '15px', textAlign: 'center', marginBottom: '30px', border: '1px dashed #E5E7EB' }}>
-                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#6B7280', fontWeight: '700' }}>
-                    Esperando asignación de motorista para habilitar mapa...
-                  </p>
-                </div>
-              )}
+              ) : null}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #F3F4F6', paddingBottom: '20px', marginBottom: '25px' }}>
                 <div>
@@ -1159,7 +1148,7 @@ export default function App() {
       {activeTab === 'perfil' && (
         <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-            <h2 style={{ fontWeight: '900', fontSize: '2rem', margin: 0, color: '#111' }}>Mi Perfil</h2>
+            <h2 style={{ fontWeight: '900', fontSize: '2rem', margin: '0', color: '#111' }}>Mi Perfil</h2>
             {user && (
               <button 
                 onClick={handleLogout} 
