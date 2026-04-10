@@ -193,7 +193,7 @@ export default function App() {
   }, [domain, accessToken]);
 
   // ==========================================
-  // NUEVO: RADAR DE SHIPDAY (Auto-Refresh de Estatus)
+  // NUEVO: RADAR DE SHIPDAY (Auto-Refresh de Estatus) - CORREGIDO
   // ==========================================
   useEffect(() => {
     if (!pedidoActual || pedidoActual.estado === 'Entregado') return;
@@ -205,13 +205,18 @@ export default function App() {
         
         if (data.success && data.shipdayStatus) {
            let nuevoEstado = pedidoActual.estado;
-           const status = data.shipdayStatus;
+           const status = data.shipdayStatus.toUpperCase(); // Asegurar mayúsculas
            
-           if (status === 'ACCEPTED' || status === 'STARTED') nuevoEstado = 'Preparando';
-           if (status === 'ASSIGNED' || status === 'PICKED_UP' || status === 'READY_TO_DELIVER') nuevoEstado = 'En camino';
-           if (status === 'ALREADY_DELIVERED' || status === 'SUCCESSFUL') nuevoEstado = 'Entregado';
+           // Si el pedido entró o se está armando
+           if (['ACCEPTED', 'STARTED'].includes(status)) nuevoEstado = 'Preparando';
+           
+           // Si el motorista lo tomó o va rodando en Cotuí
+           if (['ASSIGNED', 'PICKED_UP', 'READY_TO_DELIVER', 'ACTIVE', 'ON_THE_WAY'].includes(status)) nuevoEstado = 'En camino';
+           
+           // Si el cliente ya lo tiene (CORREGIDO)
+           if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED', 'COMPLETED'].includes(status)) nuevoEstado = 'Entregado';
 
-           // FIX: Capturar URL del mapa si llega retrasada desde el servidor
+           // Capturar URL del mapa si llega retrasada desde el servidor
            const nuevaTrackingUrl = data.trackingUrl || pedidoActual.trackingUrl;
 
            if (nuevoEstado !== pedidoActual.estado || nuevaTrackingUrl !== pedidoActual.trackingUrl) {
@@ -475,7 +480,7 @@ export default function App() {
   };
 
   // ==========================================
-  // 6. LÓGICA DE CHECKOUT Y PEDIDOS ACTUALIZADA PARA SHIPDAY
+  // 6. LÓGICA DE CHECKOUT Y PEDIDOS
   // ==========================================
   const avanzarAPago = () => {
     if (!user) { 
@@ -527,7 +532,7 @@ export default function App() {
       
       const nuevoPedido = { 
         id: data.orderId,
-        trackingUrl: data.trackingUrl, // FIX: AQUÍ SE GUARDA EL LINK DEL MAPA
+        trackingUrl: data.trackingUrl, 
         items: [...carrito], 
         subtotal: calcularSubtotal(),
         descuento: descuentoAplicado,
@@ -569,9 +574,7 @@ export default function App() {
         overflowX: 'hidden' 
       }}
     >
-      {/* ------------------------------------------- */}
       {/* MODAL 1: CONFIRMACIÓN DE PEDIDO EXITOSO */}
-      {/* ------------------------------------------- */}
       {showSuccessModal && (
         <div 
           style={{ 
@@ -630,9 +633,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ------------------------------------------- */}
       {/* CABECERA (HEADER) PRINCIPAL */}
-      {/* ------------------------------------------- */}
       <header 
         style={{ 
           backgroundColor: '#FFFFFF', 
@@ -734,74 +735,61 @@ export default function App() {
       {activeTab === 'inicio' && (
         <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
           
-          <section 
-            style={{ 
-              backgroundColor: '#000000', 
-              padding: '60px 25px', 
-              color: '#FFFFFF', 
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-          >
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(135deg, rgba(227,30,36,0.15) 0%, rgba(0,0,0,1) 100%)', zIndex: 1 }}></div>
-            
-            <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'left', position: 'relative', zIndex: 10 }}>
-              <div 
-                style={{ 
-                  display: 'inline-flex', 
-                  alignItems: 'center', 
-                  backgroundColor: 'rgba(227,30,36,0.2)', 
-                  border: '1px solid rgba(227,30,36,0.5)', 
-                  color: '#FF3B30', 
-                  padding: '8px 16px', 
-                  borderRadius: '10px', 
-                  fontSize: '0.85rem', 
-                  fontWeight: '900', 
-                  marginBottom: '20px',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                DELIVERY A TODO COTUÍ
-              </div>
-              
-              {/* === SECCIÓN DEL LEMA ACTUALIZADO === */}
-              <h2 style={{ fontSize: '3.2rem', fontWeight: '900', margin: '0 0 15px 0', lineHeight: 1.1, letterSpacing: '-1px' }}>
-                Tu supermercado <br/> <span style={{ color: '#E31E24' }}>KolmaRD</span>.
-              </h2>
-              <p style={{ fontSize: '1.1rem', color: '#D1D5DB', fontWeight: '600', marginBottom: '25px', maxWidth: '400px' }}>
-                Todos los productos que necesitas, entregados en minutos directamente a tu puerta.
-              </p>
-              
-              <div 
-                style={{ 
-                  backgroundColor: '#FFFFFF', 
-                  borderRadius: '18px', 
-                  padding: '12px 20px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  maxWidth: '350px',
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
-                }}
-              >
-                <div style={{ color: '#E31E24', display: 'flex', alignItems: 'center' }}>
-                  <IconSearch />
-                </div>
-                <input 
-                  type="text" 
-                  placeholder="Buscar productos..." 
-                  value={searchTerm} 
-                  onChange={(e) => setSearchTerm(e.target.value)} 
+          {/* === NUEVO BANNER ESTILO PREMIUM KOLMARD === */}
+          <section style={{ padding: '20px 20px 0 20px' }}>
+            <div 
+              style={{ 
+                backgroundColor: '#E31E24', 
+                borderRadius: '24px', 
+                padding: '25px', 
+                color: '#FFFFFF', 
+                position: 'relative', 
+                overflow: 'hidden',
+                boxShadow: '0 10px 25px rgba(227,30,36,0.25)'
+              }}
+            >
+              {/* Textos y Buscador (z-index por encima del camión) */}
+              <div style={{ position: 'relative', zIndex: 10 }}>
+                <h2 style={{ fontSize: '1.9rem', fontWeight: '900', lineHeight: '1.15', margin: '0 0 8px 0' }}>
+                  Calidad Premium<br />al mejor precio
+                </h2>
+                <p style={{ margin: 0, color: '#FEE2E2', fontSize: '0.9rem', fontWeight: '600', maxWidth: '220px' }}>
+                  Los productos más frescos de Cotuí, directo a tu casa.
+                </p>
+                
+                {/* Buscador Integrado (Mantiene la función original) */}
+                <div 
                   style={{ 
-                    flex: 1, 
-                    border: 'none', 
-                    outline: 'none', 
-                    padding: '8px 15px', 
-                    fontSize: '1.05rem', 
-                    color: '#111', 
-                    background: 'transparent', 
-                    fontWeight: '600' 
-                  }} 
-                />
+                    backgroundColor: '#FFFFFF', 
+                    borderRadius: '16px', 
+                    padding: '12px 18px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    marginTop: '20px', 
+                    maxWidth: '100%',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.15)'
+                  }}
+                >
+                  <div style={{ color: '#E31E24', display: 'flex', alignItems: 'center', marginRight: '10px' }}>
+                    <IconSearch />
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="Buscar productos..." 
+                    value={searchTerm} 
+                    onChange={(e) => setSearchTerm(e.target.value)} 
+                    style={{ 
+                      flex: 1, border: 'none', outline: 'none', fontSize: '1.05rem', color: '#111', fontWeight: '600', background: 'transparent' 
+                    }} 
+                  />
+                </div>
+              </div>
+
+              {/* Icono SVG de Fondo (Opacidad baja) */}
+              <div style={{ position: 'absolute', right: '-20px', bottom: '-20px', opacity: 0.15, pointerEvents: 'none' }}>
+                <svg width="160" height="160" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                </svg>
               </div>
             </div>
           </section>
@@ -1791,62 +1779,84 @@ export default function App() {
       )}
 
       {/* ------------------------------------------- */}
-      {/* MENÚ DE NAVEGACIÓN INFERIOR (Tabs) */}
+      {/* MENÚ DE NAVEGACIÓN INFERIOR (Botón Flotante) */}
       {/* ------------------------------------------- */}
       <nav 
         style={{ 
           position: 'fixed', bottom: 0, left: 0, right: 0, 
-          backgroundColor: '#FFFFFF', borderTop: '1px solid #E5E7EB', 
-          display: 'flex', justifyContent: 'space-around', alignItems: 'center', 
-          height: '80px', zIndex: 1000, 
+          backgroundColor: '#FFFFFF', 
+          borderTop: '1px solid #E5E7EB',
+          boxShadow: '0 -10px 25px rgba(0,0,0,0.05)', 
+          zIndex: 1000, 
           paddingBottom: 'env(safe-area-inset-bottom)' 
         }}
       >
-        <div 
-          onClick={() => setActiveTab('inicio')} 
-          style={{ textAlign: 'center', color: activeTab === 'inicio' ? '#E31E24' : '#9CA3AF', cursor: 'pointer', flex: 1, padding: '10px 0', transition: 'color 0.2s' }}
-        >
-          <IconHome active={activeTab === 'inicio'} />
-          <div style={{ fontSize: '0.75rem', fontWeight: activeTab === 'inicio' ? '900' : '700', marginTop: '6px' }}>Inicio</div>
-        </div>
-        
-        <div 
-          onClick={() => setActiveTab('pedidos')} 
-          style={{ textAlign: 'center', color: activeTab === 'pedidos' ? '#E31E24' : '#9CA3AF', cursor: 'pointer', flex: 1, padding: '10px 0', transition: 'color 0.2s' }}
-        >
-          <IconTruck active={activeTab === 'pedidos'} />
-          <div style={{ fontSize: '0.75rem', fontWeight: activeTab === 'pedidos' ? '900' : '700', marginTop: '6px' }}>Pedidos</div>
-        </div>
-        
-        <div 
-          onClick={() => setIsCartOpen(true)} 
-          style={{ textAlign: 'center', color: '#9CA3AF', cursor: 'pointer', flex: 1, position: 'relative', padding: '10px 0' }}
-        >
-          <div style={{ position: 'relative', display: 'inline-block' }}>
-            <IconOrders active={false} />
-            {carrito.length > 0 && (
-              <span 
-                style={{ 
-                  position: 'absolute', top: '-5px', right: '-10px', 
-                  backgroundColor: '#E31E24', color: '#fff', fontSize: '0.65rem', 
-                  fontWeight: '900', width: '18px', height: '18px', 
-                  borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '2px solid #fff'
-                }}
-              >
-                {carrito.reduce((acc, item) => acc + item.quantity, 0)}
-              </span>
-            )}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '75px', position: 'relative' }}>
+          
+          {/* 1. Pedidos */}
+          <div 
+            onClick={() => setActiveTab('pedidos')} 
+            style={{ width: '25%', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: activeTab === 'pedidos' ? '#E31E24' : '#94A3B8', transition: 'color 0.2s' }}
+          >
+            <IconTruck active={activeTab === 'pedidos'} />
+            <span style={{ fontSize: '0.65rem', fontWeight: activeTab === 'pedidos' ? '900' : '700', marginTop: '4px' }}>Pedidos</span>
           </div>
-          <div style={{ fontSize: '0.75rem', marginTop: '6px', fontWeight: '700' }}>Canasta</div>
-        </div>
-        
-        <div 
-          onClick={() => setActiveTab('perfil')} 
-          style={{ textAlign: 'center', color: activeTab === 'perfil' ? '#E31E24' : '#9CA3AF', cursor: 'pointer', flex: 1, padding: '10px 0', transition: 'color 0.2s' }}
-        >
-          <IconProfile active={activeTab === 'perfil'} />
-          <div style={{ fontSize: '0.75rem', fontWeight: activeTab === 'perfil' ? '900' : '700', marginTop: '6px' }}>Perfil</div>
+
+          {/* 2. Canasta (Mantenida para no perder funcionalidad) */}
+          <div 
+            onClick={() => setIsCartOpen(true)} 
+            style={{ width: '25%', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: '#94A3B8', position: 'relative' }}
+          >
+            <div style={{ position: 'relative' }}>
+              <IconOrders active={false} />
+              {carrito.length > 0 && (
+                <span style={{ position: 'absolute', top: '-6px', right: '-10px', backgroundColor: '#E31E24', color: '#fff', fontSize: '0.65rem', fontWeight: '900', width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff' }}>
+                  {carrito.reduce((acc, item) => acc + item.quantity, 0)}
+                </span>
+              )}
+            </div>
+            <span style={{ fontSize: '0.65rem', fontWeight: '700', marginTop: '4px' }}>Canasta</span>
+          </div>
+
+          {/* 3. Inicio (BOTÓN FLOTANTE CENTRAL) */}
+          <div style={{ width: '25%', height: '100%', position: 'relative', display: 'flex', justifyContent: 'center' }}>
+            <button 
+              onClick={() => setActiveTab('inicio')} 
+              style={{ 
+                position: 'absolute', 
+                top: '-25px', 
+                backgroundColor: activeTab === 'inicio' ? '#E31E24' : '#111111', 
+                width: '64px', 
+                height: '64px', 
+                borderRadius: '50%', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                border: '6px solid #F9FAFB', 
+                boxShadow: '0 8px 20px rgba(0,0,0,0.15)', 
+                cursor: 'pointer',
+                transition: 'background-color 0.3s'
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+            </button>
+            <span style={{ position: 'absolute', bottom: '10px', fontSize: '0.65rem', fontWeight: activeTab === 'inicio' ? '900' : '700', color: activeTab === 'inicio' ? '#E31E24' : '#94A3B8' }}>
+              Inicio
+            </span>
+          </div>
+
+          {/* 4. Perfil */}
+          <div 
+            onClick={() => setActiveTab('perfil')} 
+            style={{ width: '25%', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: activeTab === 'perfil' ? '#E31E24' : '#94A3B8', transition: 'color 0.2s' }}
+          >
+            <IconProfile active={activeTab === 'perfil'} />
+            <span style={{ fontSize: '0.65rem', fontWeight: activeTab === 'perfil' ? '900' : '700', marginTop: '4px' }}>Perfil</span>
+          </div>
+
         </div>
       </nav>
 
@@ -1871,7 +1881,6 @@ export default function App() {
           70% { box-shadow: 0 0 0 10px rgba(227, 30, 36, 0); }
           100% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0); }
         }
-        /* Ocultar barra de scroll para un look más limpio (estilo app nativa) */
         ::-webkit-scrollbar { 
           width: 0px; 
           height: 0px; 
