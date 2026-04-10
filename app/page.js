@@ -211,8 +211,15 @@ export default function App() {
            if (status === 'ASSIGNED' || status === 'PICKED_UP' || status === 'READY_TO_DELIVER') nuevoEstado = 'En camino';
            if (status === 'ALREADY_DELIVERED' || status === 'SUCCESSFUL') nuevoEstado = 'Entregado';
 
-           if (nuevoEstado !== pedidoActual.estado) {
-              const pedidoActualizado = { ...pedidoActual, estado: nuevoEstado };
+           // FIX: Capturar URL del mapa si llega retrasada desde el servidor
+           const nuevaTrackingUrl = data.trackingUrl || pedidoActual.trackingUrl;
+
+           if (nuevoEstado !== pedidoActual.estado || nuevaTrackingUrl !== pedidoActual.trackingUrl) {
+              const pedidoActualizado = { 
+                  ...pedidoActual, 
+                  estado: nuevoEstado, 
+                  trackingUrl: nuevaTrackingUrl 
+              };
               setPedidoActual(pedidoActualizado);
               localStorage.setItem('kolma_last_order', JSON.stringify(pedidoActualizado));
            }
@@ -958,9 +965,12 @@ export default function App() {
               }}
             >
               {/* --- BOTÓN DE RASTREO SHIPDAY: MAPA EN VIVO --- */}
+              {/* FIX APLICADO: Convertido de <button> a <a> para evitar bloqueos del navegador */}
               {pedidoActual.trackingUrl ? (
-                <button 
-                  onClick={() => window.open(pedidoActual.trackingUrl, '_blank')} 
+                <a 
+                  href={pedidoActual.trackingUrl} 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   style={{ 
                     width: '100%', 
                     backgroundColor: '#E31E24', 
@@ -977,11 +987,13 @@ export default function App() {
                     justifyContent: 'center', 
                     gap: '12px',
                     boxShadow: '0 10px 25px rgba(227,30,36,0.3)',
-                    transition: 'transform 0.2s'
+                    transition: 'transform 0.2s',
+                    textDecoration: 'none',
+                    boxSizing: 'border-box'
                   }}
                 >
                   <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
-                </button>
+                </a>
               ) : (
                 <div style={{ padding: '15px', backgroundColor: '#F9FAFB', borderRadius: '15px', textAlign: 'center', marginBottom: '30px', border: '1px dashed #E5E7EB' }}>
                   <p style={{ margin: 0, fontSize: '0.9rem', color: '#6B7280', fontWeight: '700' }}>
