@@ -208,7 +208,7 @@ export default function App() {
            const status = data.shipdayStatus;
            
            if (status === 'ACCEPTED' || status === 'STARTED') nuevoEstado = 'Preparando';
-           if (status === 'PICKED_UP' || status === 'READY_TO_DELIVER') nuevoEstado = 'En camino';
+           if (status === 'ASSIGNED' || status === 'PICKED_UP' || status === 'READY_TO_DELIVER') nuevoEstado = 'En camino';
            if (status === 'ALREADY_DELIVERED' || status === 'SUCCESSFUL') nuevoEstado = 'Entregado';
 
            if (nuevoEstado !== pedidoActual.estado) {
@@ -520,6 +520,7 @@ export default function App() {
       
       const nuevoPedido = { 
         id: data.orderId,
+        trackingUrl: data.trackingUrl, // FIX: AQUÍ SE GUARDA EL LINK DEL MAPA
         items: [...carrito], 
         subtotal: calcularSubtotal(),
         descuento: descuentoAplicado,
@@ -945,9 +946,6 @@ export default function App() {
       {/* ------------------------------------------- */}
       {activeTab === 'pedidos' && (
         <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
-          <h2 style={{ fontWeight: '900', marginBottom: '25px', fontSize: '2.4rem', color: '#111', letterSpacing: '-1px' }}>
-            Mi Pedido en Vivo
-          </h2>
           
           {pedidoActual ? (
             <div 
@@ -1030,12 +1028,17 @@ export default function App() {
                 </div>
               </div>
               
-              {/* --- BARRA DE PROGRESO SHIPDAY --- */}
+              {/* --- BARRA DE PROGRESO SHIPDAY CON ANIMACIÓN --- */}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', position: 'relative' }}>
                 <div style={{ position: 'absolute', top: '12px', left: '10%', right: '10%', height: '4px', backgroundColor: '#F3F4F6', zIndex: 1 }}></div>
                 
                 <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
-                  <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#E31E24', border: '5px solid #fff', margin: '0 auto 10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}></div>
+                  <div style={{ 
+                    width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#E31E24', 
+                    border: '5px solid #fff', margin: '0 auto 10px', 
+                    boxShadow: pedidoActual.estado === 'Recibido' ? '0 0 0 0 rgba(227, 30, 36, 0.7)' : '0 4px 10px rgba(0,0,0,0.1)',
+                    animation: pedidoActual.estado === 'Recibido' ? 'pulseActive 1.5s infinite' : 'none'
+                  }}></div>
                   <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#111' }}>Recibido</span>
                 </div>
 
@@ -1043,7 +1046,9 @@ export default function App() {
                   <div style={{ 
                     width: '26px', height: '26px', borderRadius: '50%', 
                     backgroundColor: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', 
-                    border: '5px solid #fff', margin: '0 auto 10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                    border: '5px solid #fff', margin: '0 auto 10px', 
+                    boxShadow: pedidoActual.estado === 'Preparando' ? '0 0 0 0 rgba(227, 30, 36, 0.7)' : '0 4px 10px rgba(0,0,0,0.1)',
+                    animation: pedidoActual.estado === 'Preparando' ? 'pulseActive 1.5s infinite' : 'none',
                     transition: 'background-color 0.5s'
                   }}></div>
                   <span style={{ fontSize: '0.75rem', fontWeight: '800', color: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>Preparando</span>
@@ -1053,7 +1058,9 @@ export default function App() {
                   <div style={{ 
                     width: '26px', height: '26px', borderRadius: '50%', 
                     backgroundColor: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', 
-                    border: '5px solid #fff', margin: '0 auto 10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                    border: '5px solid #fff', margin: '0 auto 10px', 
+                    boxShadow: pedidoActual.estado === 'En camino' ? '0 0 0 0 rgba(227, 30, 36, 0.7)' : '0 4px 10px rgba(0,0,0,0.1)',
+                    animation: pedidoActual.estado === 'En camino' ? 'pulseActive 1.5s infinite' : 'none',
                     transition: 'background-color 0.5s'
                   }}></div>
                   <span style={{ fontSize: '0.75rem', fontWeight: '800', color: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>En camino</span>
@@ -1844,6 +1851,11 @@ export default function App() {
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+        @keyframes pulseActive {
+          0% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0.5); }
+          70% { box-shadow: 0 0 0 10px rgba(227, 30, 36, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0); }
         }
         /* Ocultar barra de scroll para un look más limpio (estilo app nativa) */
         ::-webkit-scrollbar { 
