@@ -1013,7 +1013,7 @@ export default function App() {
                   <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.4rem', color: '#111' }}>#{pedidoActual.id}</p>
                   
                   <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', color: '#E31E24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '1.2rem' }}>⏰</span> {
+                    <span style={{ fontSize: '1.2rem' }}>⏰</span> 
                       pedidoActual.fecha && (pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM'))
                       ? pedidoActual.fecha 
                       : new Date().toLocaleString("es-DO", {
