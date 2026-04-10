@@ -43,6 +43,9 @@ const IconEdit = () => (
 const IconSuccess = () => (
   <svg width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
 );
+const IconWhatsApp = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+);
 
 export default function App() {
   // ==========================================
@@ -213,7 +216,7 @@ export default function App() {
            // Si el motorista lo tomó o va rodando en Cotuí
            if (['ASSIGNED', 'PICKED_UP', 'READY_TO_DELIVER', 'ACTIVE', 'ON_THE_WAY'].includes(status)) nuevoEstado = 'En camino';
            
-           // Si el cliente ya lo tiene (CORREGIDO)
+           // Si el cliente ya lo tiene (CORREGIDO Y OPTIMIZADO)
            if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED', 'COMPLETED'].includes(status)) nuevoEstado = 'Entregado';
 
            // Capturar URL del mapa si llega retrasada desde el servidor
@@ -735,7 +738,7 @@ export default function App() {
       {activeTab === 'inicio' && (
         <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
           
-          {/* === NUEVO BANNER ESTILO PREMIUM KOLMARD === */}
+          {/* === BANNER ESTILO PREMIUM KOLMARD INTACTO === */}
           <section style={{ padding: '20px 20px 0 20px' }}>
             <div 
               style={{ 
@@ -940,7 +943,7 @@ export default function App() {
       )}
 
       {/* ------------------------------------------- */}
-      {/* VISTA 2: MIS PEDIDOS (Reemplazo de Billetera) */}
+      {/* VISTA 2: MIS PEDIDOS (CÓDIGO CORREGIDO Y WHATSAPP AÑADIDO) */}
       {/* ------------------------------------------- */}
       {activeTab === 'pedidos' && (
         <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
@@ -955,8 +958,14 @@ export default function App() {
                 boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
               }}
             >
-              {/* --- BOTÓN DE RASTREO SHIPDAY: MAPA EN VIVO --- */}
-              {pedidoActual.trackingUrl ? (
+              {/* --- BOTÓN DE RASTREO SHIPDAY / AVISO ENTREGADO --- */}
+              {pedidoActual.estado === 'Entregado' ? (
+                <div style={{ backgroundColor: '#DCFCE7', padding: '25px', borderRadius: '20px', textAlign: 'center', marginBottom: '30px', border: '2px solid #22C55E' }}>
+                  <IconSuccess />
+                  <h3 style={{ margin: '15px 0 5px 0', color: '#16A34A', fontWeight: '900', fontSize: '1.4rem' }}>¡Pedido Completado!</h3>
+                  <p style={{ margin: 0, color: '#15803D', fontWeight: '600' }}>Esperamos que disfrutes tu compra en KolmaRD.</p>
+                </div>
+              ) : pedidoActual.trackingUrl ? (
                 <a 
                   href={pedidoActual.trackingUrl} 
                   target="_blank"
@@ -1030,7 +1039,7 @@ export default function App() {
                 </div>
               </div>
               
-              {/* --- BARRA DE PROGRESO SHIPDAY CON ANIMACIÓN --- */}
+              {/* --- BARRA DE PROGRESO SHIPDAY --- */}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', position: 'relative' }}>
                 <div style={{ position: 'absolute', top: '12px', left: '10%', right: '10%', height: '4px', backgroundColor: '#F3F4F6', zIndex: 1 }}></div>
                 
@@ -1070,7 +1079,7 @@ export default function App() {
               </div>
 
               {/* --- RESUMEN DE PRODUCTOS --- */}
-              <div style={{ marginBottom: '30px', backgroundColor: '#F9FAFB', padding: '25px', borderRadius: '24px' }}>
+              <div style={{ marginBottom: '20px', backgroundColor: '#F9FAFB', padding: '25px', borderRadius: '24px' }}>
                 <p style={{ fontSize: '1rem', color: '#111', fontWeight: '900', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <IconOrders active={true} /> Resumen de tu compra
                 </p>
@@ -1091,7 +1100,33 @@ export default function App() {
                 </div>
               </div>
 
-              <div style={{ textAlign: 'center', borderTop: '1px solid #F3F4F6', paddingTop: '20px' }}>
+              {/* --- NUEVO: BOTÓN DE WHATSAPP --- */}
+              <div style={{ marginTop: '20px' }}>
+                <a
+                  href={`https://wa.me/18298558779?text=Hola,%20necesito%20ayuda%20con%20mi%20pedido%20de%20KolmaRD%20%23${pedidoActual.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    backgroundColor: '#25D366',
+                    color: '#fff',
+                    textDecoration: 'none',
+                    padding: '16px',
+                    borderRadius: '16px',
+                    fontWeight: '900',
+                    fontSize: '1.05rem',
+                    boxShadow: '0 4px 15px rgba(37, 211, 102, 0.3)',
+                    transition: 'transform 0.2s'
+                  }}
+                >
+                  <IconWhatsApp /> Escribir a Soporte (WhatsApp)
+                </a>
+              </div>
+
+              <div style={{ textAlign: 'center', borderTop: '1px solid #F3F4F6', paddingTop: '20px', marginTop: '20px' }}>
                 <p style={{ fontSize: '0.8rem', fontWeight: '900', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
                   Método: {pedidoActual.metodo === 'efectivo' ? 'Efectivo al recibir' : 'Pago Online'}
                 </p>
