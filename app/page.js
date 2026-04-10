@@ -195,11 +195,11 @@ export default function App() {
     fetchData();
   }, [domain, accessToken]);
 
-  // ==========================================
+    // ==========================================
   // NUEVO: RADAR DE SHIPDAY (Auto-Refresh de Estatus)
   // ==========================================
   useEffect(() => {
-    if (!pedidoActual) return;
+    if (!pedidoActual || pedidoActual.estado === 'Entregado') return;
 
     const rastreador = setInterval(async () => {
       try {
@@ -209,27 +209,26 @@ export default function App() {
         if (data.success && data.shipdayStatus) {
            const status = data.shipdayStatus.toUpperCase();
            
+           // Si el pedido ya se entregó
            if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED', 'COMPLETED', 'DONE'].includes(status)) {
-              clearInterval(rastreador);
-              localStorage.removeItem('kolma_last_order');
-              setPedidoActual(null);
-              alert("¡Tu pedido ha sido entregado exitosamente!");
+              clearInterval(rastreador); 
+              
+              // Actualiza visualmente a Entregado en vez de desaparecerlo
+              const pedidoFinalizado = { ...pedidoActual, estado: 'Entregado' };
+              setPedidoActual(pedidoFinalizado);
+              localStorage.setItem('kolma_last_order', JSON.stringify(pedidoFinalizado));
               return;
            }
 
+           // Si sigue en proceso
            let nuevoEstado = pedidoActual.estado;
-           
            if (['ACCEPTED', 'STARTED'].includes(status)) nuevoEstado = 'Preparando';
            if (['ASSIGNED', 'PICKED_UP', 'READY_TO_DELIVER', 'ACTIVE', 'ON_THE_WAY'].includes(status)) nuevoEstado = 'En camino';
 
            const nuevaTrackingUrl = data.trackingUrl || pedidoActual.trackingUrl;
 
            if (nuevoEstado !== pedidoActual.estado || nuevaTrackingUrl !== pedidoActual.trackingUrl) {
-              const pedidoActualizado = { 
-                  ...pedidoActual, 
-                  estado: nuevoEstado, 
-                  trackingUrl: nuevaTrackingUrl 
-              };
+              const pedidoActualizado = { ...pedidoActual, estado: nuevoEstado, trackingUrl: nuevaTrackingUrl };
               setPedidoActual(pedidoActualizado);
               localStorage.setItem('kolma_last_order', JSON.stringify(pedidoActualizado));
            }
