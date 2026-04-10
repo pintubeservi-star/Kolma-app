@@ -1013,19 +1013,20 @@ export default function App() {
                   <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.4rem', color: '#111' }}>#{pedidoActual.id}</p>
                   
                   <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', color: '#E31E24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '1.2rem' }}>⏰</span> 
-                      pedidoActual.fecha && (pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM'))
-                      ? pedidoActual.fecha 
-                      : new Date().toLocaleString("es-DO", {
-                          timeZone: "America/Santo_Domingo",
-                          hour: 'numeric',
-                          minute: 'numeric',
-                          hour12: true,
-                          day: '2-digit',
-                          month: '2-digit'
-                        })
-                    }
-                  </p>
+  <span style={{ fontSize: '1.2rem' }}>⏰</span> {
+    pedidoActual.fecha && (pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM'))
+    ? pedidoActual.fecha 
+    : new Date().toLocaleString("es-DO", {
+        timeZone: "America/Santo_Domingo",
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true,
+        day: '2-digit',
+        month: '2-digit'
+      })
+  }
+</p>
+
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ESTATUS</span>
