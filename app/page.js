@@ -764,9 +764,13 @@ export default function App() {
                 DELIVERY A TODO COTUÍ
               </div>
               
-              <h2 style={{ fontSize: '3rem', fontWeight: '900', margin: '0 0 15px 0', lineHeight: 1.1, letterSpacing: '-1px' }}>
-                Tu supermercado<br/>en minutos.
+              {/* === SECCIÓN DEL LEMA ACTUALIZADO === */}
+              <h2 style={{ fontSize: '3.2rem', fontWeight: '900', margin: '0 0 15px 0', lineHeight: 1.1, letterSpacing: '-1px' }}>
+                Tu supermercado <br/> <span style={{ color: '#E31E24' }}>KolmaRD</span>.
               </h2>
+              <p style={{ fontSize: '1.1rem', color: '#D1D5DB', fontWeight: '600', marginBottom: '25px', maxWidth: '400px' }}>
+                Todos los productos que necesitas, entregados en minutos directamente a tu puerta.
+              </p>
               
               <div 
                 style={{ 
@@ -775,7 +779,6 @@ export default function App() {
                   padding: '12px 20px', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  marginTop: '25px', 
                   maxWidth: '350px',
                   boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
                 }}
@@ -965,7 +968,6 @@ export default function App() {
               }}
             >
               {/* --- BOTÓN DE RASTREO SHIPDAY: MAPA EN VIVO --- */}
-              {/* FIX APLICADO: Convertido de <button> a <a> para evitar bloqueos del navegador */}
               {pedidoActual.trackingUrl ? (
                 <a 
                   href={pedidoActual.trackingUrl} 
