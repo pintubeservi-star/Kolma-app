@@ -15,6 +15,15 @@ export async function POST(request) {
       quantity: parseInt(item.quantity)
     }));
 
+    // --- FIX DE FECHA Y HORA (ZONA HORARIA DE RD) ---
+    // Obtenemos la fecha y hora actuales forzadas a Cotuí para evitar que Vercel lo mande al día siguiente
+    const dateOptions = { timeZone: 'America/Santo_Domingo', year: 'numeric', month: '2-digit', day: '2-digit' };
+    const timeOptions = { timeZone: 'America/Santo_Domingo', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+    
+    // Formato exacto que pide Shipday: YYYY-MM-DD y HH:mm:ss
+    const expectedDeliveryDate = new Intl.DateTimeFormat('en-CA', dateOptions).format(new Date()); 
+    const expectedDeliveryTime = new Intl.DateTimeFormat('en-GB', timeOptions).format(new Date());
+
     // LLAMADA A SHIPDAY
     const shipdayRes = await fetch("https://api.shipday.com/orders", {
       method: "POST",
@@ -32,7 +41,10 @@ export async function POST(request) {
         restaurantAddress: "Cotuí, RD", 
         totalOrderCost: parseFloat(total),
         deliveryInstruction: metodoPago === 'efectivo' ? 'COBRAR EFECTIVO' : 'YA PAGADO',
-        orderItem: shipdayItems
+        orderItem: shipdayItems,
+        // PARÁMETROS AGREGADOS PARA FORZAR LA ENTREGA INMEDIATA HOY
+        expectedDeliveryDate: expectedDeliveryDate,
+        expectedDeliveryTime: expectedDeliveryTime
       })
     });
 
@@ -52,6 +64,7 @@ export async function POST(request) {
         trackingUrl: shipdayData.trackingLink // ESTE ES EL LINK DEL MAPA
       });
     } else {
+      console.error("Shipday Error:", shipdayData);
       return NextResponse.json({ success: false, error: "Error en Shipday" }, { status: 400 });
     }
 
