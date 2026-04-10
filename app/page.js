@@ -203,17 +203,17 @@ export default function App() {
 
     const rastreador = setInterval(async () => {
       try {
-        const res = await fetch(`/api/status?id=${pedidoActual.id}`);
+        const res = await fetch(`/api/status?id=${pedidoActual.id}&t=${Date.now()}`);
         const data = await res.json();
         
         if (data.success && data.shipdayStatus) {
            const status = data.shipdayStatus.toUpperCase();
            
-           // CAMBIO: Quitar el pedido si se entregó
-           if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED', 'COMPLETED'].includes(status)) {
-              alert("¡Tu pedido ha sido entregado exitosamente!");
-              setPedidoActual(null);
+           if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED', 'COMPLETED', 'DONE'].includes(status)) {
+              clearInterval(rastreador);
               localStorage.removeItem('kolma_last_order');
+              setPedidoActual(null);
+              alert("¡Tu pedido ha sido entregado exitosamente!");
               return;
            }
 
@@ -237,7 +237,7 @@ export default function App() {
       } catch(e) {
         console.error("Error consultando estatus", e);
       }
-    }, 15000); 
+    }, 10000); 
 
     return () => clearInterval(rastreador);
   }, [pedidoActual]);
@@ -740,7 +740,6 @@ export default function App() {
       {activeTab === 'inicio' && (
         <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
           
-          {/* === BANNER ESTILO PREMIUM KOLMARD INTACTO === */}
           <section style={{ padding: '20px 20px 0 20px' }}>
             <div 
               style={{ 
@@ -753,7 +752,6 @@ export default function App() {
                 boxShadow: '0 10px 25px rgba(227,30,36,0.25)'
               }}
             >
-              {/* Textos y Buscador (z-index por encima del camión) */}
               <div style={{ position: 'relative', zIndex: 10 }}>
                 <h2 style={{ fontSize: '1.9rem', fontWeight: '900', lineHeight: '1.15', margin: '0 0 8px 0' }}>
                   Calidad Premium<br />al mejor precio
@@ -762,7 +760,6 @@ export default function App() {
                   Los productos más frescos de Cotuí, directo a tu casa.
                 </p>
                 
-                {/* Buscador Integrado (Mantiene la función original) */}
                 <div 
                   style={{ 
                     backgroundColor: '#FFFFFF', 
@@ -790,7 +787,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Icono SVG de Fondo (Opacidad baja) */}
               <div style={{ position: 'absolute', right: '-20px', bottom: '-20px', opacity: 0.15, pointerEvents: 'none' }}>
                 <svg width="160" height="160" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
@@ -960,7 +956,7 @@ export default function App() {
                 boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
               }}
             >
-              {pedidoActual.trackingUrl ? (
+              {pedidoActual.trackingUrl && (
                 <a 
                   href={pedidoActual.trackingUrl} 
                   target="_blank"
@@ -988,14 +984,13 @@ export default function App() {
                 >
                   <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
                 </a>
-              ) : null}
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #F3F4F6', paddingBottom: '20px', marginBottom: '25px' }}>
                 <div>
                   <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>NÚMERO DE ORDEN</span>
                   <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.4rem', color: '#111' }}>#{pedidoActual.id}</p>
                   
-                  {/* FIX DE HORA */}
                   <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', color: '#E31E24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontSize: '1.2rem' }}>⏰</span> {
                       pedidoActual.fecha && (pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM'))
@@ -1089,7 +1084,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* --- NUEVO: BOTÓN DE WHATSAPP --- */}
               <div style={{ marginTop: '20px' }}>
                 <a
                   href={`https://wa.me/18298558779?text=Hola,%20necesito%20ayuda%20con%20mi%20pedido%20de%20KolmaRD%20%23${pedidoActual.id}`}
@@ -1122,7 +1116,6 @@ export default function App() {
               </div>
             </div>
           ) : (
-            /* --- ESTADO VACÍO --- */
             <div style={{ textAlign: 'center', padding: '80px 30px', backgroundColor: '#fff', borderRadius: '32px', border: '1px solid #E5E7EB' }}>
               <div style={{ backgroundColor: '#FEE2E2', width: '100px', height: '100px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 30px', color: '#E31E24' }}>
                 <IconTruck active={true} />
