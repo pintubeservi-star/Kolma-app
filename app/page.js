@@ -966,7 +966,6 @@ export default function App() {
       {/* ------------------------------------------- */}
 {activeTab === 'pedidos' && (
   <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
-    
     {pedidoActual ? (
       <div 
         style={{ 
@@ -1041,6 +1040,7 @@ export default function App() {
     ) : null}
   </section>
 )}
+
  
               {/* BOTÓN DE MAPA (Se oculta cuando ya se entregó) */}
               {pedidoActual.trackingUrl && pedidoActual.estado !== 'Entregado' && (
