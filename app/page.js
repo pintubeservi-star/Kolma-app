@@ -1041,6 +1041,7 @@ export default function App() {
   </section>
 )}
 
+
  
               {/* BOTÓN DE MAPA (Se oculta cuando ya se entregó) */}
               {pedidoActual.trackingUrl && pedidoActual.estado !== 'Entregado' && (
