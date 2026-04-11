@@ -2117,10 +2117,8 @@ export default function App() {
         </div>
       </nav>
 
-      {/* ------------------------------------------- */}
-      {/* ESTILOS GLOBALES Y ANIMACIONES */}
-      {/* ------------------------------------------- */}
-      <style>{`
+    {/* Aquí termina el contenido de tu página */}
+      <style jsx global>{`
         @keyframes slideInRight { 
           0% { transform: translateX(100%); } 
           100% { transform: translateX(0); } 
@@ -2152,6 +2150,6 @@ export default function App() {
           border-color: #E31E24 !important;
         }
       `}</style>
-    </div>
+    </div> // Este cierra el DIV principal que envuelve toda tu página
   );
 }
