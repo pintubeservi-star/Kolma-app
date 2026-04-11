@@ -964,68 +964,84 @@ export default function App() {
       {/* ------------------------------------------- */}
       {/* VISTA 2: MIS PEDIDOS (CÓDIGO CORREGIDO Y WHATSAPP AÑADIDO) */}
       {/* ------------------------------------------- */}
-      {activeTab === 'pedidos' && (
-        <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
-          
-          {pedidoActual ? (
-            <div 
-              style={{ 
-                backgroundColor: '#fff', 
-                borderRadius: '32px', 
-                padding: '35px', 
-                border: '1px solid #E5E7EB', 
-                boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
-                }}
-                            >
-                Rastrear Pedido
-              </a>
-            )}
+{activeTab === 'pedidos' && (
+  <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
+    
+    {pedidoActual ? (
+      <div 
+        style={{ 
+          backgroundColor: '#fff', 
+          borderRadius: '32px', 
+          padding: '35px', 
+          border: '1px solid #E5E7EB', 
+          boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
+        }}
+      >
+        {pedidoActual.trackingUrl && (
+          <a 
+            href={pedidoActual.trackingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ 
+              width: '100%', 
+              backgroundColor: '#E31E24', 
+              color: '#fff', 
+              padding: '22px', 
+              borderRadius: '20px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '12px',
+              textDecoration: 'none',
+              fontWeight: '900',
+              marginBottom: '30px'
+            }}
+          >
+            <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
+          </a>
+        )}
 
-            <p style={{ fontSize: '0.9rem', color: '#666', textAlign: 'center', marginTop: '20px' }}>
-              {pedidoActual.fecha 
+        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #F3F4F6', paddingBottom: '20px', marginBottom: '25px' }}>
+          <div>
+            <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>NÚMERO DE ORDEN</span>
+            <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.4rem', color: '#111' }}>#{pedidoActual.id}</p>
+            
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', color: '#E31E24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '1.2rem' }}>⏰</span> {
+                pedidoActual.fecha && (pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM'))
                 ? pedidoActual.fecha 
                 : new Date().toLocaleString("es-DO", {
                     timeZone: "America/Santo_Domingo",
                     hour: 'numeric',
                     minute: 'numeric',
                     hour12: true,
-                  })}
+                    day: '2-digit',
+                    month: '2-digit'
+                  })
+              }
             </p>
-
-                  <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
-                </a>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #F3F4F6', paddingBottom: '20px', marginBottom: '25px' }}>
-                <div>
-                  <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>NÚMERO DE ORDEN</span>
-                  <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.4rem', color: '#111' }}>#{pedidoActual.id}</p>
-                  
-                  <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', color: '#E31E24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-  <span style={{ fontSize: '1.2rem' }}>⏰</span> {
-    pedidoActual.fecha && (pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM'))
-    ? pedidoActual.fecha 
-    : new Date().toLocaleString("es-DO", {
-        timeZone: "America/Santo_Domingo",
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true,
-        day: '2-digit',
-        month: '2-digit'
-      })
-  }
-</p>
-
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ESTATUS</span>
-                  <div style={{ 
-                    backgroundColor: pedidoActual.estado === 'Entregado' ? '#DCFCE7' : '#FEF2F2', 
-                    color: pedidoActual.estado === 'Entregado' ? '#16A34A' : '#E31E24', 
-                    padding: '8px 16px', 
-                    borderRadius: '12px', 
-                    fontWeight: '900', 
-                    fontSize: '0.9rem', 
+          </div>
+          
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ESTATUS</span>
+            <div style={{ 
+              backgroundColor: pedidoActual.estado === 'Entregado' ? '#DCFCE7' : '#FEF2F2', 
+              color: pedidoActual.estado === 'Entregado' ? '#16A34A' : '#E31E24', 
+              padding: '8px 16px', 
+              borderRadius: '12px', 
+              fontWeight: '900', 
+              fontSize: '0.9rem',
+              marginTop: '5px'
+            }}>
+              {pedidoActual.estado}
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : null}
+  </section>
+)}
+ 
               {/* BOTÓN DE MAPA (Se oculta cuando ya se entregó) */}
               {pedidoActual.trackingUrl && pedidoActual.estado !== 'Entregado' && (
                 <a 
