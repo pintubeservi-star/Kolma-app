@@ -976,12 +976,12 @@ export default function App() {
                 border: '1px solid #E5E7EB', 
                 boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
                 }}
-              >
+                            >
                 Rastrear Pedido
               </a>
             )}
 
-            <p style={{ fontSize: '0.9rem', color: '#666', textAlign: 'center' }}>
+            <p style={{ fontSize: '0.9rem', color: '#666', textAlign: 'center', marginTop: '20px' }}>
               {pedidoActual.fecha 
                 ? pedidoActual.fecha 
                 : new Date().toLocaleString("es-DO", {
@@ -991,6 +991,7 @@ export default function App() {
                     hour12: true,
                   })}
             </p>
+
                   <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
                 </a>
               )}
