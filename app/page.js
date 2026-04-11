@@ -975,34 +975,22 @@ export default function App() {
                 padding: '35px', 
                 border: '1px solid #E5E7EB', 
                 boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
-              }}
-            >
-              {pedidoActual.trackingUrl && (
-                <a 
-                  href={pedidoActual.trackingUrl} 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ 
-                    width: '100%', 
-                    backgroundColor: '#E31E24', 
-                    color: '#fff', 
-                    padding: '22px', 
-                    borderRadius: '20px', 
-                    border: 'none', 
-                    fontWeight: '900', 
-                    fontSize: '1.1rem', 
-                    marginBottom: '30px', 
-                    cursor: 'pointer', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    gap: '12px',
-                    boxShadow: '0 10px 25px rgba(227,30,36,0.3)',
-                    transition: 'transform 0.2s',
-                    textDecoration: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                >
+                }}
+              >
+                Rastrear Pedido
+              </a>
+            )}
+
+            <p style={{ fontSize: '0.9rem', color: '#666', textAlign: 'center' }}>
+              {pedidoActual.fecha 
+                ? pedidoActual.fecha 
+                : new Date().toLocaleString("es-DO", {
+                    timeZone: "America/Santo_Domingo",
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    hour12: true,
+                  })}
+            </p>
                   <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
                 </a>
               )}
