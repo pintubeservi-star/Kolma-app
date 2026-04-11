@@ -1001,6 +1001,46 @@ export default function App() {
         )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #F3F4F6', paddingBottom: '20px', marginBottom: '25px' }}>
+{activeTab === 'pedidos' && (
+  <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
+    {pedidoActual ? (
+      <div 
+        style={{ 
+          backgroundColor: '#fff', 
+          borderRadius: '32px', 
+          padding: '35px', 
+          border: '1px solid #E5E7EB', 
+          boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
+        }}
+      >
+        {pedidoActual.trackingUrl && (
+          <a 
+            href={pedidoActual.trackingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ 
+              width: '100%', 
+              backgroundColor: '#E31E24', 
+              color: '#fff', 
+              padding: '22px', 
+              borderRadius: '20px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '12px',
+              textDecoration: 'none',
+              fontWeight: '900',
+              marginBottom: '30px',
+              fontSize: '1.1rem',
+              boxShadow: '0 10px 25px rgba(227,30,36,0.3)',
+              boxSizing: 'border-box'
+            }}
+          >
+            <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
+          </a>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #F3F4F6', paddingBottom: '20px', marginBottom: '25px' }}>
           <div>
             <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>NÚMERO DE ORDEN</span>
             <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.4rem', color: '#111' }}>#{pedidoActual.id}</p>
