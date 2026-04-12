@@ -4,14 +4,11 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
 
-  if (!id) {
-    return NextResponse.json({ success: false, error: 'Falta el ID' }, { status: 400 });
-  }
+  if (!id) return NextResponse.json({ success: false, error: 'Falta ID' }, { status: 400 });
 
   const SHIPDAY_KEY = "FzKmvwy7mB.DgaRNOaMv19P28urcMEb.";
 
   try {
-    // Buscamos por número de orden
     const response = await fetch(`https://api.shipday.com/orders/number/${id}`, {
       method: 'GET',
       headers: {
@@ -24,42 +21,44 @@ export async function GET(request) {
     const dataArray = await response.json();
     const pedido = Array.isArray(dataArray) ? dataArray[0] : dataArray;
 
-    if (!pedido) {
-      return NextResponse.json({ success: false, error: 'No encontrado' }, { status: 404 });
+    if (!pedido) return NextResponse.json({ success: false, error: 'No encontrado' }, { status: 404 });
+
+    // --- LÓGICA DE ESTADO REFORZADA ---
+    // Revisamos todas las posibles ubicaciones del estado en Shipday
+    let estadoReal = "PENDING";
+    
+    if (pedido.status) estadoReal = pedido.status;
+    if (pedido.orderStatus?.shipdayStatus) estadoReal = pedido.orderStatus.shipdayStatus;
+    if (pedido.orderStatus?.orderState) estadoReal = pedido.orderStatus.orderState;
+    
+    // Si ya hay un motorista asignado, forzamos el estado a "STARTED" para activar el mapa
+    if (pedido.carrier && estadoReal === "PENDING") {
+        estadoReal = "ASSIGNED";
     }
 
-    // EXTRAER EL ESTADO CORRECTO (Igual que en tu código anterior que sí funcionaba)
-    const estadoShipday = typeof pedido.orderStatus === 'string' 
-                            ? pedido.orderStatus 
-                            : (pedido.orderStatus?.orderState || 'PENDING');
+    const result = {
+      success: true,
+      shipdayStatus: estadoReal.toUpperCase(), // Lo enviamos en mayúsculas para evitar errores
+      driverName: pedido.carrier?.name || null,
+      driverPhone: pedido.carrier?.phoneNumber || null,
+      eta: pedido.eta || pedido.etaTime || null,
+      driverLocation: null
+    };
 
-    // EXTRAER DATOS DEL MOTORISTA
-    const driverName = pedido.carrier?.name || pedido.carrierName || null;
-    const driverPhone = pedido.carrier?.phoneNumber || pedido.carrierPhoneNumber || null;
-    const eta = pedido.etaTime || pedido.eta || null;
-    
-    // EXTRAER GPS (Shipday lo manda dentro de carrier.location o carrier directamente)
-    let driverLocation = null;
+    // Ubicación GPS
     const lat = pedido.carrier?.location?.latitude || pedido.carrier?.latitude;
     const lng = pedido.carrier?.location?.longitude || pedido.carrier?.longitude;
 
     if (lat && lng) {
-      driverLocation = {
+      result.driverLocation = {
         latitude: parseFloat(lat),
         longitude: parseFloat(lng)
       };
     }
 
-    return NextResponse.json({
-      success: true,
-      shipdayStatus: estadoShipday,
-      driverName,
-      driverPhone,
-      driverLocation,
-      eta
-    });
+    return NextResponse.json(result);
 
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
-}
+      }
