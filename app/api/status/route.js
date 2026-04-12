@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+
+    import { NextResponse } from 'next/server';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -9,7 +10,8 @@ export async function GET(request) {
   const SHIPDAY_KEY = "FzKmvwy7mB.DgaRNOaMv19P28urcMEb.";
 
   try {
-    const response = await fetch(`https://api.shipday.com/orders`, {
+    // 1. Buscamos el pedido directamente por su número
+    const response = await fetch(`https://api.shipday.com/orders/number/${id}`, {
       method: 'GET',
       headers: {
         'Authorization': `Basic ${SHIPDAY_KEY}`,
@@ -18,55 +20,45 @@ export async function GET(request) {
       cache: 'no-store'
     });
 
-    if (!response.ok) throw new Error('Error de conexión');
+    const dataArray = await response.json();
+    const p = Array.isArray(dataArray) ? dataArray[0] : dataArray;
 
-    const todosLosPedidos = await response.json();
-    
-    // Buscamos el pedido por número o por ID
-    const pedido = todosLosPedidos.find(p => 
-      String(p.orderNumber) === String(id) || 
-      String(p.id) === String(id)
-    );
+    if (!p) return NextResponse.json({ success: false, error: 'No encontrado' }, { status: 404 });
 
-    if (!pedido) {
-      return NextResponse.json({ success: false, error: 'No encontrado' }, { status: 404 });
-    }
+    // 2. EXTRACCIÓN MAESTRA DE ESTADO
+    let status = "PENDING";
+    if (p.orderStatus?.orderState) status = p.orderStatus.orderState;
+    else if (p.orderStatus?.shipdayStatus) status = p.orderStatus.shipdayStatus;
+    else if (p.status) status = p.status;
 
-    // --- DETECTAR EL ESTADO REAL (Multi-campo) ---
-    // Revisamos cada rincón donde Shipday guarda el estatus
-    let estadoReal = "PENDING";
-    
-    if (pedido.orderStatus?.orderState) estadoReal = pedido.orderStatus.orderState;
-    else if (pedido.orderStatus?.shipdayStatus) estadoReal = pedido.orderStatus.shipdayStatus;
-    else if (pedido.status) estadoReal = pedido.status;
+    // 3. EXTRACCIÓN DE MOTORISTA (Buscando en todas las capas)
+    const carrier = p.carrier || {};
+    const driverName = carrier.name || p.carrierName || "Asignando...";
+    const driverPhone = carrier.phoneNumber || p.carrierPhoneNumber || "";
 
-    // TRUCO DE SEGURIDAD: Si hay un motorista (carrier) asignado, el estado NO puede ser PENDING.
-    // Lo forzamos a "STARTED" para que la barra de la app se mueva.
-    if (pedido.carrier && (estadoReal === "PENDING" || estadoReal === "UNASSIGNED")) {
-        estadoReal = "STARTED";
-    }
+    // 4. ESCANEO PROFUNDO DE GPS (Para que no salga null si hay señal)
+    let driverLocation = null;
+    const lat = carrier.location?.latitude || carrier.latitude || p.latitude;
+    const lng = carrier.location?.longitude || carrier.longitude || p.longitude;
 
-    const result = {
-      success: true,
-      shipdayStatus: String(estadoReal).toUpperCase(),
-      driverName: pedido.carrier?.name || null,
-      driverPhone: pedido.carrier?.phoneNumber || null,
-      eta: pedido.eta || pedido.etaTime || null,
-      driverLocation: null
-    };
-
-    // Ubicación GPS (Ruta absoluta de Shipday)
-    const lat = pedido.carrier?.location?.latitude || pedido.carrier?.latitude;
-    const lng = pedido.carrier?.location?.longitude || pedido.carrier?.longitude;
-
-    if (lat && lng) {
-      result.driverLocation = {
+    if (lat && lng && lat !== 0) {
+      driverLocation = {
         latitude: parseFloat(lat),
         longitude: parseFloat(lng)
       };
     }
 
-    return NextResponse.json(result);
+    // 5. RESPUESTA COMPLETA PARA LA APP
+    return NextResponse.json({
+      success: true,
+      shipdayStatus: String(status).toUpperCase(),
+      driverName,
+      driverPhone,
+      eta: p.eta || p.etaTime || null,
+      driverLocation,
+      // Enviamos el link de rastreo nativo de Shipday por si el mapa interno falla
+      trackingUrl: p.trackingLink || p.trackingUrl || null 
+    });
 
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
