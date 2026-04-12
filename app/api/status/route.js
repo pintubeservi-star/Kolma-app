@@ -23,29 +23,25 @@ export async function GET(request) {
 
     if (!pedido) return NextResponse.json({ success: false, error: 'No encontrado' }, { status: 404 });
 
-    // --- LÓGICA DE ESTADO REFORZADA ---
-    // Revisamos todas las posibles ubicaciones del estado en Shipday
-    let estadoReal = "PENDING";
-    
-    if (pedido.status) estadoReal = pedido.status;
-    if (pedido.orderStatus?.shipdayStatus) estadoReal = pedido.orderStatus.shipdayStatus;
-    if (pedido.orderStatus?.orderState) estadoReal = pedido.orderStatus.orderState;
-    
-    // Si ya hay un motorista asignado, forzamos el estado a "STARTED" para activar el mapa
-    if (pedido.carrier && estadoReal === "PENDING") {
-        estadoReal = "ASSIGNED";
-    }
+    // --- LÓGICA DE ESTADO SEGURA ---
+    let estadoCrudo = pedido.status || 
+                       pedido.orderStatus?.shipdayStatus || 
+                       pedido.orderStatus?.orderState || 
+                       "PENDING";
+
+    // Forzamos que sea texto antes de usar toUpperCase() para evitar el error anterior
+    const estadoFinal = String(estadoCrudo).toUpperCase();
 
     const result = {
       success: true,
-      shipdayStatus: estadoReal.toUpperCase(), // Lo enviamos en mayúsculas para evitar errores
+      shipdayStatus: estadoFinal,
       driverName: pedido.carrier?.name || null,
       driverPhone: pedido.carrier?.phoneNumber || null,
       eta: pedido.eta || pedido.etaTime || null,
       driverLocation: null
     };
 
-    // Ubicación GPS
+    // Ubicación GPS (Revisando múltiples rutas de Shipday)
     const lat = pedido.carrier?.location?.latitude || pedido.carrier?.latitude;
     const lng = pedido.carrier?.location?.longitude || pedido.carrier?.longitude;
 
@@ -59,6 +55,7 @@ export async function GET(request) {
     return NextResponse.json(result);
 
   } catch (error) {
+    // Si algo falla, devolvemos el error pero sin romper la ejecución
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
       }
