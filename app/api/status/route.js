@@ -9,7 +9,8 @@ export async function GET(request) {
   const SHIPDAY_KEY = "FzKmvwy7mB.DgaRNOaMv19P28urcMEb.";
 
   try {
-    const response = await fetch(`https://api.shipday.com/orders/number/${id}`, {
+    // 1. OBTENEMOS TODOS LOS PEDIDOS ACTIVOS PARA BUSCAR EL MATCH REAL
+    const response = await fetch(`https://api.shipday.com/orders`, {
       method: 'GET',
       headers: {
         'Authorization': `Basic ${SHIPDAY_KEY}`,
@@ -18,32 +19,33 @@ export async function GET(request) {
       cache: 'no-store'
     });
 
-    // Si la respuesta de Shipday no es OK (200), es que el pedido no existe allí
-    if (!response.ok) {
-        return NextResponse.json({ success: false, error: 'Pedido no existe en Shipday' }, { status: 404 });
-    }
+    if (!response.ok) throw new Error('Error al conectar con Shipday');
 
-    const dataArray = await response.json();
+    const todosLosPedidos = await response.json();
     
-    // Si el array está vacío, Shipday no encontró el pedido
-    if (!dataArray || (Array.isArray(dataArray) && dataArray.length === 0)) {
-        return NextResponse.json({ success: false, error: 'Pedido no encontrado' }, { status: 404 });
+    // 2. BUSCAMOS EL PEDIDO QUE COINCIDA CON EL NÚMERO "KRD-315793"
+    const pedido = todosLosPedidos.find(p => 
+      String(p.orderNumber) === String(id) || 
+      String(p.id) === String(id)
+    );
+
+    if (!pedido) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Pedido no encontrado en lista activa',
+        buscado: id 
+      }, { status: 404 });
     }
 
-    const pedido = Array.isArray(dataArray) ? dataArray[0] : dataArray;
-
-    // Extraer estado real evitando el error del "404"
-    let estadoCrudo = "PENDING";
-    if (pedido.orderStatus?.shipdayStatus) estadoCrudo = pedido.orderStatus.shipdayStatus;
-    else if (pedido.status) estadoCrudo = pedido.status;
-    else if (pedido.orderStatus?.orderState) estadoCrudo = pedido.orderStatus.orderState;
+    // 3. EXTRACCIÓN DE ESTADO Y GPS
+    const estadoCrudo = pedido.status || pedido.orderStatus?.shipdayStatus || "PENDING";
 
     const result = {
       success: true,
       shipdayStatus: String(estadoCrudo).toUpperCase(),
       driverName: pedido.carrier?.name || null,
       driverPhone: pedido.carrier?.phoneNumber || null,
-      eta: pedido.eta || pedido.etaTime || null,
+      eta: pedido.eta || null,
       driverLocation: null
     };
 
