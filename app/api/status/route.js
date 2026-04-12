@@ -18,30 +18,36 @@ export async function GET(request) {
       cache: 'no-store'
     });
 
+    // Si la respuesta de Shipday no es OK (200), es que el pedido no existe allí
+    if (!response.ok) {
+        return NextResponse.json({ success: false, error: 'Pedido no existe en Shipday' }, { status: 404 });
+    }
+
     const dataArray = await response.json();
+    
+    // Si el array está vacío, Shipday no encontró el pedido
+    if (!dataArray || (Array.isArray(dataArray) && dataArray.length === 0)) {
+        return NextResponse.json({ success: false, error: 'Pedido no encontrado' }, { status: 404 });
+    }
+
     const pedido = Array.isArray(dataArray) ? dataArray[0] : dataArray;
 
-    if (!pedido) return NextResponse.json({ success: false, error: 'No encontrado' }, { status: 404 });
-
-    // --- LÓGICA DE ESTADO SEGURA ---
-    let estadoCrudo = pedido.status || 
-                       pedido.orderStatus?.shipdayStatus || 
-                       pedido.orderStatus?.orderState || 
-                       "PENDING";
-
-    // Forzamos que sea texto antes de usar toUpperCase() para evitar el error anterior
-    const estadoFinal = String(estadoCrudo).toUpperCase();
+    // Extraer estado real evitando el error del "404"
+    let estadoCrudo = "PENDING";
+    if (pedido.orderStatus?.shipdayStatus) estadoCrudo = pedido.orderStatus.shipdayStatus;
+    else if (pedido.status) estadoCrudo = pedido.status;
+    else if (pedido.orderStatus?.orderState) estadoCrudo = pedido.orderStatus.orderState;
 
     const result = {
       success: true,
-      shipdayStatus: estadoFinal,
+      shipdayStatus: String(estadoCrudo).toUpperCase(),
       driverName: pedido.carrier?.name || null,
       driverPhone: pedido.carrier?.phoneNumber || null,
       eta: pedido.eta || pedido.etaTime || null,
       driverLocation: null
     };
 
-    // Ubicación GPS (Revisando múltiples rutas de Shipday)
+    // Ubicación GPS
     const lat = pedido.carrier?.location?.latitude || pedido.carrier?.latitude;
     const lng = pedido.carrier?.location?.longitude || pedido.carrier?.longitude;
 
@@ -55,7 +61,6 @@ export async function GET(request) {
     return NextResponse.json(result);
 
   } catch (error) {
-    // Si algo falla, devolvemos el error pero sin romper la ejecución
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
-      }
+}
