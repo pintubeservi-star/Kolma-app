@@ -9,7 +9,6 @@ export async function GET(request) {
   const SHIPDAY_KEY = "FzKmvwy7mB.DgaRNOaMv19P28urcMEb.";
 
   try {
-    // 1. OBTENEMOS TODOS LOS PEDIDOS ACTIVOS PARA BUSCAR EL MATCH REAL
     const response = await fetch(`https://api.shipday.com/orders`, {
       method: 'GET',
       headers: {
@@ -19,37 +18,44 @@ export async function GET(request) {
       cache: 'no-store'
     });
 
-    if (!response.ok) throw new Error('Error al conectar con Shipday');
+    if (!response.ok) throw new Error('Error de conexión');
 
     const todosLosPedidos = await response.json();
     
-    // 2. BUSCAMOS EL PEDIDO QUE COINCIDA CON EL NÚMERO "KRD-315793"
+    // Buscamos el pedido por número o por ID
     const pedido = todosLosPedidos.find(p => 
       String(p.orderNumber) === String(id) || 
       String(p.id) === String(id)
     );
 
     if (!pedido) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Pedido no encontrado en lista activa',
-        buscado: id 
-      }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'No encontrado' }, { status: 404 });
     }
 
-    // 3. EXTRACCIÓN DE ESTADO Y GPS
-    const estadoCrudo = pedido.status || pedido.orderStatus?.shipdayStatus || "PENDING";
+    // --- DETECTAR EL ESTADO REAL (Multi-campo) ---
+    // Revisamos cada rincón donde Shipday guarda el estatus
+    let estadoReal = "PENDING";
+    
+    if (pedido.orderStatus?.orderState) estadoReal = pedido.orderStatus.orderState;
+    else if (pedido.orderStatus?.shipdayStatus) estadoReal = pedido.orderStatus.shipdayStatus;
+    else if (pedido.status) estadoReal = pedido.status;
+
+    // TRUCO DE SEGURIDAD: Si hay un motorista (carrier) asignado, el estado NO puede ser PENDING.
+    // Lo forzamos a "STARTED" para que la barra de la app se mueva.
+    if (pedido.carrier && (estadoReal === "PENDING" || estadoReal === "UNASSIGNED")) {
+        estadoReal = "STARTED";
+    }
 
     const result = {
       success: true,
-      shipdayStatus: String(estadoCrudo).toUpperCase(),
+      shipdayStatus: String(estadoReal).toUpperCase(),
       driverName: pedido.carrier?.name || null,
       driverPhone: pedido.carrier?.phoneNumber || null,
-      eta: pedido.eta || null,
+      eta: pedido.eta || pedido.etaTime || null,
       driverLocation: null
     };
 
-    // Ubicación GPS
+    // Ubicación GPS (Ruta absoluta de Shipday)
     const lat = pedido.carrier?.location?.latitude || pedido.carrier?.latitude;
     const lng = pedido.carrier?.location?.longitude || pedido.carrier?.longitude;
 
