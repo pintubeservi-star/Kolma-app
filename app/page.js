@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // ==========================================
 // 1. ICONOS SVG PROFESIONALES (Diseño Premium)
@@ -47,6 +47,120 @@ const IconWhatsApp = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
 );
 
+// ==========================================
+// NUEVO: COMPONENTE DE MAPA REAL (CONECTADO A SHIPDAY)
+// ==========================================
+const TrackingKolma = ({ pedido, cerrarMapa }) => {
+  const mapRef = useRef(null);
+  const driverMarkerRef = useRef(null);
+  
+  // Coordenadas iniciales para la vista de Cotuí
+  const defaultLoc = [19.0527, -70.1492]; 
+
+  useEffect(() => {
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link');
+      link.id = 'leaflet-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+
+    if (!document.getElementById('leaflet-js')) {
+      const script = document.createElement('script');
+      script.id = 'leaflet-js';
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      document.head.appendChild(script);
+      script.onload = iniciarMapa;
+    } else {
+      iniciarMapa();
+    }
+
+    function iniciarMapa() {
+      if (mapRef.current !== null) return;
+
+      const map = window.L.map('kolma-map', { zoomControl: false, attributionControl: false }).setView(defaultLoc, 15);
+      mapRef.current = map;
+
+      window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+      // Ícono del repartidor
+      const driverIcon = window.L.divIcon({
+        className: '',
+        html: `<div style="background: #E31E24; border-radius: 50%; padding: 8px; border: 2px solid white; box-shadow: 0 4px 10px rgba(227,30,36,0.4); display: flex; align-items: center; justify-content: center; color: white;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+               </div>`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+      });
+
+      driverMarkerRef.current = window.L.marker([0, 0], { icon: driverIcon }).addTo(map);
+      driverMarkerRef.current.setOpacity(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (driverMarkerRef.current && pedido.driverLat && pedido.driverLng) {
+      const nuevaPosicion = [pedido.driverLat, pedido.driverLng];
+      
+      driverMarkerRef.current.setOpacity(1);
+      driverMarkerRef.current.setLatLng(nuevaPosicion);
+      
+      if (mapRef.current) {
+        mapRef.current.setView(nuevaPosicion, 16);
+      }
+    }
+  }, [pedido.driverLat, pedido.driverLng]);
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 3000, backgroundColor: '#f3f4f6' }}>
+      <div id="kolma-map" style={{ height: '100%', width: '100%', zIndex: 0 }}></div>
+
+      <div style={{ position: 'absolute', top: '25px', left: '20px', right: '20px', zIndex: 1001, display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'none' }}>
+        <button onClick={cerrarMapa} style={{ pointerEvents: 'auto', background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', border: 'none', padding: '12px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', cursor: 'pointer' }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <div style={{ background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', padding: '8px 20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', pointerEvents: 'auto', textAlign: 'center' }}>
+          <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase' }}>Llega en</p>
+          <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '900', color: '#E31E24' }}>
+            {pedido.eta ? `${pedido.eta} min` : 'Calculando...'}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(15px)', borderRadius: '40px 40px 0 0', padding: '25px 25px 40px 25px', boxShadow: '0 -10px 40px rgba(0,0,0,0.1)', zIndex: 1001, animation: 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <div style={{ width: '55px', height: '55px', borderRadius: '16px', backgroundColor: '#F3F4F6', backgroundImage: 'url(https://i.pravatar.cc/150?u=kolma_driver)', backgroundSize: 'cover' }}></div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '900', color: '#111' }}>
+                {pedido.driverName || 'Buscando Repartidor...'}
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: '600', color: '#6B7280' }}>Delivery Kolma RD</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {pedido.driverPhone && (
+              <a href={`tel:${pedido.driverPhone}`} style={{ padding: '15px', background: '#111', borderRadius: '16px', color: '#fff' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div style={{ background: '#F9FAFB', borderRadius: '20px', padding: '15px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #E5E7EB' }}>
+          <div>
+            <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase' }}>Nº Pedido</p>
+            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '900', color: '#111' }}>#{pedido.id}</p>
+          </div>
+          <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '900', color: '#111' }}>RD${pedido.total.toFixed(0)}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   // ==========================================
   // 2. ESTADOS GLOBALES DE LA APLICACIÓN
@@ -93,8 +207,9 @@ export default function App() {
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   
-  // Pedidos
+  // Pedidos y Mapa
   const [pedidoActual, setPedidoActual] = useState(null);
+  const [verMapaPremium, setVerMapaPremium] = useState(false);
 
   // Credenciales Shopify
   const domain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN || "q0q09e-cp.myshopify.com";
@@ -195,11 +310,10 @@ export default function App() {
     fetchData();
   }, [domain, accessToken]);
 
-      // ==========================================
-  // NUEVO: RADAR DE SHIPDAY (Auto-Refresh de Estatus)
+  // ==========================================
+  // RADAR DE SHIPDAY (Auto-Refresh de Estatus) ACTUALIZADO
   // ==========================================
   useEffect(() => {
-    // Si ya se entregó o está finalizado, no seguimos buscando en internet
     if (!pedidoActual || ['Entregado', 'Finalizado'].includes(pedidoActual.estado)) return;
 
     const rastreador = setInterval(async () => {
@@ -215,7 +329,7 @@ export default function App() {
               const pedidoEntregado = { 
                 ...pedidoActual, 
                 estado: 'Entregado',
-                entregadoAt: Date.now() // Guardamos la hora exacta en la que se entregó
+                entregadoAt: Date.now()
               };
               setPedidoActual(pedidoEntregado);
               localStorage.setItem('kolma_last_order', JSON.stringify(pedidoEntregado));
@@ -228,11 +342,18 @@ export default function App() {
 
            const nuevaTrackingUrl = data.trackingUrl || pedidoActual.trackingUrl;
 
-           if (nuevoEstado !== pedidoActual.estado || nuevaTrackingUrl !== pedidoActual.trackingUrl) {
-              const pedidoActualizado = { ...pedidoActual, estado: nuevoEstado, trackingUrl: nuevaTrackingUrl };
-              setPedidoActual(pedidoActualizado);
-              localStorage.setItem('kolma_last_order', JSON.stringify(pedidoActualizado));
+           const pedidoActualizado = { ...pedidoActual, estado: nuevoEstado, trackingUrl: nuevaTrackingUrl };
+
+           if (data.driverLocation) {
+             pedidoActualizado.driverLat = data.driverLocation.latitude;
+             pedidoActualizado.driverLng = data.driverLocation.longitude;
            }
+           if (data.driverName) pedidoActualizado.driverName = data.driverName;
+           if (data.driverPhone) pedidoActualizado.driverPhone = data.driverPhone;
+           if (data.eta) pedidoActualizado.eta = data.eta;
+
+           setPedidoActual(pedidoActualizado);
+           localStorage.setItem('kolma_last_order', JSON.stringify(pedidoActualizado));
         }
       } catch(e) {
         console.error("Error consultando estatus", e);
@@ -249,7 +370,7 @@ export default function App() {
     if (pedidoActual?.estado === 'Entregado' && pedidoActual.entregadoAt) {
       const revisarExpiracion = setInterval(() => {
         const tiempoPasado = Date.now() - pedidoActual.entregadoAt;
-        const unaHoraEnMilisegundos = 3600000; // 1 hora exacta
+        const unaHoraEnMilisegundos = 3600000; 
         
         if (tiempoPasado >= unaHoraEnMilisegundos) {
           const pedidoFinalizado = { ...pedidoActual, estado: 'Finalizado' };
@@ -257,7 +378,7 @@ export default function App() {
           localStorage.setItem('kolma_last_order', JSON.stringify(pedidoFinalizado));
           clearInterval(revisarExpiracion);
         }
-      }, 60000); // Revisa cada minuto
+      }, 60000);
 
       return () => clearInterval(revisarExpiracion);
     }
@@ -600,6 +721,14 @@ export default function App() {
         overflowX: 'hidden' 
       }}
     >
+      {/* RENDERIZAR MAPA PREMIUM A PANTALLA COMPLETA SI ESTÁ ACTIVO */}
+      {verMapaPremium && pedidoActual && (
+        <TrackingKolma 
+          pedido={pedidoActual} 
+          cerrarMapa={() => setVerMapaPremium(false)} 
+        />
+      )}
+
       {/* MODAL 1: CONFIRMACIÓN DE PEDIDO EXITOSO */}
       {showSuccessModal && (
         <div 
@@ -1019,16 +1148,13 @@ export default function App() {
                 </div>
               ) : (
                 <>
-                  {pedidoActual.trackingUrl && pedidoActual.estado !== 'Entregado' && (
-                    <a 
-                      href={pedidoActual.trackingUrl} 
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ width: '100%', backgroundColor: '#E31E24', color: '#fff', padding: '22px', borderRadius: '20px', border: 'none', fontWeight: '900', fontSize: '1.1rem', marginBottom: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxShadow: '0 10px 25px rgba(227,30,36,0.3)', textDecoration: 'none', boxSizing: 'border-box' }}
-                    >
-                      <IconTruck active={true} /> 📍 SEGUIR MOTORISTA EN EL MAPA
-                    </a>
-                  )}
+                  {/* BOTÓN PARA ABRIR EL MAPA PREMIUM SIEMPRE VISIBLE SI NO ESTÁ ENTREGADO */}
+                  <button 
+                    onClick={() => setVerMapaPremium(true)}
+                    style={{ width: '100%', backgroundColor: '#111', color: '#fff', padding: '22px', borderRadius: '20px', border: 'none', fontWeight: '900', fontSize: '1.1rem', marginBottom: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', transition: 'transform 0.2s' }}
+                  >
+                    <IconTruck active={true} /> 📍 RASTREAR MI PEDIDO
+                  </button>
                   
                   {/* --- BARRA DE PROGRESO 4 PASOS --- */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', position: 'relative' }}>
@@ -1802,7 +1928,7 @@ export default function App() {
             <span style={{ fontSize: '0.65rem', fontWeight: activeTab === 'pedidos' ? '900' : '700', marginTop: '4px' }}>Pedidos</span>
           </div>
 
-          {/* 2. Canasta (Mantenida para no perder funcionalidad) */}
+          {/* 2. Canasta */}
           <div 
             onClick={() => setIsCartOpen(true)} 
             style={{ width: '25%', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: '#94A3B8', position: 'relative' }}
@@ -1864,6 +1990,10 @@ export default function App() {
         @keyframes slideInRight { 
           0% { transform: translateX(100%); } 
           100% { transform: translateX(0); } 
+        }
+        @keyframes slideUp { 
+          0% { transform: translateY(100%); } 
+          100% { transform: translateY(0); } 
         }
         @keyframes fadeIn { 
           0% { opacity: 0; transform: translateY(10px); } 
