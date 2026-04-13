@@ -48,7 +48,7 @@ const IconWhatsApp = () => (
 );
 
 // ==========================================
-// NUEVO: COMPONENTE DE MAPA REAL (CONECTADO A SHIPDAY)
+// COMPONENTE DE MAPA REAL (CONECTADO A SHIPDAY)
 // ==========================================
 const TrackingKolma = ({ pedido, cerrarMapa }) => {
   const mapRef = useRef(null);
@@ -321,10 +321,11 @@ export default function App() {
         const res = await fetch(`/api/status?id=${pedidoActual.id}&t=${Date.now()}`);
         const data = await res.json();
         
-        if (data.success && data.shipdayStatus) {
-           const status = data.shipdayStatus.toUpperCase();
+        if (data.success && data.status_route) {
+           const info = data.status_route;
+           const statusRaw = info.status.toUpperCase();
            
-           if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED', 'COMPLETED', 'DONE'].includes(status)) {
+           if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED', 'COMPLETED', 'DONE'].includes(statusRaw)) {
               clearInterval(rastreador); 
               const pedidoEntregado = { 
                 ...pedidoActual, 
@@ -337,20 +338,20 @@ export default function App() {
            }
 
            let nuevoEstado = pedidoActual.estado;
-           if (['UNASSIGNED', 'ACCEPTED', 'PENDING'].includes(status)) nuevoEstado = 'Preparando';
-           if (['ASSIGNED', 'STARTED', 'PICKED_UP', 'READY_TO_DELIVER', 'ACTIVE', 'ON_THE_WAY', 'ARRIVED'].includes(status)) nuevoEstado = 'En camino';
+           if (['UNASSIGNED', 'ACCEPTED', 'PENDING'].includes(statusRaw)) nuevoEstado = 'Preparando';
+           if (['ASSIGNED', 'STARTED', 'PICKED_UP', 'READY_TO_DELIVER', 'ACTIVE', 'ON_THE_WAY', 'ARRIVED'].includes(statusRaw)) nuevoEstado = 'En camino';
 
            const nuevaTrackingUrl = data.trackingUrl || pedidoActual.trackingUrl;
 
            const pedidoActualizado = { ...pedidoActual, estado: nuevoEstado, trackingUrl: nuevaTrackingUrl };
 
-           if (data.driverLocation) {
-             pedidoActualizado.driverLat = data.driverLocation.latitude;
-             pedidoActualizado.driverLng = data.driverLocation.longitude;
+           if (info.driver_location) {
+             pedidoActualizado.driverLat = info.driver_location.lat;
+             pedidoActualizado.driverLng = info.driver_location.lng;
            }
-           if (data.driverName) pedidoActualizado.driverName = data.driverName;
-           if (data.driverPhone) pedidoActualizado.driverPhone = data.driverPhone;
-           if (data.eta) pedidoActualizado.eta = data.eta;
+           if (info.driver_name) pedidoActualizado.driverName = info.driver_name;
+           if (info.driver_phone) pedidoActualizado.driverPhone = info.driver_phone;
+           if (info.eta) pedidoActualizado.eta = info.eta;
 
            setPedidoActual(pedidoActualizado);
            localStorage.setItem('kolma_last_order', JSON.stringify(pedidoActualizado));
