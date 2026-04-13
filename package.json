@@ -12,6 +12,7 @@
     "react": "latest",
     "react-dom": "latest",
     "@prisma/client": "latest",
-    "prisma": "latest"
+    "prisma": "latest",
+    "lucide-react": "latest"
   }
 }
