@@ -18,8 +18,6 @@ const IconLogout = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="n
 const IconEdit = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>;
 const IconSuccess = () => <svg width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
 const IconWhatsApp = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>;
-
-// Iconos extras para el mapa
 const IconChevronLeft = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E293B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>;
 const IconClock = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
 const IconShieldCheck = () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>;
@@ -150,6 +148,9 @@ export default function App() {
   const [categoriaActiva, setCategoriaActiva] = useState('Todas'); 
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Novedad: Producto ampliado para mejor visión
+  const [productoAmpliado, setProductoAmpliado] = useState(null);
+
   // Navegación
   const [activeTab, setActiveTab] = useState('inicio'); 
   
@@ -579,6 +580,8 @@ export default function App() {
     
     setIsCartOpen(true);
     setCheckoutStep('cart');
+    // Si se añadió desde la vista ampliada, cerramos el modal
+    setProductoAmpliado(null); 
   };
 
   const modificarCantidad = (variantId, cambio) => {
@@ -698,6 +701,31 @@ export default function App() {
         overflowX: 'hidden' 
       }}
     >
+      {/* ------------------------------------------- */}
+      {/* MODAL: VISTA AMPLIADA DE PRODUCTO (Corta Visión) */}
+      {/* ------------------------------------------- */}
+      {productoAmpliado && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 5000, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(10px)', animation: 'fadeIn 0.2s' }}>
+          <div style={{ backgroundColor: '#fff', width: '100%', maxWidth: '500px', borderRadius: '32px', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <button onClick={() => setProductoAmpliado(null)} style={{ position: 'absolute', top: '20px', right: '20px', background: '#F3F4F6', border: 'none', borderRadius: '50%', width: '45px', height: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+              <IconClose />
+            </button>
+            <div style={{ padding: '40px 20px', backgroundColor: '#F9FAFB', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '250px' }}>
+              <img src={productoAmpliado.node.images.edges[0]?.node.url} style={{ width: '100%', maxHeight: '350px', objectFit: 'contain' }} alt={productoAmpliado.node.title} />
+            </div>
+            <div style={{ padding: '35px 25px', textAlign: 'center' }}>
+              <h3 style={{ margin: '0 0 15px 0', fontSize: '2rem', fontWeight: '900', color: '#111', lineHeight: '1.2' }}>{productoAmpliado.node.title}</h3>
+              <p style={{ margin: '0 0 30px 0', fontSize: '2.5rem', fontWeight: '900', color: '#E31E24' }}>
+                RD${parseFloat(productoAmpliado.node.variants.edges[0]?.node.price.amount).toFixed(0)}
+              </p>
+              <button onClick={() => agregarAlCarrito(productoAmpliado)} style={{ width: '100%', padding: '24px', backgroundColor: '#E31E24', color: '#fff', border: 'none', borderRadius: '24px', fontSize: '1.4rem', fontWeight: '900', cursor: 'pointer', boxShadow: '0 8px 25px rgba(227,30,36,0.3)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px' }}>
+                <IconCart /> AÑADIR A LA CANASTA
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* RENDERIZAR MAPA PREMIUM A PANTALLA COMPLETA SI ESTÁ ACTIVO */}
       {verMapaPremium && pedidoActual && (
         <TrackingKolma 
@@ -1007,42 +1035,50 @@ export default function App() {
                   }}
                 >
                   <div 
-                    style={{ 
-                      height: '130px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      marginBottom: '15px',
-                      padding: '10px'
-                    }}
+                    onClick={() => setProductoAmpliado({ node })} // SE AÑADE A LA IMAGEN/TITULO PARA ABRIR MODAL
+                    style={{ cursor: 'pointer' }}
                   >
-                    <img 
-                      src={node.images.edges[0]?.node.url} 
-                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
-                      alt={node.title} 
-                    />
+                    <div 
+                      style={{ 
+                        height: '130px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        marginBottom: '15px',
+                        padding: '10px'
+                      }}
+                    >
+                      <img 
+                        src={node.images.edges[0]?.node.url} 
+                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
+                        alt={node.title} 
+                      />
+                    </div>
+                    
+                    <h4 
+                      style={{ 
+                        fontSize: '0.9rem', 
+                        margin: '0 0 12px 0', 
+                        height: '40px', 
+                        overflow: 'hidden', 
+                        fontWeight: '800', 
+                        color: '#1F2937', 
+                        lineHeight: '1.4' 
+                      }}
+                    >
+                      {node.title}
+                    </h4>
                   </div>
-                  
-                  <h4 
-                    style={{ 
-                      fontSize: '0.9rem', 
-                      margin: '0 0 12px 0', 
-                      height: '40px', 
-                      overflow: 'hidden', 
-                      fontWeight: '800', 
-                      color: '#1F2937', 
-                      lineHeight: '1.4' 
-                    }}
-                  >
-                    {node.title}
-                  </h4>
                   
                   <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontWeight: '900', fontSize: '1.15rem', color: '#111' }}>
                       RD${parseFloat(node.variants.edges[0]?.node.price.amount).toFixed(0)}
                     </span>
                     <button 
-                      onClick={() => agregarAlCarrito({ node })} 
+                      onClick={(e) => {
+                        e.stopPropagation(); // Evitar que abra el modal si le da directo al +
+                        agregarAlCarrito({ node })
+                      }} 
                       style={{ 
                         backgroundColor: '#fff', 
                         color: '#E31E24', 
