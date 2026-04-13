@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
+import { Truck, Package, MapPin, Clock, ChevronLeft, Navigation, CheckCircle2, Activity, ShieldCheck } from 'lucide-react';
 
 // ==========================================
 // 1. ICONOS SVG PROFESIONALES (Diseño Premium)
@@ -48,115 +49,114 @@ const IconWhatsApp = () => (
 );
 
 // ==========================================
-// COMPONENTE DE MAPA REAL (CONECTADO A SHIPDAY)
+// COMPONENTE DE MAPA REAL (ACTUALIZADO A DISEÑO PREMIUM LUCIDE)
 // ==========================================
 const TrackingKolma = ({ pedido, cerrarMapa }) => {
-  const mapRef = useRef(null);
-  const driverMarkerRef = useRef(null);
-  
-  // Coordenadas iniciales para la vista de Cotuí
-  const defaultLoc = [19.0527, -70.1492]; 
+  const leafletMap = useRef(null);
+  const markerRef = useRef(null);
 
   useEffect(() => {
-    if (!document.getElementById('leaflet-css')) {
+    if (typeof window === 'undefined') return;
+
+    const initMap = () => {
+      const L = window.L;
+      if (!L || leafletMap.current) return;
+
+      leafletMap.current = L.map('kolma-map', { zoomControl: false, attributionControl: false }).setView([19.0528, -70.1435], 15);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(leafletMap.current);
+
+      const deliveryIcon = L.divIcon({
+        className: 'custom-icon',
+        html: `<div style="background-color: #dc2626; padding: 10px; border-radius: 15px; border: 3px solid white; box-shadow: 0 4px 15px rgba(220,38,38,0.4);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+              </div>`,
+        iconSize: [44, 44],
+        iconAnchor: [22, 22]
+      });
+
+      markerRef.current = L.marker([19.0528, -70.1435], { icon: deliveryIcon }).addTo(leafletMap.current);
+    };
+
+    if (!window.L) {
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.async = true;
+      script.onload = initMap;
+      document.head.appendChild(script);
+      
       const link = document.createElement('link');
-      link.id = 'leaflet-css';
       link.rel = 'stylesheet';
       link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
       document.head.appendChild(link);
-    }
-
-    if (!document.getElementById('leaflet-js')) {
-      const script = document.createElement('script');
-      script.id = 'leaflet-js';
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      document.head.appendChild(script);
-      script.onload = iniciarMapa;
     } else {
-      iniciarMapa();
-    }
-
-    function iniciarMapa() {
-      if (mapRef.current !== null) return;
-
-      const map = window.L.map('kolma-map', { zoomControl: false, attributionControl: false }).setView(defaultLoc, 15);
-      mapRef.current = map;
-
-      window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-
-      // Ícono del repartidor
-      const driverIcon = window.L.divIcon({
-        className: '',
-        html: `<div style="background: #E31E24; border-radius: 50%; padding: 8px; border: 2px solid white; box-shadow: 0 4px 10px rgba(227,30,36,0.4); display: flex; align-items: center; justify-content: center; color: white;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-               </div>`,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20]
-      });
-
-      driverMarkerRef.current = window.L.marker([0, 0], { icon: driverIcon }).addTo(map);
-      driverMarkerRef.current.setOpacity(0);
+      initMap();
     }
   }, []);
 
   useEffect(() => {
-    if (driverMarkerRef.current && pedido.driverLat && pedido.driverLng) {
-      const nuevaPosicion = [pedido.driverLat, pedido.driverLng];
-      
-      driverMarkerRef.current.setOpacity(1);
-      driverMarkerRef.current.setLatLng(nuevaPosicion);
-      
-      if (mapRef.current) {
-        mapRef.current.setView(nuevaPosicion, 16);
-      }
+    if (pedido.driverLat && markerRef.current) {
+      const newPos = [pedido.driverLat, pedido.driverLng];
+      markerRef.current.setLatLng(newPos);
+      if (leafletMap.current) leafletMap.current.panTo(newPos);
     }
   }, [pedido.driverLat, pedido.driverLng]);
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 3000, backgroundColor: '#f3f4f6' }}>
-      <div id="kolma-map" style={{ height: '100%', width: '100%', zIndex: 0 }}></div>
-
-      <div style={{ position: 'absolute', top: '25px', left: '20px', right: '20px', zIndex: 1001, display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'none' }}>
-        <button onClick={cerrarMapa} style={{ pointerEvents: 'auto', background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', border: 'none', padding: '12px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', cursor: 'pointer' }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 4000, backgroundColor: '#F8F9FB', display: 'flex', flexDirection: 'column' }}>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(20px)', zIndex: 4002, padding: '20px 24px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #F3F4F6' }}>
+        <button onClick={cerrarMapa} style={{ position: 'absolute', left: '24px', padding: '8px', background: '#F3F4F6', borderRadius: '50%', cursor: 'pointer', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ChevronLeft style={{ width: '24px', height: '24px', color: '#1E293B' }} />
         </button>
-        <div style={{ background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', padding: '8px 20px', borderRadius: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', pointerEvents: 'auto', textAlign: 'center' }}>
-          <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase' }}>Llega en</p>
-          <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '900', color: '#E31E24' }}>
-            {pedido.eta ? `${pedido.eta} min` : 'Calculando...'}
-          </p>
+        <div style={{ textAlign: 'center', width: '100%' }}>
+          <p style={{ margin: 0, fontSize: '10px', fontWeight: '900', color: '#E31E24', textTransform: 'uppercase', letterSpacing: '2px' }}>Kolma En Vivo</p>
+          <p style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#1E293B' }}>Cotuí, RD</p>
         </div>
-      </div>
+      </nav>
 
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(15px)', borderRadius: '40px 40px 0 0', padding: '25px 25px 40px 25px', boxShadow: '0 -10px 40px rgba(0,0,0,0.1)', zIndex: 1001, animation: 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <div style={{ width: '55px', height: '55px', borderRadius: '16px', backgroundColor: '#F3F4F6', backgroundImage: 'url(https://i.pravatar.cc/150?u=kolma_driver)', backgroundSize: 'cover' }}></div>
+      <div style={{ position: 'relative', height: '55vh', width: '100%', paddingTop: '80px', zIndex: 4001 }}>
+        <div id="kolma-map" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#F3F4F6', zIndex: 0 }} />
+        <div style={{ position: 'absolute', bottom: '32px', left: '24px', right: '24px', zIndex: 4002, background: 'white', padding: '24px', borderRadius: '40px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '48px', height: '48px', backgroundColor: '#E31E24', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+              <Clock style={{ width: '24px', height: '24px' }} />
+            </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '900', color: '#111' }}>
-                {pedido.driverName || 'Buscando Repartidor...'}
-              </h3>
-              <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: '600', color: '#6B7280' }}>Delivery Kolma RD</p>
+              <p style={{ margin: 0, fontSize: '10px', color: '#9CA3AF', fontWeight: 'bold', textTransform: 'uppercase' }}>Estado Real</p>
+              <p style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: '#111' }}>{pedido.shipdayMsg || pedido.estado || 'Buscando...'}</p>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {pedido.driverPhone && (
-              <a href={`tel:${pedido.driverPhone}`} style={{ padding: '15px', background: '#111', borderRadius: '16px', color: '#fff' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-              </a>
-            )}
-          </div>
-        </div>
-
-        <div style={{ background: '#F9FAFB', borderRadius: '20px', padding: '15px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #E5E7EB' }}>
-          <div>
-            <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: '800', color: '#9CA3AF', textTransform: 'uppercase' }}>Nº Pedido</p>
-            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '900', color: '#111' }}>#{pedido.id}</p>
-          </div>
-          <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '900', color: '#111' }}>RD${pedido.total.toFixed(0)}</p>
+          <ShieldCheck style={{ color: '#22C55E', width: '32px', height: '32px' }} />
         </div>
       </div>
+
+      <main style={{ flex: 1, padding: '24px', zIndex: 4001, backgroundColor: '#F8F9FB', position: 'relative' }}>
+        <div style={{ background: 'white', padding: '32px', borderRadius: '48px', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
+          <div style={{ background: '#FEF2F2', padding: '24px', borderRadius: '32px', display: 'flex', alignItems: 'center', gap: '20px', border: '1px solid #FEE2E2' }}>
+            <Truck style={{ width: '36px', height: '36px', color: '#E31E24' }} />
+            <div>
+              <p style={{ margin: 0, fontWeight: '900', color: '#0F172A', fontSize: '18px' }}>Kolma Delivery</p>
+              <p style={{ margin: 0, fontSize: '14px', color: '#E31E24', fontWeight: 'bold' }}>Orden #{pedido.id}</p>
+            </div>
+          </div>
+          
+          {(pedido.driverName || pedido.eta) && (
+            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <div style={{ width: '50px', height: '50px', borderRadius: '16px', backgroundColor: '#F3F4F6', backgroundImage: 'url(https://i.pravatar.cc/150?u=kolma_driver)', backgroundSize: 'cover' }}></div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '1.1rem', fontWeight: '900', color: '#111' }}>{pedido.driverName || 'Repartidor'}</p>
+                  <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: '600', color: '#6B7280' }}>Llega en {pedido.eta ? `${pedido.eta} min` : '...'}</p>
+                </div>
+              </div>
+              {pedido.driverPhone && (
+                <a href={`tel:${pedido.driverPhone}`} style={{ padding: '12px', background: '#111', borderRadius: '16px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 };
