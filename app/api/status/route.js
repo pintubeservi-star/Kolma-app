@@ -6,13 +6,14 @@ export async function GET(request) {
 
   if (!id) return NextResponse.json({ success: false, error: 'Falta ID' }, { status: 400 });
 
-  const SHIPDAY_KEY = "FzKmvwy7mB.DgaRNOaMv19P28urcMEb.";
+  // 1. Esconde tu clave en las variables de entorno de Vercel
+  const SHIPDAY_KEY = process.env.SHIPDAY_API_KEY;
 
   try {
     const response = await fetch(`https://api.shipday.com/orders/number/${id}`, {
       method: 'GET',
       headers: { 'Authorization': `Basic ${SHIPDAY_KEY}`, 'Content-Type': 'application/json' },
-      cache: 'no-store'
+      cache: 'no-store' // 2. Evita que Vercel guarde en caché respuestas viejas
     });
 
     const dataArray = await response.json();
@@ -23,11 +24,11 @@ export async function GET(request) {
     // NORMALIZACIÓN DE ESTADOS
     let rawStatus = (p.status || p.orderStatus?.shipdayStatus || "PENDING").toUpperCase();
     
-    // OBJETO STATUS_ROUTE (Estructura que pediste)
+    // OBJETO STATUS_ROUTE
     const status_route = {
       order_id: id,
       status: rawStatus,
-      driver_name: p.carrier?.name || "Asignando...",
+      driver_name: p.carrier?.name || "Buscando...",
       driver_phone: p.carrier?.phoneNumber || "",
       driver_location: null,
       customer_location: { 
@@ -54,4 +55,4 @@ export async function GET(request) {
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
-          }
+}
