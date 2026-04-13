@@ -343,7 +343,7 @@ export default function App() {
 
            const nuevaTrackingUrl = data.trackingUrl || pedidoActual.trackingUrl;
 
-           const pedidoActualizado = { ...pedidoActual, estado: nuevoEstado, trackingUrl: nuevaTrackingUrl };
+           const pedidoActualizado = { ...pedidoActual, estado: nuevoEstado, trackingUrl: nuevaTrackingUrl, shipdayMsg: statusRaw };
 
            if (info.driver_location) {
              pedidoActualizado.driverLat = info.driver_location.lat;
@@ -1092,7 +1092,7 @@ export default function App() {
       )}
 
       {/* ------------------------------------------- */}
-      {/* VISTA 2: MIS PEDIDOS */}
+      {/* VISTA 2: MIS PEDIDOS (ACTUALIZADO DINÁMICO) */}
       {/* ------------------------------------------- */}
       {activeTab === 'pedidos' && (
         <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
@@ -1138,54 +1138,40 @@ export default function App() {
                 </div>
               </div>
 
-              {/* MODO FACTURA O MODO RASTREO (MAPA + BARRA) */}
+              {/* ANIMACIONES DINÁMICAS BASADAS EN ESTADO REAL */}
               {pedidoActual.estado === 'Finalizado' ? (
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', backgroundColor: '#DCFCE7', borderRadius: '50%', marginBottom: '15px' }}>
-                    <IconSuccess />
-                  </div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', backgroundColor: '#DCFCE7', borderRadius: '50%', marginBottom: '15px' }}><IconSuccess /></div>
                   <h3 style={{ margin: 0, color: '#16A34A', fontWeight: '900', fontSize: '1.2rem' }}>Pedido Completado</h3>
                   <p style={{ margin: '5px 0 0 0', color: '#6B7280', fontSize: '0.9rem' }}>Este pedido ha sido entregado y cerrado.</p>
                 </div>
-              ) : (
-                <>
-                  {/* BOTÓN PARA ABRIR EL MAPA PREMIUM SIEMPRE VISIBLE SI NO ESTÁ ENTREGADO */}
-                  <button 
-                    onClick={() => setVerMapaPremium(true)}
-                    style={{ width: '100%', backgroundColor: '#111', color: '#fff', padding: '22px', borderRadius: '20px', border: 'none', fontWeight: '900', fontSize: '1.1rem', marginBottom: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', transition: 'transform 0.2s' }}
-                  >
-                    <IconTruck active={true} /> 📍 RASTREAR MI PEDIDO
-                  </button>
-                  
-                  {/* --- BARRA DE PROGRESO 4 PASOS --- */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px', position: 'relative' }}>
-                    <div style={{ position: 'absolute', top: '12px', left: '10%', right: '10%', height: '4px', backgroundColor: '#F3F4F6', zIndex: 1 }}></div>
-                    
-                    {/* 1. Recibido */}
-                    <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
-                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#E31E24', border: '5px solid #fff', margin: '0 auto 10px', boxShadow: pedidoActual.estado === 'Recibido' ? '0 0 0 0 rgba(227, 30, 36, 0.7)' : '0 4px 10px rgba(0,0,0,0.1)', animation: pedidoActual.estado === 'Recibido' ? 'pulseActive 1.5s infinite' : 'none' }}></div>
-                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#111' }}>Recibido</span>
-                    </div>
-
-                    {/* 2. Preparando */}
-                    <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
-                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', border: '5px solid #fff', margin: '0 auto 10px', boxShadow: pedidoActual.estado === 'Preparando' ? '0 0 0 0 rgba(227, 30, 36, 0.7)' : '0 4px 10px rgba(0,0,0,0.1)', animation: pedidoActual.estado === 'Preparando' ? 'pulseActive 1.5s infinite' : 'none', transition: 'background-color 0.5s' }}></div>
-                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: ['Preparando', 'En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>Preparando</span>
-                    </div>
-
-                    {/* 3. En camino */}
-                    <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
-                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#E31E24' : '#F3F4F6', border: '5px solid #fff', margin: '0 auto 10px', boxShadow: pedidoActual.estado === 'En camino' ? '0 0 0 0 rgba(227, 30, 36, 0.7)' : '0 4px 10px rgba(0,0,0,0.1)', animation: pedidoActual.estado === 'En camino' ? 'pulseActive 1.5s infinite' : 'none', transition: 'background-color 0.5s' }}></div>
-                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: ['En camino', 'Entregado'].includes(pedidoActual.estado) ? '#111' : '#9CA3AF' }}>En camino</span>
-                    </div>
-
-                    {/* 4. Entregado */}
-                    <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', flex: 1 }}>
-                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: pedidoActual.estado === 'Entregado' ? '#16A34A' : '#F3F4F6', border: '5px solid #fff', margin: '0 auto 10px', boxShadow: pedidoActual.estado === 'Entregado' ? '0 0 0 0 rgba(22, 163, 74, 0.7)' : '0 4px 10px rgba(0,0,0,0.1)', animation: pedidoActual.estado === 'Entregado' ? 'pulseActive 1.5s infinite' : 'none', transition: 'background-color 0.5s' }}></div>
-                      <span style={{ fontSize: '0.7rem', fontWeight: '800', color: pedidoActual.estado === 'Entregado' ? '#16A34A' : '#9CA3AF' }}>Entregado</span>
-                    </div>
+              ) : pedidoActual.estado === 'Entregado' ? (
+                <div style={{ textAlign: 'center', marginBottom: '30px', animation: 'fadeIn 0.5s' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '80px', height: '80px', backgroundColor: '#DCFCE7', borderRadius: '50%', marginBottom: '15px', border: '5px solid #BBF7D0' }}><IconSuccess /></div>
+                  <h3 style={{ margin: 0, color: '#16A34A', fontWeight: '900', fontSize: '1.4rem' }}>¡Disfruta tu pedido!</h3>
+                  <p style={{ margin: '5px 0 0 0', color: '#6B7280', fontSize: '0.9rem' }}>Entregado en tu dirección.</p>
+                </div>
+              ) : pedidoActual.estado === 'En camino' ? (
+                <div style={{ textAlign: 'center', marginBottom: '30px', animation: 'fadeIn 0.5s' }}>
+                  <div className="truck-animation" style={{ width: '80px', height: '80px', margin: '0 auto 15px', backgroundColor: '#FEE2E2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '4px solid #E31E24' }}>
+                    <IconTruck active={true} />
                   </div>
-                </>
+                  <h3 style={{ margin: 0, color: '#111', fontWeight: '900', fontSize: '1.4rem' }}>¡Va en camino!</h3>
+                  <p style={{ margin: '5px 0 15px 0', color: '#E31E24', fontSize: '0.95rem', fontWeight: '700' }}>{pedidoActual.shipdayMsg || 'Asignado al repartidor'}</p>
+                  
+                  <button onClick={() => setVerMapaPremium(true)} style={{ width: '100%', backgroundColor: '#111', color: '#fff', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}>
+                    📍 Ver en el Mapa
+                  </button>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', marginBottom: '30px', animation: 'fadeIn 0.5s' }}>
+                  <div className="pulse-box" style={{ width: '80px', height: '80px', margin: '0 auto 15px', backgroundColor: '#FFF5F5', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #E31E24', boxShadow: '0 0 0 8px rgba(227, 30, 36, 0.1)' }}>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#E31E24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                  </div>
+                  <h3 style={{ margin: 0, color: '#111', fontWeight: '900', fontSize: '1.4rem' }}>Preparando pedido...</h3>
+                  <p style={{ margin: '5px 0 0 0', color: '#6B7280', fontSize: '0.95rem', fontWeight: '600' }}>Estamos empacando tus productos en tienda.</p>
+                  <p style={{ margin: '5px 0 0 0', color: '#9CA3AF', fontSize: '0.8rem', fontStyle: 'italic' }}>{pedidoActual.shipdayMsg || 'Esperando repartidor'}</p>
+                </div>
               )}
 
               {/* --- RESUMEN DE PRODUCTOS COMÚN --- */}
@@ -2004,11 +1990,18 @@ export default function App() {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
-        @keyframes pulseActive {
-          0% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0.5); }
-          70% { box-shadow: 0 0 0 10px rgba(227, 30, 36, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0); }
+        @keyframes pulseAnim { 
+          0% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0.4); transform: scale(1); } 
+          50% { box-shadow: 0 0 0 15px rgba(227, 30, 36, 0); transform: scale(1.05); } 
+          100% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0); transform: scale(1); } 
         }
+        .pulse-box { animation: pulseAnim 2s infinite ease-in-out; }
+        @keyframes driveAnim { 
+          0% { transform: translateX(-10px); } 
+          50% { transform: translateX(10px); } 
+          100% { transform: translateX(-10px); } 
+        }
+        .truck-animation { animation: driveAnim 2s infinite; }
         ::-webkit-scrollbar { 
           width: 0px; 
           height: 0px; 
