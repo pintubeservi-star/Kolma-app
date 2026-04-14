@@ -252,6 +252,7 @@ export default function App() {
                   node { 
                     id 
                     title 
+                    tags 
                     collections(first: 5) { edges { node { title } } } 
                     images(first: 1) { edges { node { url } } } 
                     variants(first: 1) { edges { node { id price { amount } } } } 
@@ -950,6 +951,37 @@ export default function App() {
             </div>
           </section>
 
+          {/* BANNER DE OFERTAS AÑADIDO AQUÍ */}
+          <section style={{ maxWidth: '1200px', margin: '20px auto 0', padding: '0 20px' }}>
+            <div
+              onClick={() => setCategoriaActiva('Ofertas')}
+              style={{
+                background: 'linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)',
+                borderRadius: '24px',
+                padding: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                boxShadow: '0 8px 20px rgba(255, 140, 0, 0.3)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{ position: 'relative', zIndex: 10 }}>
+                <h3 style={{ margin: 0, color: '#fff', fontSize: '1.5rem', fontWeight: '900', textShadow: '1px 1px 2px rgba(0,0,0,0.2)' }}>
+                  🔥 OFERTAS ESPECIALES
+                </h3>
+                <p style={{ margin: '5px 0 0 0', color: '#fff', fontWeight: '700', fontSize: '0.9rem', opacity: 0.9 }}>
+                  Descubre los mejores descuentos de hoy.
+                </p>
+              </div>
+              <div style={{ backgroundColor: '#fff', color: '#FF8C00', padding: '10px 20px', borderRadius: '12px', fontWeight: '900', fontSize: '0.9rem', zIndex: 10 }}>
+                VER AHORA
+              </div>
+            </div>
+          </section>
+
           <section style={{ maxWidth: '1200px', margin: '25px auto 0', padding: '0 20px' }}>
             <div 
               style={{ 
@@ -1017,6 +1049,10 @@ export default function App() {
                   <p style={{ fontWeight: '800', color: '#9CA3AF', fontSize: '1.1rem' }}>Cargando pasillos...</p>
                 </div>
               ) : productos.filter(p => {
+                // FILTRO AÑADIDO: Ocultar productos con etiqueta 'pos'
+                const tieneEtiquetaPos = p.node.tags && p.node.tags.some(tag => tag.toLowerCase() === 'pos');
+                if (tieneEtiquetaPos) return false;
+
                 const coincideBusqueda = p.node.title.toLowerCase().includes(searchTerm.toLowerCase());
                 const coincideCategoria = categoriaActiva === 'Todas' || p.node.collections.edges.some(c => c.node.title === categoriaActiva);
                 return coincideBusqueda && coincideCategoria;
