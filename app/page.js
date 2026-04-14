@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
+import { Analytics } from "@vercel/analytics/react" // Usa /react para componentes de cliente
 
 // ==========================================
 // 1. ICONOS SVG PROFESIONALES (Diseño Premium)
@@ -2064,6 +2065,7 @@ export default function App() {
           border-color: #E31E24 !important;
         }
       `}</style>
+      <Analytics />
     </div>
   );
 }
