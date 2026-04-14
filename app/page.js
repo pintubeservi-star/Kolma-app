@@ -5,7 +5,7 @@ import { Analytics } from "@vercel/analytics/react"
 // ==========================================
 // 1. ICONOS SVG PROFESIONALES (Diseño Premium)
 // ==========================================
-const IconAdd = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+const IconAdd = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
 const IconMinus = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
 const IconTrash = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
 const IconSearch = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>;
@@ -22,6 +22,17 @@ const IconWhatsApp = () => <svg width="20" height="20" viewBox="0 0 24 24" fill=
 const IconChevronLeft = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E293B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>;
 const IconClock = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
 const IconShieldCheck = () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>;
+const IconHeart = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>;
+const IconStar = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="#FBBF24" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>;
+
+// ==========================================
+// OFERTAS PREMIUM CARRUSEL
+// ==========================================
+const OFFERS = [
+  { id: 1, title: 'Orgullo de Cotuí', subtitle: 'Siempre lo más fresco de nuestra tierra', img: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800', bg: '#dc2626', tag: 'LOCAL' },
+  { id: 2, title: 'Reserva Exclusiva', subtitle: 'Elegancia y distinción en cada copa', img: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=800', bg: '#0f172a', tag: 'PREMIUM' },
+  { id: 3, title: 'Hogar Impecable', subtitle: 'Limpieza profunda y frescura', img: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800', bg: '#2563eb', tag: 'HOGAR' }
+];
 
 // ==========================================
 // COMPONENTE DE MAPA REAL
@@ -141,7 +152,6 @@ export default function App() {
   // 2. ESTADOS GLOBALES DE LA APLICACIÓN
   // ==========================================
   
-  // Productos y Categorías
   const [productos, setProductos] = useState([]);
   const [colecciones, setColecciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -149,53 +159,46 @@ export default function App() {
   const [categoriaActiva, setCategoriaActiva] = useState('Todas'); 
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Novedad: Producto ampliado para mejor visión
   const [productoAmpliado, setProductoAmpliado] = useState(null);
+  const [currentBanner, setCurrentBanner] = useState(0);
 
-  // Navegación
   const [activeTab, setActiveTab] = useState('inicio'); 
-  
-  // Usuario y Perfil
   const [user, setUser] = useState(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   
-  // Autenticación
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); 
   const [errorAuth, setErrorAuth] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Formulario de Usuario
   const [formData, setFormData] = useState({ 
-    nombre: '', 
-    email: '', 
-    telefono: '', 
-    password: '', 
-    direccion: '' 
+    nombre: '', email: '', telefono: '', password: '', direccion: '' 
   });
   
-  // Carrito y Checkout
   const [carrito, setCarrito] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [checkoutStep, setCheckoutStep] = useState('cart'); // cart | payment
-  const [metodoPago, setMetodoPago] = useState('efectivo'); // efectivo | tarjeta
+  const [checkoutStep, setCheckoutStep] = useState('cart');
+  const [metodoPago, setMetodoPago] = useState('efectivo');
   const [cupon, setCupon] = useState('');
   const [descuentoAplicado, setDescuentoAplicado] = useState(0);
   const [isMissingInfoOpen, setIsMissingInfoOpen] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   
-  // Pedidos y Mapa
   const [pedidoActual, setPedidoActual] = useState(null);
   const [verMapaPremium, setVerMapaPremium] = useState(false);
 
-  // Credenciales Shopify
   const domain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN || "q0q09e-cp.myshopify.com";
   const accessToken = process.env.NEXT_PUBLIC_SHOPIFY_ACCESS_TOKEN || "c9bda45020488455d7fe2d8b7e22f352";
 
   // ==========================================
-  // 3. EFECTO DE CARGA INICIAL (Mount)
+  // 3. EFECTOS (Mount & Timers)
   // ==========================================
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentBanner(prev => (prev + 1) % OFFERS.length), 5000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem('kolma_access_token');
     const savedName = localStorage.getItem('kolma_user_name');
@@ -213,47 +216,33 @@ export default function App() {
         telefono: savedPhone || "" 
       });
       setFormData(prev => ({ 
-        ...prev, 
-        nombre: savedName || '', 
-        email: savedEmail || '', 
-        direccion: savedAddress || '', 
-        telefono: savedPhone || '' 
+        ...prev, nombre: savedName || '', email: savedEmail || '', 
+        direccion: savedAddress || '', telefono: savedPhone || '' 
       }));
     }
 
     if (savedOrder) {
-      try { 
-        setPedidoActual(JSON.parse(savedOrder)); 
-      } catch(e) {
-        console.error("Error leyendo pedido anterior");
-      }
+      try { setPedidoActual(JSON.parse(savedOrder)); } 
+      catch(e) { console.error("Error leyendo pedido anterior"); }
     }
 
     async function fetchData() {
       if(!domain || !accessToken) { 
         setErrorShopify("Faltan las credenciales de Shopify.");
-        setLoading(false); 
-        return; 
+        setLoading(false); return; 
       }
       
       try {
         const res = await fetch(`https://${domain}/api/2024-04/graphql.json`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json', 
-            'X-Shopify-Storefront-Access-Token': accessToken 
-          },
+          headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': accessToken },
           body: JSON.stringify({ 
             query: `{ 
-              collections(first: 20) { 
-                edges { node { id title } } 
-              }
+              collections(first: 20) { edges { node { id title } } }
               products(first: 50) { 
                 edges { 
                   node { 
-                    id 
-                    title 
-                    tags 
+                    id title tags 
                     collections(first: 5) { edges { node { title } } } 
                     images(first: 1) { edges { node { url } } } 
                     variants(first: 1) { edges { node { id price { amount } } } } 
@@ -265,52 +254,28 @@ export default function App() {
         });
         
         const { data, errors } = await res.json();
-        
-        if (errors) { 
-          setErrorShopify("Error conectando con Shopify: " + errors[0].message); 
-          setLoading(false); 
-          return; 
-        }
+        if (errors) { setErrorShopify("Error conectando con Shopify: " + errors[0].message); setLoading(false); return; }
 
-        if(data?.collections) {
-          setColecciones([{node: {id: 'all', title: 'Todas'}}, ...data.collections.edges]);
-        }
-        
-        if(data?.products) {
-          setProductos(data.products.edges);
-        }
-        
+        if(data?.collections) setColecciones([{node: {id: 'all', title: 'Todas'}}, ...data.collections.edges]);
+        if(data?.products) setProductos(data.products.edges);
         setLoading(false);
-      } catch (e) { 
-        setErrorShopify("Error de red conectando a la tienda."); 
-        setLoading(false); 
-      }
+      } catch (e) { setErrorShopify("Error de red conectando a la tienda."); setLoading(false); }
     }
     fetchData();
   }, [domain, accessToken]);
 
-  // ==========================================
-  // RADAR DE SHIPDAY (Auto-Refresh de Estatus)
-  // ==========================================
   useEffect(() => {
     if (!pedidoActual || ['Entregado', 'Finalizado'].includes(pedidoActual.estado)) return;
-
     const rastreador = setInterval(async () => {
       try {
         const res = await fetch(`/api/status?id=${pedidoActual.id}&t=${Date.now()}`);
         const data = await res.json();
-        
         if (data.success && data.status_route) {
            const info = data.status_route;
            const statusRaw = info.status.toUpperCase();
-           
            if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED', 'COMPLETED', 'DONE'].includes(statusRaw)) {
               clearInterval(rastreador); 
-              const pedidoEntregado = { 
-                ...pedidoActual, 
-                estado: 'Entregado',
-                entregadoAt: Date.now()
-              };
+              const pedidoEntregado = { ...pedidoActual, estado: 'Entregado', entregadoAt: Date.now() };
               setPedidoActual(pedidoEntregado);
               localStorage.setItem('kolma_last_order', JSON.stringify(pedidoEntregado));
               return;
@@ -321,13 +286,9 @@ export default function App() {
            if (['ASSIGNED', 'STARTED', 'PICKED_UP', 'READY_TO_DELIVER', 'ACTIVE', 'ON_THE_WAY', 'ARRIVED'].includes(statusRaw)) nuevoEstado = 'En camino';
 
            const nuevaTrackingUrl = data.trackingUrl || pedidoActual.trackingUrl;
-
            const pedidoActualizado = { ...pedidoActual, estado: nuevoEstado, trackingUrl: nuevaTrackingUrl, shipdayMsg: statusRaw };
 
-           if (info.driver_location) {
-             pedidoActualizado.driverLat = info.driver_location.lat;
-             pedidoActualizado.driverLng = info.driver_location.lng;
-           }
+           if (info.driver_location) { pedidoActualizado.driverLat = info.driver_location.lat; pedidoActualizado.driverLng = info.driver_location.lng; }
            if (info.driver_name) pedidoActualizado.driverName = info.driver_name;
            if (info.driver_phone) pedidoActualizado.driverPhone = info.driver_phone;
            if (info.eta) pedidoActualizado.eta = info.eta;
@@ -335,37 +296,28 @@ export default function App() {
            setPedidoActual(pedidoActualizado);
            localStorage.setItem('kolma_last_order', JSON.stringify(pedidoActualizado));
         }
-      } catch(e) {
-        console.error("Error consultando estatus", e);
-      }
+      } catch(e) { console.error("Error consultando estatus", e); }
     }, 10000); 
-
     return () => clearInterval(rastreador);
   }, [pedidoActual]);
 
-  // ==========================================
-  // TEMPORIZADOR DE 1 HORA PARA FACTURA
-  // ==========================================
   useEffect(() => {
     if (pedidoActual?.estado === 'Entregado' && pedidoActual.entregadoAt) {
       const revisarExpiracion = setInterval(() => {
         const tiempoPasado = Date.now() - pedidoActual.entregadoAt;
-        const unaHoraEnMilisegundos = 3600000; 
-        
-        if (tiempoPasado >= unaHoraEnMilisegundos) {
+        if (tiempoPasado >= 3600000) {
           const pedidoFinalizado = { ...pedidoActual, estado: 'Finalizado' };
           setPedidoActual(pedidoFinalizado);
           localStorage.setItem('kolma_last_order', JSON.stringify(pedidoFinalizado));
           clearInterval(revisarExpiracion);
         }
       }, 60000);
-
       return () => clearInterval(revisarExpiracion);
     }
   }, [pedidoActual]);
 
   // ==========================================
-  // 4. LÓGICA DE USUARIOS Y AUTENTICACIÓN
+  // 4. LÓGICA DE USUARIOS
   // ==========================================
   const formatPhone = (tel) => {
     let clean = tel.replace(/\D/g, '');
@@ -386,111 +338,53 @@ export default function App() {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorAuth('');
-    
     const shopifyUrl = `https://${domain}/api/2024-04/graphql.json`;
-    const headers = { 
-      'Content-Type': 'application/json', 
-      'X-Shopify-Storefront-Access-Token': accessToken 
-    };
+    const headers = { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': accessToken };
 
     try {
       if (authMode === 'register') {
         const telefonoValido = formatPhone(formData.telefono);
-        if (telefonoValido.length < 11) throw new Error("Por favor, ingresa un teléfono válido de 10 dígitos.");
-        if (formData.direccion.length < 5) throw new Error("Por favor, ingresa una dirección completa en Cotuí.");
-        
+        if (telefonoValido.length < 11) throw new Error("Ingresa un teléfono válido de 10 dígitos.");
+        if (formData.direccion.length < 5) throw new Error("Ingresa una dirección completa en Cotuí.");
         const registerResponse = await fetch(shopifyUrl, {
-          method: 'POST', 
-          headers,
+          method: 'POST', headers,
           body: JSON.stringify({
-            query: `mutation customerCreate($input: CustomerCreateInput!) { 
-              customerCreate(input: $input) { 
-                customer { id firstName lastName email phone } 
-                customerUserErrors { message } 
-              } 
-            }`,
-            variables: { 
-              input: { 
-                firstName: formData.nombre, 
-                lastName: formData.direccion, 
-                email: formData.email, 
-                phone: telefonoValido, 
-                password: formData.password 
-              } 
-            }
+            query: `mutation customerCreate($input: CustomerCreateInput!) { customerCreate(input: $input) { customer { id firstName lastName email phone } customerUserErrors { message } } }`,
+            variables: { input: { firstName: formData.nombre, lastName: formData.direccion, email: formData.email, phone: telefonoValido, password: formData.password } }
           })
         });
-        
         const { data } = await registerResponse.json();
-        if (data.customerCreate.customerUserErrors.length > 0) {
-          throw new Error(data.customerCreate.customerUserErrors[0].message);
-        }
+        if (data.customerCreate.customerUserErrors.length > 0) throw new Error(data.customerCreate.customerUserErrors[0].message);
         
         setAuthMode('login');
-        setErrorAuth('¡Cuenta creada con éxito! Por favor, inicia sesión.');
-      } 
-      else if (authMode === 'login') {
+        setErrorAuth('¡Cuenta creada con éxito! Inicia sesión.');
+      } else {
         const loginResponse = await fetch(shopifyUrl, {
-          method: 'POST', 
-          headers,
+          method: 'POST', headers,
           body: JSON.stringify({
-            query: `mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
-              customerAccessTokenCreate(input: $input) { 
-                customerAccessToken { accessToken } 
-                customerUserErrors { message } 
-              }
-            }`,
-            variables: { 
-              input: { 
-                email: formData.email, 
-                password: formData.password 
-              } 
-            }
+            query: `mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) { customerAccessTokenCreate(input: $input) { customerAccessToken { accessToken } customerUserErrors { message } } }`,
+            variables: { input: { email: formData.email, password: formData.password } }
           })
         });
-        
         const { data } = await loginResponse.json();
-        if (data.customerAccessTokenCreate.customerUserErrors.length > 0) {
-          throw new Error(data.customerAccessTokenCreate.customerUserErrors[0].message);
-        }
+        if (data.customerAccessTokenCreate.customerUserErrors.length > 0) throw new Error(data.customerAccessTokenCreate.customerUserErrors[0].message);
         
         const userToken = data.customerAccessTokenCreate.customerAccessToken.accessToken;
-        
         const profileResponse = await fetch(shopifyUrl, {
-          method: 'POST', 
-          headers,
-          body: JSON.stringify({
-            query: `{ 
-              customer(customerAccessToken: "${userToken}") { 
-                firstName 
-                lastName 
-                email 
-                phone 
-              } 
-            }`
-          })
+          method: 'POST', headers,
+          body: JSON.stringify({ query: `{ customer(customerAccessToken: "${userToken}") { firstName lastName email phone } }` })
         });
-        
         const profileData = await profileResponse.json();
         const customerInfo = profileData.data.customer;
 
-        const completeUser = {
-          id: userToken,
-          nombre: customerInfo.firstName || formData.email.split('@')[0],
-          email: customerInfo.email,
-          telefono: customerInfo.phone || "",
-          direccion: customerInfo.lastName || "" 
-        };
-
+        persistUserData({
+          id: userToken, nombre: customerInfo.firstName || formData.email.split('@')[0], email: customerInfo.email,
+          telefono: customerInfo.phone || "", direccion: customerInfo.lastName || "" 
+        });
         localStorage.setItem('kolma_access_token', userToken);
-        persistUserData(completeUser);
         setIsAuthOpen(false);
       }
-    } catch (err) { 
-      setErrorAuth(err.message); 
-    } finally { 
-      setIsSubmitting(false); 
-    }
+    } catch (err) { setErrorAuth(err.message); } finally { setIsSubmitting(false); }
   };
 
   const handleUpdateProfile = async (e) => {
@@ -498,214 +392,86 @@ export default function App() {
     setIsSubmitting(true);
     const telefonoValido = formatPhone(formData.telefono);
     const token = localStorage.getItem('kolma_access_token');
-
     try {
       if (token) {
         await fetch(`https://${domain}/api/2024-04/graphql.json`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json', 
-            'X-Shopify-Storefront-Access-Token': accessToken 
-          },
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': accessToken },
           body: JSON.stringify({
-            query: `mutation customerUpdate($customerAccessToken: String!, $customer: CustomerUpdateInput!) {
-              customerUpdate(customerAccessToken: $customerAccessToken, customer: $customer) { 
-                customer { firstName lastName phone } 
-              }
-            }`,
-            variables: { 
-              customerAccessToken: token, 
-              customer: { 
-                firstName: formData.nombre, 
-                lastName: formData.direccion, 
-                phone: telefonoValido 
-              } 
-            }
+            query: `mutation customerUpdate($customerAccessToken: String!, $customer: CustomerUpdateInput!) { customerUpdate(customerAccessToken: $customerAccessToken, customer: $customer) { customer { firstName lastName phone } } }`,
+            variables: { customerAccessToken: token, customer: { firstName: formData.nombre, lastName: formData.direccion, phone: telefonoValido } }
           })
         });
       }
-      
-      const updatedUser = { 
-        ...user, 
-        nombre: formData.nombre, 
-        telefono: telefonoValido, 
-        direccion: formData.direccion 
-      };
-      
-      persistUserData(updatedUser);
-      setIsEditingProfile(false);
-      setIsMissingInfoOpen(false);
-    } catch (err) { 
-      console.error(err); 
-    } finally { 
-      setIsSubmitting(false); 
-    }
+      persistUserData({ ...user, nombre: formData.nombre, telefono: telefonoValido, direccion: formData.direccion });
+      setIsEditingProfile(false); setIsMissingInfoOpen(false);
+    } catch (err) { console.error(err); } finally { setIsSubmitting(false); }
   };
 
   const handleLogout = () => {
-    localStorage.clear();
-    setUser(null);
-    setPedidoActual(null);
+    localStorage.clear(); setUser(null); setPedidoActual(null);
     setFormData({ nombre: '', email: '', telefono: '', password: '', direccion: '' });
     setActiveTab('inicio');
   };
 
   // ==========================================
-  // 5. LÓGICA DE CARRITO INTERACTIVO
+  // 5. LÓGICA DE CARRITO
   // ==========================================
   const agregarAlCarrito = (producto) => {
     const variantId = producto.node.variants.edges[0]?.node.id;
-    
-    setCarrito(prevCarrito => {
-      const productoExistente = prevCarrito.find(item => item.variantId === variantId);
-      
-      if (productoExistente) {
-        return prevCarrito.map(item => 
-          item.variantId === variantId 
-            ? { ...item, quantity: item.quantity + 1 } 
-            : item
-        );
-      }
-      
-      return [
-        ...prevCarrito, 
-        { 
-          id: producto.node.id, 
-          title: producto.node.title, 
-          price: parseFloat(producto.node.variants.edges[0]?.node.price.amount), 
-          image: producto.node.images.edges[0]?.node.url, 
-          variantId, 
-          quantity: 1 
-        }
-      ];
+    setCarrito(prev => {
+      const existe = prev.find(item => item.variantId === variantId);
+      if (existe) return prev.map(item => item.variantId === variantId ? { ...item, quantity: item.quantity + 1 } : item);
+      return [...prev, { id: producto.node.id, title: producto.node.title, price: parseFloat(producto.node.variants.edges[0]?.node.price.amount), image: producto.node.images.edges[0]?.node.url, variantId, quantity: 1 }];
     });
-    
-    setIsCartOpen(true);
-    setCheckoutStep('cart');
-    // Si se añadió desde la vista ampliada, cerramos el modal
-    setProductoAmpliado(null); 
+    setIsCartOpen(true); setCheckoutStep('cart'); setProductoAmpliado(null); 
   };
 
   const modificarCantidad = (variantId, cambio) => {
-    setCarrito(prevCarrito => {
-      return prevCarrito.map(item => {
-        if (item.variantId === variantId) {
-          const nuevaCantidad = item.quantity + cambio;
-          if (nuevaCantidad <= 0) return null;
-          return { ...item, quantity: nuevaCantidad };
-        }
-        return item;
-      }).filter(item => item !== null); 
-    });
+    setCarrito(prev => prev.map(item => item.variantId === variantId ? { ...item, quantity: item.quantity + cambio } : item).filter(item => item.quantity > 0));
   };
+  const calcularSubtotal = () => carrito.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const calcularTotalFinal = () => calcularSubtotal() - descuentoAplicado;
 
-  const calcularSubtotal = () => {
-    return carrito.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  };
-
-  const calcularTotalFinal = () => {
-    const subtotal = calcularSubtotal();
-    return subtotal - descuentoAplicado;
-  };
-
-  // ==========================================
-  // 6. LÓGICA DE CHECKOUT Y PEDIDOS
-  // ==========================================
   const avanzarAPago = () => {
-    if (!user) { 
-      setIsCartOpen(false); 
-      setIsAuthOpen(true); 
-      return; 
-    }
-    if (!user.nombre || !user.telefono || !user.direccion || user.direccion.length < 5) {
-      setIsCartOpen(false); 
-      setIsMissingInfoOpen(true); 
-      return;
-    }
+    if (!user) { setIsCartOpen(false); setIsAuthOpen(true); return; }
+    if (!user.nombre || !user.telefono || !user.direccion || user.direccion.length < 5) { setIsCartOpen(false); setIsMissingInfoOpen(true); return; }
     setCheckoutStep('payment'); 
   };
 
   const aplicarCupon = () => {
-    if (cupon.toUpperCase() === 'KOLMA10') {
-      setDescuentoAplicado(calcularSubtotal() * 0.10);
-      alert("¡Cupón del 10% aplicado exitosamente!");
-    } else {
-      alert("Cupón inválido o expirado.");
-      setDescuentoAplicado(0);
-    }
+    if (cupon.toUpperCase() === 'KOLMA10') { setDescuentoAplicado(calcularSubtotal() * 0.10); alert("¡Cupón del 10% aplicado!"); } 
+    else { alert("Cupón inválido"); setDescuentoAplicado(0); }
   };
 
   const finalizarPedido = async () => {
     setIsProcessingOrder(true);
-    
     const totalVenta = calcularTotalFinal();
-    
     try {
       const res = await fetch('/api/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          items: carrito, 
-          customer: user, 
-          total: totalVenta.toFixed(2),
-          metodoPago: metodoPago,
-          descuento: descuentoAplicado.toFixed(2)
-        })
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: carrito, customer: user, total: totalVenta.toFixed(2), metodoPago, descuento: descuentoAplicado.toFixed(2) })
       });
-      
       const data = await res.json();
-      
-      if(!data.success) {
-        throw new Error("El servidor falló al procesar");
-      }
+      if(!data.success) throw new Error("Error en servidor");
       
       const nuevoPedido = { 
-        id: data.orderId,
-        trackingUrl: data.trackingUrl, 
-        items: [...carrito], 
-        subtotal: calcularSubtotal(),
-        descuento: descuentoAplicado,
-        total: totalVenta, 
-        fecha: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(), 
-        estado: 'Recibido',
-        metodo: metodoPago
+        id: data.orderId, trackingUrl: data.trackingUrl, items: [...carrito], subtotal: calcularSubtotal(),
+        descuento: descuentoAplicado, total: totalVenta, fecha: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(), 
+        estado: 'Recibido', metodo: metodoPago
       };
-
-      setPedidoActual(nuevoPedido);
-      localStorage.setItem('kolma_last_order', JSON.stringify(nuevoPedido));
+      setPedidoActual(nuevoPedido); localStorage.setItem('kolma_last_order', JSON.stringify(nuevoPedido));
       
-      setCarrito([]); 
-      setCupon('');
-      setDescuentoAplicado(0);
-      setIsCartOpen(false);
-      setCheckoutStep('cart');
-      
-      setShowSuccessModal(true);
-      
-    } catch (e) { 
-      alert("Error de conexión. Por favor revisa tu internet e intenta nuevamente."); 
-    } finally { 
-      setIsProcessingOrder(false); 
-    }
+      setCarrito([]); setCupon(''); setDescuentoAplicado(0); setIsCartOpen(false); setCheckoutStep('cart'); setShowSuccessModal(true);
+    } catch (e) { alert("Error de conexión. Intenta nuevamente."); } finally { setIsProcessingOrder(false); }
   };
 
   // ==========================================
-  // 7. RENDERIZADO DE LA INTERFAZ DE USUARIO
+  // RENDER UI
   // ==========================================
   return (
-    <div 
-      style={{ 
-        backgroundColor: '#F9FAFB', 
-        minHeight: '100vh', 
-        fontFamily: 'system-ui, -apple-system, sans-serif', 
-        color: '#1F2937', 
-        paddingBottom: '100px', 
-        overflowX: 'hidden' 
-      }}
-    >
-      {/* ------------------------------------------- */}
-      {/* MODAL: VISTA AMPLIADA DE PRODUCTO (Corta Visión) */}
-      {/* ------------------------------------------- */}
+    <div style={{ backgroundColor: '#F8F9FB', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#1F2937', paddingBottom: '100px', overflowX: 'hidden' }}>
+      
+      {/* MODAL VISTA AMPLIADA */}
       {productoAmpliado && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 5000, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(10px)', animation: 'fadeIn 0.2s' }}>
           <div style={{ backgroundColor: '#fff', width: '100%', maxWidth: '500px', borderRadius: '32px', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
@@ -713,177 +479,57 @@ export default function App() {
               <IconClose />
             </button>
             <div style={{ padding: '40px 20px', backgroundColor: '#F9FAFB', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '250px' }}>
-              <img src={productoAmpliado.node.images.edges[0]?.node.url} style={{ width: '100%', maxHeight: '350px', objectFit: 'contain' }} alt={productoAmpliado.node.title} />
+              <img src={productoAmpliado.node.images.edges[0]?.node.url} style={{ width: '100%', maxHeight: '350px', objectFit: 'contain', mixBlendMode: 'multiply' }} alt={productoAmpliado.node.title} />
             </div>
             <div style={{ padding: '35px 25px', textAlign: 'center' }}>
               <h3 style={{ margin: '0 0 15px 0', fontSize: '2rem', fontWeight: '900', color: '#111', lineHeight: '1.2' }}>{productoAmpliado.node.title}</h3>
-              <p style={{ margin: '0 0 30px 0', fontSize: '2.5rem', fontWeight: '900', color: '#E31E24' }}>
-                RD${parseFloat(productoAmpliado.node.variants.edges[0]?.node.price.amount).toFixed(0)}
-              </p>
+              <p style={{ margin: '0 0 30px 0', fontSize: '2.5rem', fontWeight: '900', color: '#E31E24' }}>RD${parseFloat(productoAmpliado.node.variants.edges[0]?.node.price.amount).toFixed(0)}</p>
               <button onClick={() => agregarAlCarrito(productoAmpliado)} style={{ width: '100%', padding: '24px', backgroundColor: '#E31E24', color: '#fff', border: 'none', borderRadius: '24px', fontSize: '1.4rem', fontWeight: '900', cursor: 'pointer', boxShadow: '0 8px 25px rgba(227,30,36,0.3)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px' }}>
-                <IconCart /> AÑADIR A LA CANASTA
+                <IconCart /> AÑADIR
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* RENDERIZAR MAPA PREMIUM A PANTALLA COMPLETA SI ESTÁ ACTIVO */}
-      {verMapaPremium && pedidoActual && (
-        <TrackingKolma 
-          pedido={pedidoActual} 
-          cerrarMapa={() => setVerMapaPremium(false)} 
-        />
-      )}
+      {verMapaPremium && pedidoActual && <TrackingKolma pedido={pedidoActual} cerrarMapa={() => setVerMapaPremium(false)} />}
 
-      {/* MODAL 1: CONFIRMACIÓN DE PEDIDO EXITOSO */}
+      {/* MODAL ÉXITO */}
       {showSuccessModal && (
-        <div 
-          style={{ 
-            position: 'fixed', 
-            top: 0, left: 0, right: 0, bottom: 0, 
-            backgroundColor: 'rgba(0,0,0,0.85)', 
-            zIndex: 4000, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            backdropFilter: 'blur(8px)' 
-          }}
-        >
-          <div 
-            style={{ 
-              backgroundColor: '#fff', 
-              padding: '40px 30px', 
-              borderRadius: '24px', 
-              width: '90%', 
-              maxWidth: '400px', 
-              textAlign: 'center', 
-              animation: 'fadeIn 0.4s ease-out' 
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '25px' }}>
-              <IconSuccess />
-            </div>
-            <h2 style={{ margin: '0 0 15px 0', fontWeight: '900', color: '#111', fontSize: '2rem' }}>
-              ¡Pedido Confirmado!
-            </h2>
-            <p style={{ color: '#4B5563', fontSize: '1.05rem', lineHeight: '1.6', marginBottom: '35px' }}>
-              Tu orden <strong>#{pedidoActual?.id}</strong> ha sido recibida correctamente. Ya la estamos preparando para enviarla a tu dirección en Cotuí.
-            </p>
-            <button 
-              onClick={() => { 
-                setShowSuccessModal(false); 
-                setActiveTab('pedidos'); 
-              }} 
-              style={{ 
-                backgroundColor: '#E31E24', 
-                color: '#fff', 
-                width: '100%', 
-                padding: '18px', 
-                borderRadius: '15px', 
-                border: 'none', 
-                fontWeight: '900', 
-                fontSize: '1.1rem', 
-                cursor: 'pointer', 
-                boxShadow: '0 8px 20px rgba(227,30,36,0.3)',
-                transition: 'transform 0.2s'
-              }}
-            >
-              Ver Estatus de mi Pedido
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
+          <div style={{ backgroundColor: '#fff', padding: '40px 30px', borderRadius: '24px', width: '90%', maxWidth: '400px', textAlign: 'center', animation: 'fadeIn 0.4s ease-out' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '25px' }}><IconSuccess /></div>
+            <h2 style={{ margin: '0 0 15px 0', fontWeight: '900', color: '#111', fontSize: '2rem' }}>¡Pedido Confirmado!</h2>
+            <p style={{ color: '#4B5563', fontSize: '1.05rem', lineHeight: '1.6', marginBottom: '35px' }}>Tu orden <strong>#{pedidoActual?.id}</strong> ha sido recibida. La enviamos a Cotuí.</p>
+            <button onClick={() => { setShowSuccessModal(false); setActiveTab('pedidos'); }} style={{ backgroundColor: '#E31E24', color: '#fff', width: '100%', padding: '18px', borderRadius: '15px', border: 'none', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 8px 20px rgba(227,30,36,0.3)' }}>
+              Ver Estatus
             </button>
           </div>
         </div>
       )}
 
-      {/* CABECERA (HEADER) PRINCIPAL */}
-      <header 
-        style={{ 
-          backgroundColor: '#FFFFFF', 
-          padding: '15px 25px', 
-          position: 'sticky', 
-          top: 0, 
-          zIndex: 100, 
-          boxShadow: '0 4px 20px rgba(227, 30, 36, 0.08)', 
-          borderBottom: '1px solid #F3F4F6' 
-        }}
-      >
+      {/* HEADER */}
+      <header style={{ backgroundColor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', padding: '15px 25px', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 20px rgba(227, 30, 36, 0.05)', borderBottom: '1px solid #F3F4F6' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          
-          <div 
-            onClick={() => setActiveTab('inicio')}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-          >
+          <div onClick={() => setActiveTab('inicio')} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
             <div style={{ backgroundColor: '#E31E24', width: '8px', height: '28px', borderRadius: '4px' }}></div>
-            <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '900', color: '#E31E24', letterSpacing: '-1.5px' }}>
-              KOLMA<span style={{fontWeight: '300'}}>RD</span>
-            </h1>
+            <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: '900', color: '#E31E24', letterSpacing: '-1.5px' }}>KOLMA<span style={{fontWeight: '300'}}>RD</span></h1>
           </div>
-          
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div 
-              onClick={() => setIsCartOpen(true)} 
-              style={{ position: 'relative', cursor: 'pointer', color: '#111', padding: '5px' }}
-            >
+            <div onClick={() => setIsCartOpen(true)} style={{ position: 'relative', cursor: 'pointer', color: '#111', padding: '5px' }}>
               <IconCart />
               {carrito.length > 0 && (
-                <span 
-                  style={{ 
-                    position: 'absolute', 
-                    top: '-2px', 
-                    right: '-5px', 
-                    backgroundColor: '#E31E24', 
-                    color: '#fff', 
-                    fontSize: '0.7rem', 
-                    fontWeight: 'bold', 
-                    width: '20px', 
-                    height: '20px', 
-                    borderRadius: '50%', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    border: '2px solid #fff'
-                  }}
-                >
+                <span style={{ position: 'absolute', top: '-2px', right: '-5px', backgroundColor: '#E31E24', color: '#fff', fontSize: '0.7rem', fontWeight: 'bold', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff' }}>
                   {carrito.reduce((acc, item) => acc + item.quantity, 0)}
                 </span>
               )}
             </div>
-
             {!user ? (
-              <button 
-                onClick={() => setIsAuthOpen(true)} 
-                style={{ 
-                  backgroundColor: '#E31E24', 
-                  color: '#FFFFFF', 
-                  border: 'none', 
-                  padding: '10px 24px', 
-                  borderRadius: '25px', 
-                  fontWeight: '800', 
-                  fontSize: '0.9rem', 
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 10px rgba(227,30,36,0.2)'
-                }}
-              >
+              <button onClick={() => setIsAuthOpen(true)} style={{ backgroundColor: '#E31E24', color: '#FFFFFF', border: 'none', padding: '10px 24px', borderRadius: '25px', fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 4px 10px rgba(227,30,36,0.2)' }}>
                 Ingresar
               </button>
             ) : (
-              <div 
-                onClick={() => setActiveTab('perfil')} 
-                style={{ 
-                  cursor: 'pointer', 
-                  width: '42px', 
-                  height: '42px', 
-                  borderRadius: '50%', 
-                  backgroundColor: '#FEE2E2', 
-                  border: '2px solid #E31E24', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  color: '#E31E24', 
-                  fontWeight: '900',
-                  fontSize: '1.2rem'
-                }}
-              >
+              <div onClick={() => setActiveTab('perfil')} style={{ cursor: 'pointer', width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#FEE2E2', border: '2px solid #E31E24', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E31E24', fontWeight: '900', fontSize: '1.2rem' }}>
                 {user.nombre ? user.nombre.charAt(0).toUpperCase() : 'K'}
               </div>
             )}
@@ -891,245 +537,99 @@ export default function App() {
         </div>
       </header>
 
-      {/* ------------------------------------------- */}
-      {/* VISTA 1: INICIO (Catálogo y Categorías) */}
-      {/* ------------------------------------------- */}
+      {/* VISTA 1: INICIO ESTÉTICA PREMIUM */}
       {activeTab === 'inicio' && (
         <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
           
           <section style={{ padding: '20px 20px 0 20px' }}>
-            <div 
-              style={{ 
-                backgroundColor: '#E31E24', 
-                borderRadius: '24px', 
-                padding: '25px', 
-                color: '#FFFFFF', 
-                position: 'relative', 
-                overflow: 'hidden',
-                boxShadow: '0 10px 25px rgba(227,30,36,0.25)'
-              }}
-            >
-              <div style={{ position: 'relative', zIndex: 10 }}>
-                <h2 style={{ fontSize: '1.9rem', fontWeight: '900', lineHeight: '1.15', margin: '0 0 8px 0' }}>
-                  Calidad Premium<br />al mejor precio
-                </h2>
-                <p style={{ margin: 0, color: '#FEE2E2', fontSize: '0.9rem', fontWeight: '600', maxWidth: '220px' }}>
-                  Los productos más frescos de Cotuí, directo a tu casa.
-                </p>
-                
-                <div 
-                  style={{ 
-                    backgroundColor: '#FFFFFF', 
-                    borderRadius: '16px', 
-                    padding: '12px 18px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    marginTop: '20px', 
-                    maxWidth: '100%',
-                    boxShadow: '0 8px 20px rgba(0,0,0,0.15)'
-                  }}
-                >
-                  <div style={{ color: '#E31E24', display: 'flex', alignItems: 'center', marginRight: '10px' }}>
-                    <IconSearch />
-                  </div>
-                  <input 
-                    type="text" 
-                    placeholder="Buscar productos..." 
-                    value={searchTerm} 
-                    onChange={(e) => setSearchTerm(e.target.value)} 
-                    style={{ 
-                      flex: 1, border: 'none', outline: 'none', fontSize: '1.05rem', color: '#111', fontWeight: '600', background: 'transparent' 
-                    }} 
-                  />
+            {!searchTerm && (
+              <div style={{ overflow: 'hidden', borderRadius: '32px', height: '220px', position: 'relative', boxShadow: '0 15px 30px rgba(0,0,0,0.08)' }}>
+                <div style={{ display: 'flex', transition: 'transform 1s ease-in-out', transform: `translateX(-${currentBanner * 100}%)`, height: '100%' }}>
+                  {OFFERS.map(offer => (
+                    <div key={offer.id} style={{ minWidth: '100%', height: '100%', position: 'relative' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: offer.bg, opacity: 0.8, mixBlendMode: 'multiply', zIndex: 1 }} />
+                      <img src={offer.img} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={offer.title} />
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 2, padding: '30px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <span style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '6px 14px', borderRadius: '20px', color: '#fff', fontSize: '10px', fontWeight: '900', letterSpacing: '2px', width: 'fit-content', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(4px)' }}>{offer.tag}</span>
+                        <h2 style={{ color: '#fff', fontSize: '28px', fontWeight: '900', margin: '15px 0 5px 0', lineHeight: '1.1', textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>{offer.title}</h2>
+                        <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '14px', fontWeight: '600', fontStyle: 'italic', margin: 0, textShadow: '0 1px 5px rgba(0,0,0,0.3)' }}>{offer.subtitle}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-
-              <div style={{ position: 'absolute', right: '-20px', bottom: '-20px', opacity: 0.15, pointerEvents: 'none' }}>
-                <svg width="160" height="160" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
-                </svg>
-              </div>
-            </div>
-          </section>
-
-          {/* BANNER DE OFERTAS AÑADIDO AQUÍ */}
-          <section style={{ maxWidth: '1200px', margin: '20px auto 0', padding: '0 20px' }}>
-            <div
-              onClick={() => setCategoriaActiva('Ofertas')}
-              style={{
-                background: 'linear-gradient(135deg, #FFD700 0%, #FF8C00 100%)',
-                borderRadius: '24px',
-                padding: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                boxShadow: '0 8px 20px rgba(255, 140, 0, 0.3)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-            >
-              <div style={{ position: 'relative', zIndex: 10 }}>
-                <h3 style={{ margin: 0, color: '#fff', fontSize: '1.5rem', fontWeight: '900', textShadow: '1px 1px 2px rgba(0,0,0,0.2)' }}>
-                  🔥 OFERTAS ESPECIALES
-                </h3>
-                <p style={{ margin: '5px 0 0 0', color: '#fff', fontWeight: '700', fontSize: '0.9rem', opacity: 0.9 }}>
-                  Descubre los mejores descuentos de hoy.
-                </p>
-              </div>
-              <div style={{ backgroundColor: '#fff', color: '#FF8C00', padding: '10px 20px', borderRadius: '12px', fontWeight: '900', fontSize: '0.9rem', zIndex: 10 }}>
-                VER AHORA
-              </div>
-            </div>
-          </section>
-
-          <section style={{ maxWidth: '1200px', margin: '25px auto 0', padding: '0 20px' }}>
-            <div 
-              style={{ 
-                display: 'flex', 
-                overflowX: 'auto', 
-                gap: '12px', 
-                paddingBottom: '15px', 
-                scrollbarWidth: 'none',
-                WebkitOverflowScrolling: 'touch'
-              }}
-            >
-              {colecciones.map((col, index) => (
-                <button 
-                  key={index} 
-                  onClick={() => setCategoriaActiva(col.node.title)}
-                  style={{ 
-                    padding: '12px 24px', 
-                    borderRadius: '30px', 
-                    whiteSpace: 'nowrap', 
-                    fontWeight: '800', 
-                    fontSize: '0.95rem', 
-                    border: categoriaActiva === col.node.title ? 'none' : '1px solid #E5E7EB', 
-                    backgroundColor: categoriaActiva === col.node.title ? '#E31E24' : '#FFFFFF', 
-                    color: categoriaActiva === col.node.title ? '#FFFFFF' : '#4B5563', 
-                    cursor: 'pointer', 
-                    boxShadow: categoriaActiva === col.node.title ? '0 6px 15px rgba(227,30,36,0.25)' : '0 2px 5px rgba(0,0,0,0.02)',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  {col.node.title}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-            
-            {errorShopify && (
-              <div 
-                style={{ 
-                  backgroundColor: '#FEF2F2', 
-                  border: '1px solid #FCA5A5', 
-                  color: '#991B1B', 
-                  padding: '20px', 
-                  borderRadius: '15px', 
-                  textAlign: 'center', 
-                  marginBottom: '20px' 
-                }}
-              >
-                <h3 style={{ margin: '0 0 10px 0', fontWeight: '900' }}>Aviso de Conexión</h3>
-                <p style={{ margin: 0, fontSize: '0.95rem' }}>{errorShopify}</p>
+                <div style={{ position: 'absolute', bottom: '15px', left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '6px', zIndex: 10 }}>
+                  {OFFERS.map((_, idx) => (
+                    <div key={idx} style={{ width: currentBanner === idx ? '20px' : '6px', height: '6px', borderRadius: '3px', backgroundColor: currentBanner === idx ? '#fff' : 'rgba(255,255,255,0.5)', transition: 'all 0.3s' }} />
+                  ))}
+                </div>
               </div>
             )}
 
-            <div 
-              style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', 
-                gap: '15px' 
-              }}
-            >
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '16px 20px', display: 'flex', alignItems: 'center', marginTop: searchTerm ? '0' : '20px', boxShadow: '0 8px 20px rgba(0,0,0,0.04)', border: '1px solid #F3F4F6' }}>
+              <div style={{ color: '#E31E24', display: 'flex', alignItems: 'center', marginRight: '12px' }}><IconSearch /></div>
+              <input type="text" placeholder="Buscar frutas, bebidas, limpieza..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, border: 'none', outline: 'none', fontSize: '1rem', color: '#111', fontWeight: '700', background: 'transparent' }} />
+            </div>
+          </section>
+
+          {!searchTerm && (
+            <section style={{ maxWidth: '1200px', margin: '25px auto 0', padding: '0 20px' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#111', margin: '0 0 15px 0' }}>Categorías</h3>
+              <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '15px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+                {colecciones.map((col, index) => {
+                  const isActive = categoriaActiva === col.node.title;
+                  const emojis = ['🥑', '🥩', '🥤', '🧼', '🍷', '🍞', '🥛'];
+                  const emoji = emojis[index % emojis.length];
+                  return (
+                    <button key={col.node.id} onClick={() => setCategoriaActiva(col.node.title)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '75px', border: 'none', background: 'none', cursor: 'pointer', outline: 'none' }}>
+                      <div style={{ width: '75px', height: '75px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', backgroundColor: isActive ? '#E31E24' : '#fff', border: isActive ? 'none' : '2px solid #F3F4F6', transition: 'all 0.2s', transform: isActive ? 'translateY(-5px)' : 'none', boxShadow: isActive ? '0 10px 20px rgba(227,30,36,0.3)' : '0 2px 5px rgba(0,0,0,0.02)' }}>
+                        {col.node.title === 'Todas' ? '⭐' : emoji}
+                      </div>
+                      <span style={{ fontSize: '10px', fontWeight: '900', marginTop: '10px', color: isActive ? '#E31E24' : '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {col.node.title === 'Todas' ? 'TODO' : col.node.title}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+
+          <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+            {errorShopify && (
+              <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FCA5A5', color: '#991B1B', padding: '20px', borderRadius: '15px', textAlign: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: '0 0 10px 0', fontWeight: '900' }}>Aviso</h3>
+                <p style={{ margin: 0, fontSize: '0.95rem' }}>{errorShopify}</p>
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' }}>
               {loading && !errorShopify ? (
                 <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px' }}>
                   <div className="loader" style={{ width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #E31E24', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}></div>
                   <p style={{ fontWeight: '800', color: '#9CA3AF', fontSize: '1.1rem' }}>Cargando pasillos...</p>
                 </div>
               ) : productos.filter(p => {
-                // FILTRO AÑADIDO: Ocultar productos con etiqueta 'pos'
-                const tieneEtiquetaPos = p.node.tags && p.node.tags.some(tag => tag.toLowerCase() === 'pos');
-                if (tieneEtiquetaPos) return false;
-
+                if (p.node.tags && p.node.tags.some(tag => tag.toLowerCase() === 'pos')) return false;
                 const coincideBusqueda = p.node.title.toLowerCase().includes(searchTerm.toLowerCase());
                 const coincideCategoria = categoriaActiva === 'Todas' || p.node.collections.edges.some(c => c.node.title === categoriaActiva);
                 return coincideBusqueda && coincideCategoria;
               }).map(({ node }) => (
-                <div 
-                  key={node.id} 
-                  style={{ 
-                    backgroundColor: '#FFFFFF', 
-                    borderRadius: '20px', 
-                    padding: '15px', 
-                    border: '1px solid #F3F4F6', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.03)',
-                    transition: 'transform 0.2s',
-                  }}
-                >
-                  <div 
-                    onClick={() => setProductoAmpliado({ node })} // SE AÑADE A LA IMAGEN/TITULO PARA ABRIR MODAL
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div 
-                      style={{ 
-                        height: '130px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        marginBottom: '15px',
-                        padding: '10px'
-                      }}
-                    >
-                      <img 
-                        src={node.images.edges[0]?.node.url} 
-                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
-                        alt={node.title} 
-                      />
+                <div key={node.id} style={{ backgroundColor: '#fff', borderRadius: '32px', padding: '16px', border: '1px solid #F3F4F6', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', transition: 'transform 0.2s' }}>
+                  <div onClick={() => setProductoAmpliado({ node })} style={{ cursor: 'pointer' }}>
+                    <div style={{ backgroundColor: '#F8F9FB', borderRadius: '24px', height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px', position: 'relative', marginBottom: '15px' }}>
+                      <img src={node.images.edges[0]?.node.url} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }} alt={node.title} />
+                      <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#fff', padding: '6px', borderRadius: '50%', boxShadow: '0 2px 10px rgba(0,0,0,0.08)' }}><IconHeart /></div>
                     </div>
-                    
-                    <h4 
-                      style={{ 
-                        fontSize: '0.9rem', 
-                        margin: '0 0 12px 0', 
-                        height: '40px', 
-                        overflow: 'hidden', 
-                        fontWeight: '800', 
-                        color: '#1F2937', 
-                        lineHeight: '1.4' 
-                      }}
-                    >
-                      {node.title}
-                    </h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
+                      <IconStar /><span style={{ fontSize: '11px', fontWeight: '800', color: '#9CA3AF' }}>4.8</span>
+                    </div>
+                    <h4 style={{ fontSize: '13px', fontWeight: '900', color: '#111', margin: '0 0 12px 0', lineHeight: '1.3', height: '34px', overflow: 'hidden' }}>{node.title}</h4>
                   </div>
-                  
                   <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: '900', fontSize: '1.15rem', color: '#111' }}>
-                      RD${parseFloat(node.variants.edges[0]?.node.price.amount).toFixed(0)}
-                    </span>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation(); // Evitar que abra el modal si le da directo al +
-                        agregarAlCarrito({ node })
-                      }} 
-                      style={{ 
-                        backgroundColor: '#fff', 
-                        color: '#E31E24', 
-                        border: '2px solid #E31E24', 
-                        borderRadius: '12px', 
-                        width: '40px', 
-                        height: '40px', 
-                        cursor: 'pointer', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        boxShadow: '0 2px 5px rgba(227,30,36,0.1)'
-                      }}
-                    >
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '9px', fontWeight: '900', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Precio</span>
+                      <span style={{ fontWeight: '900', fontSize: '18px', color: '#111' }}>${parseFloat(node.variants.edges[0]?.node.price.amount).toFixed(0)}</span>
+                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); agregarAlCarrito({ node }) }} style={{ backgroundColor: '#FEF2F2', color: '#E31E24', width: '45px', height: '45px', borderRadius: '16px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(227,30,36,0.15)', transition: 'all 0.2s' }}>
                       <IconAdd />
                     </button>
                   </div>
@@ -1137,57 +637,48 @@ export default function App() {
               ))}
             </div>
           </section>
+
+          {!searchTerm && (
+            <section style={{ padding: '20px' }}>
+              <div style={{ backgroundColor: '#111', borderRadius: '32px', padding: '35px 30px', position: 'relative', overflow: 'hidden', border: '2px solid rgba(227,30,36,0.2)' }}>
+                 <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '180px', height: '180px', backgroundColor: 'rgba(227,30,36,0.25)', borderRadius: '50%', filter: 'blur(40px)', zIndex: 0 }} />
+                 <div style={{ position: 'relative', zIndex: 1 }}>
+                   <span style={{ color: '#E31E24', fontSize: '10px', fontWeight: '900', letterSpacing: '3px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                     <IconStar /> Ahorro Inteligente
+                   </span>
+                   <h3 style={{ color: '#fff', fontSize: '28px', fontWeight: '900', margin: '15px 0 5px 0', lineHeight: '1.1' }}>Club Kolma Premium</h3>
+                   <p style={{ color: '#FCA5A5', fontSize: '14px', fontWeight: '700', margin: '0 0 25px 0' }}>Ofertas exclusivas en Cotuí</p>
+                   <button onClick={() => {if(!user) setIsAuthOpen(true)}} style={{ backgroundColor: '#E31E24', color: '#fff', padding: '18px 32px', borderRadius: '20px', border: 'none', fontWeight: '900', fontSize: '12px', letterSpacing: '1px', textTransform: 'uppercase', cursor: 'pointer', boxShadow: '0 8px 25px rgba(227,30,36,0.4)', display: 'flex', alignItems: 'center', gap: '8px', transition: 'transform 0.2s' }}>
+                     Unirme y Ahorrar
+                   </button>
+                 </div>
+              </div>
+            </section>
+          )}
         </div>
       )}
 
-      {/* ------------------------------------------- */}
-      {/* VISTA 2: MIS PEDIDOS (ACTUALIZADO DINÁMICO) */}
-      {/* ------------------------------------------- */}
+      {/* VISTA 2: PEDIDOS */}
       {activeTab === 'pedidos' && (
         <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
-          
           {pedidoActual ? (
-            <div 
-              style={{ 
-                backgroundColor: '#fff', 
-                borderRadius: '32px', 
-                padding: '35px', 
-                border: '1px solid #E5E7EB', 
-                boxShadow: '0 20px 40px rgba(0,0,0,0.08)' 
-              }}
-            >
-              {/* CABECERA COMÚN */}
+            <div style={{ backgroundColor: '#fff', borderRadius: '32px', padding: '35px', border: '1px solid #E5E7EB', boxShadow: '0 20px 40px rgba(0,0,0,0.08)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px dashed #F3F4F6', paddingBottom: '20px', marginBottom: '25px' }}>
                 <div>
                   <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>{pedidoActual.estado === 'Finalizado' ? 'FACTURA' : 'NÚMERO DE ORDEN'}</span>
                   <p style={{ margin: '5px 0 0 0', fontWeight: '900', fontSize: '1.4rem', color: '#111' }}>#{pedidoActual.id}</p>
-                  
                   <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', color: '#E31E24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '1.2rem' }}>⏰</span> {
-                      pedidoActual.fecha && (pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM'))
-                      ? pedidoActual.fecha 
-                      : new Date().toLocaleString("es-DO", { timeZone: "America/Santo_Domingo", hour: 'numeric', minute: 'numeric', hour12: true, day: '2-digit', month: '2-digit' })
-                    }
+                    <span style={{ fontSize: '1.2rem' }}>⏰</span> {pedidoActual.fecha && (pedidoActual.fecha.includes('AM') || pedidoActual.fecha.includes('PM')) ? pedidoActual.fecha : new Date().toLocaleString("es-DO", { timeZone: "America/Santo_Domingo", hour: 'numeric', minute: 'numeric', hour12: true, day: '2-digit', month: '2-digit' })}
                   </p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <span style={{ fontSize: '0.8rem', color: '#9CA3AF', fontWeight: '800', letterSpacing: '1px' }}>ESTATUS</span>
-                  <div style={{ 
-                    backgroundColor: pedidoActual.estado === 'Finalizado' ? '#F3F4F6' : (pedidoActual.estado === 'Entregado' ? '#DCFCE7' : '#FEF2F2'), 
-                    color: pedidoActual.estado === 'Finalizado' ? '#4B5563' : (pedidoActual.estado === 'Entregado' ? '#16A34A' : '#E31E24'), 
-                    padding: '8px 16px', 
-                    borderRadius: '12px', 
-                    fontWeight: '900', 
-                    fontSize: '0.9rem', 
-                    marginTop: '8px', 
-                    display: 'inline-block'
-                  }}>
+                  <div style={{ backgroundColor: pedidoActual.estado === 'Finalizado' ? '#F3F4F6' : (pedidoActual.estado === 'Entregado' ? '#DCFCE7' : '#FEF2F2'), color: pedidoActual.estado === 'Finalizado' ? '#4B5563' : (pedidoActual.estado === 'Entregado' ? '#16A34A' : '#E31E24'), padding: '8px 16px', borderRadius: '12px', fontWeight: '900', fontSize: '0.9rem', marginTop: '8px', display: 'inline-block' }}>
                     {pedidoActual.estado.toUpperCase()}
                   </div>
                 </div>
               </div>
 
-              {/* ANIMACIONES DINÁMICAS BASADAS EN ESTADO REAL */}
               {pedidoActual.estado === 'Finalizado' ? (
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', backgroundColor: '#DCFCE7', borderRadius: '50%', marginBottom: '15px' }}><IconSuccess /></div>
@@ -1207,10 +698,7 @@ export default function App() {
                   </div>
                   <h3 style={{ margin: 0, color: '#111', fontWeight: '900', fontSize: '1.4rem' }}>¡Va en camino!</h3>
                   <p style={{ margin: '5px 0 15px 0', color: '#E31E24', fontSize: '0.95rem', fontWeight: '700' }}>{pedidoActual.shipdayMsg || 'Asignado al repartidor'}</p>
-                  
-                  <button onClick={() => setVerMapaPremium(true)} style={{ width: '100%', backgroundColor: '#111', color: '#fff', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}>
-                    📍 Ver en el Mapa
-                  </button>
+                  <button onClick={() => setVerMapaPremium(true)} style={{ width: '100%', backgroundColor: '#111', color: '#fff', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 8px 20px rgba(0,0,0,0.15)' }}>📍 Ver en el Mapa</button>
                 </div>
               ) : (
                 <div style={{ textAlign: 'center', marginBottom: '30px', animation: 'fadeIn 0.5s' }}>
@@ -1219,24 +707,17 @@ export default function App() {
                   </div>
                   <h3 style={{ margin: 0, color: '#111', fontWeight: '900', fontSize: '1.4rem' }}>Preparando pedido...</h3>
                   <p style={{ margin: '5px 0 0 0', color: '#6B7280', fontSize: '0.95rem', fontWeight: '600' }}>Estamos empacando tus productos en tienda.</p>
-                  <p style={{ margin: '5px 0 0 0', color: '#9CA3AF', fontSize: '0.8rem', fontStyle: 'italic' }}>{pedidoActual.shipdayMsg || 'Esperando repartidor'}</p>
                 </div>
               )}
 
-              {/* --- RESUMEN DE PRODUCTOS COMÚN --- */}
               <div style={{ marginBottom: '20px', backgroundColor: '#F9FAFB', padding: '25px', borderRadius: '24px' }}>
-                <p style={{ fontSize: '1rem', color: '#111', fontWeight: '900', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <IconOrders active={true} /> Resumen de tu compra
-                </p>
+                <p style={{ fontSize: '1rem', color: '#111', fontWeight: '900', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px' }}><IconOrders active={true} /> Resumen de tu compra</p>
                 {pedidoActual.items.map((item, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', marginBottom: '12px', color: '#4B5563' }}>
-                    <span style={{ fontWeight: '600' }}>
-                      <b style={{ color: '#E31E24', fontWeight: '900', marginRight: '8px' }}>{item.quantity}x</b> {item.title}
-                    </span>
+                    <span style={{ fontWeight: '600' }}><b style={{ color: '#E31E24', fontWeight: '900', marginRight: '8px' }}>{item.quantity}x</b> {item.title}</span>
                     <span style={{ fontWeight: '900', color: '#111' }}>RD${(item.price * item.quantity).toFixed(0)}</span>
                   </div>
                 ))}
-                
                 <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontWeight: '900', color: '#111', fontSize: '1.2rem' }}>TOTAL PAGADO</span>
@@ -1245,7 +726,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* WHATSAPP OCULTO SI YA ES FACTURA CERRADA */}
               {pedidoActual.estado !== 'Finalizado' && (
                 <div style={{ marginTop: '20px' }}>
                   <a href={`https://wa.me/18298558779?text=Hola,%20necesito%20ayuda%20con%20mi%20pedido%20de%20KolmaRD%20%23${pedidoActual.id}`} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', backgroundColor: '#25D366', color: '#fff', textDecoration: 'none', padding: '16px', borderRadius: '16px', fontWeight: '900', fontSize: '1.05rem', boxShadow: '0 4px 15px rgba(37, 211, 102, 0.3)', transition: 'transform 0.2s' }}>
@@ -1253,189 +733,76 @@ export default function App() {
                   </a>
                 </div>
               )}
-
-              <div style={{ textAlign: 'center', borderTop: '1px solid #F3F4F6', paddingTop: '20px', marginTop: '20px' }}>
-                <p style={{ fontSize: '0.8rem', fontWeight: '900', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '1px', margin: 0 }}>
-                  Método: {pedidoActual.metodo === 'efectivo' ? 'Efectivo al recibir' : 'Pago Online'}
-                </p>
-              </div>
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '80px 30px', backgroundColor: '#fff', borderRadius: '32px', border: '1px solid #E5E7EB' }}>
-              <div style={{ backgroundColor: '#FEE2E2', width: '100px', height: '100px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 30px', color: '#E31E24' }}>
-                <IconTruck active={true} />
-              </div>
+              <div style={{ backgroundColor: '#FEE2E2', width: '100px', height: '100px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 30px', color: '#E31E24' }}><IconTruck active={true} /></div>
               <h3 style={{ margin: '0 0 15px 0', color: '#111', fontWeight: '900', fontSize: '1.6rem' }}>¿Qué pediremos hoy?</h3>
-              <p style={{ fontSize: '1.1rem', color: '#6B7280', marginBottom: '35px' }}>
-                Tus pedidos aparecerán aquí para que los sigas en tiempo real.
-              </p>
-              <button 
-                onClick={() => setActiveTab('inicio')} 
-                style={{ backgroundColor: '#111', color: '#fff', padding: '20px 40px', borderRadius: '20px', border: 'none', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer' }}
-              >
-                Ir a la tienda
-              </button>
+              <p style={{ fontSize: '1.1rem', color: '#6B7280', marginBottom: '35px' }}>Tus pedidos aparecerán aquí para que los sigas en tiempo real.</p>
+              <button onClick={() => setActiveTab('inicio')} style={{ backgroundColor: '#111', color: '#fff', padding: '20px 40px', borderRadius: '20px', border: 'none', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer' }}>Ir a la tienda</button>
             </div>
           )}
         </section>
       )}
 
-      {/* ------------------------------------------- */}
-      {/* VISTA 3: PERFIL DE USUARIO */}
-      {/* ------------------------------------------- */}
+      {/* VISTA 3: PERFIL */}
       {activeTab === 'perfil' && (
         <section style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 25px', animation: 'fadeIn 0.3s' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
             <h2 style={{ fontWeight: '900', fontSize: '2rem', margin: '0', color: '#111' }}>Mi Perfil</h2>
             {user && (
-              <button 
-                onClick={handleLogout} 
-                style={{ 
-                  color: '#E31E24', 
-                  background: '#FEE2E2', 
-                  border: 'none', 
-                  padding: '10px 18px', 
-                  borderRadius: '12px', 
-                  fontWeight: '800', 
-                  fontSize: '0.9rem', 
-                  cursor: 'pointer', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '8px' 
-                }}
-              >
+              <button onClick={handleLogout} style={{ color: '#E31E24', background: '#FEE2E2', border: 'none', padding: '10px 18px', borderRadius: '12px', fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <IconLogout /> Salir
               </button>
             )}
           </div>
-
           {user ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div 
-                style={{ 
-                  backgroundColor: '#fff', 
-                  borderRadius: '24px', 
-                  padding: '30px', 
-                  border: '1px solid #E5E7EB', 
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.03)', 
-                  position: 'relative' 
-                }}
-              >
+              <div style={{ backgroundColor: '#fff', borderRadius: '24px', padding: '30px', border: '1px solid #E5E7EB', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', position: 'relative' }}>
                 {!isEditingProfile && (
-                  <button 
-                    onClick={() => setIsEditingProfile(true)} 
-                    style={{ 
-                      position: 'absolute', 
-                      top: '25px', 
-                      right: '25px', 
-                      background: '#F9FAFB', 
-                      border: '1px solid #E5E7EB', 
-                      color: '#111', 
-                      padding: '8px 16px', 
-                      borderRadius: '12px', 
-                      cursor: 'pointer', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '6px', 
-                      fontWeight: '800', 
-                      fontSize: '0.85rem' 
-                    }}
-                  >
+                  <button onClick={() => setIsEditingProfile(true)} style={{ position: 'absolute', top: '25px', right: '25px', background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#111', padding: '8px 16px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '800', fontSize: '0.85rem' }}>
                     <IconEdit /> Editar
                   </button>
                 )}
-                
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' }}>
-                  <div 
-                    style={{ 
-                      width: '75px', 
-                      height: '75px', 
-                      borderRadius: '50%', 
-                      backgroundColor: '#E31E24', 
-                      color: '#fff', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      fontSize: '2.2rem', 
-                      fontWeight: '900',
-                      boxShadow: '0 4px 10px rgba(227,30,36,0.3)'
-                    }}
-                  >
+                  <div style={{ width: '75px', height: '75px', borderRadius: '50%', backgroundColor: '#E31E24', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.2rem', fontWeight: '900', boxShadow: '0 4px 10px rgba(227,30,36,0.3)' }}>
                     {user.nombre ? user.nombre.charAt(0).toUpperCase() : 'K'}
                   </div>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '900', color: '#111' }}>
-                      {user.nombre || 'Cliente Kolma'}
-                    </h3>
-                    <p style={{ margin: '4px 0 0 0', fontSize: '0.95rem', color: '#6B7280', fontWeight: '600' }}>
-                      {user.email}
-                    </p>
+                    <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '900', color: '#111' }}>{user.nombre || 'Cliente Kolma'}</h3>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.95rem', color: '#6B7280', fontWeight: '600' }}>{user.email}</p>
                   </div>
                 </div>
-
                 {isEditingProfile ? (
                   <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                     <div>
-                      <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF', letterSpacing: '0.5px' }}>NOMBRE COMPLETO</label>
-                      <input 
-                        name="nombre" 
-                        value={formData.nombre} 
-                        onChange={e => setFormData({...formData, nombre: e.target.value})} 
-                        required 
-                        style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '8px', fontSize: '1rem', fontWeight: '600' }} 
-                      />
+                      <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF', letterSpacing: '0.5px' }}>NOMBRE</label>
+                      <input name="nombre" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} required style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '8px', fontSize: '1rem', fontWeight: '600' }} />
                     </div>
                     <div>
-                      <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF', letterSpacing: '0.5px' }}>TELÉFONO (WHATSAPP)</label>
-                      <input 
-                        name="telefono" 
-                        value={formData.telefono} 
-                        onChange={e => setFormData({...formData, telefono: e.target.value})} 
-                        required 
-                        style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '8px', fontSize: '1rem', fontWeight: '600' }} 
-                      />
+                      <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF', letterSpacing: '0.5px' }}>TELÉFONO</label>
+                      <input name="telefono" value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} required style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '8px', fontSize: '1rem', fontWeight: '600' }} />
                     </div>
                     <div>
-                      <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF', letterSpacing: '0.5px' }}>DIRECCIÓN DE ENTREGA EN COTUÍ</label>
-                      <textarea 
-                        name="direccion" 
-                        value={formData.direccion} 
-                        onChange={e => setFormData({...formData, direccion: e.target.value})} 
-                        required 
-                        style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '8px', fontSize: '1rem', fontWeight: '600', height: '100px', resize: 'none' }} 
-                      />
+                      <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF', letterSpacing: '0.5px' }}>DIRECCIÓN EN COTUÍ</label>
+                      <textarea name="direccion" value={formData.direccion} onChange={e => setFormData({...formData, direccion: e.target.value})} required style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '8px', fontSize: '1rem', fontWeight: '600', height: '100px', resize: 'none' }} />
                     </div>
-                    
                     <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
-                      <button 
-                        type="submit" 
-                        disabled={isSubmitting} 
-                        style={{ flex: 1, backgroundColor: '#E31E24', color: '#fff', padding: '16px', borderRadius: '14px', border: 'none', fontWeight: '900', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(227,30,36,0.2)' }}
-                      >
+                      <button type="submit" disabled={isSubmitting} style={{ flex: 1, backgroundColor: '#E31E24', color: '#fff', padding: '16px', borderRadius: '14px', border: 'none', fontWeight: '900', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(227,30,36,0.2)' }}>
                         {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
                       </button>
-                      <button 
-                        type="button" 
-                        onClick={() => setIsEditingProfile(false)} 
-                        style={{ flex: 1, backgroundColor: '#F3F4F6', color: '#111', padding: '16px', borderRadius: '14px', border: 'none', fontWeight: '900', fontSize: '1rem', cursor: 'pointer' }}
-                      >
-                        Cancelar
-                      </button>
+                      <button type="button" onClick={() => setIsEditingProfile(false)} style={{ flex: 1, backgroundColor: '#F3F4F6', color: '#111', padding: '16px', borderRadius: '14px', border: 'none', fontWeight: '900', fontSize: '1rem', cursor: 'pointer' }}>Cancelar</button>
                     </div>
                   </form>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', backgroundColor: '#F9FAFB', padding: '25px', borderRadius: '16px', border: '1px solid #F3F4F6' }}>
                     <div>
-                      <span style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF', letterSpacing: '0.5px' }}>TELÉFONO DE CONTACTO</span>
-                      <p style={{ margin: '5px 0 0 0', fontWeight: '800', color: '#111', fontSize: '1.1rem' }}>
-                        {user.telefono || <span style={{ color: '#E31E24', fontSize: '0.9rem' }}>⚠️ Falta agregar teléfono</span>}
-                      </p>
+                      <span style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF', letterSpacing: '0.5px' }}>TELÉFONO</span>
+                      <p style={{ margin: '5px 0 0 0', fontWeight: '800', color: '#111', fontSize: '1.1rem' }}>{user.telefono || <span style={{ color: '#E31E24', fontSize: '0.9rem' }}>⚠️ Falta agregar teléfono</span>}</p>
                     </div>
                     <div style={{ borderTop: '2px dashed #E5E7EB', paddingTop: '20px' }}>
                       <span style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF', letterSpacing: '0.5px' }}>DIRECCIÓN DE ENTREGA (COTUÍ)</span>
-                      <p style={{ margin: '5px 0 0 0', fontWeight: '800', color: '#111', fontSize: '1.1rem', lineHeight: '1.4' }}>
-                        {user.direccion || <span style={{ color: '#E31E24', fontSize: '0.9rem' }}>⚠️ Falta agregar dirección</span>}
-                      </p>
+                      <p style={{ margin: '5px 0 0 0', fontWeight: '800', color: '#111', fontSize: '1.1rem', lineHeight: '1.4' }}>{user.direccion || <span style={{ color: '#E31E24', fontSize: '0.9rem' }}>⚠️ Falta agregar dirección</span>}</p>
                     </div>
                   </div>
                 )}
@@ -1443,171 +810,51 @@ export default function App() {
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '60px 25px', backgroundColor: '#fff', borderRadius: '24px', border: '1px solid #E5E7EB', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-              <div style={{ backgroundColor: '#FEE2E2', width: '90px', height: '90px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 25px', color: '#E31E24' }}>
-                <IconProfile active={true} />
-              </div>
-              <h3 style={{ fontWeight: '900', fontSize: '1.5rem', margin: '0 0 15px 0', color: '#111' }}>
-                Crea tu cuenta Kolma
-              </h3>
-              <p style={{ color: '#6B7280', fontSize: '1.05rem', margin: '0 0 30px 0', lineHeight: '1.5' }}>
-                Regístrate hoy para guardar tu dirección, gestionar tus pedidos y comprar en segundos.
-              </p>
-              <button 
-                onClick={() => { setAuthMode('register'); setIsAuthOpen(true); }} 
-                style={{ backgroundColor: '#E31E24', color: '#fff', width: '100%', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 6px 15px rgba(227,30,36,0.25)' }}
-              >
-                Comenzar Registro
-              </button>
+              <div style={{ backgroundColor: '#FEE2E2', width: '90px', height: '90px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 25px', color: '#E31E24' }}><IconProfile active={true} /></div>
+              <h3 style={{ fontWeight: '900', fontSize: '1.5rem', margin: '0 0 15px 0', color: '#111' }}>Crea tu cuenta Kolma</h3>
+              <p style={{ color: '#6B7280', fontSize: '1.05rem', margin: '0 0 30px 0', lineHeight: '1.5' }}>Regístrate hoy para guardar tu dirección, gestionar tus pedidos y comprar en segundos.</p>
+              <button onClick={() => { setAuthMode('register'); setIsAuthOpen(true); }} style={{ backgroundColor: '#E31E24', color: '#fff', width: '100%', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 6px 15px rgba(227,30,36,0.25)' }}>Comenzar Registro</button>
             </div>
           )}
         </section>
       )}
 
-      {/* ------------------------------------------- */}
-      {/* DRAWER LATERAL: CARRITO Y CHECKOUT PASO A PASO */}
-      {/* ------------------------------------------- */}
+      {/* DRAWER LATERAL: CARRITO */}
       {isCartOpen && (
-        <div 
-          style={{ 
-            position: 'fixed', 
-            top: 0, right: 0, bottom: 0, left: 0, 
-            backgroundColor: 'rgba(0,0,0,0.6)', 
-            zIndex: 3000, 
-            display: 'flex', 
-            justifyContent: 'flex-end', 
-            backdropFilter: 'blur(5px)' 
-          }}
-        >
-          <div 
-            style={{ 
-              backgroundColor: '#fff', 
-              width: '100%', 
-              maxWidth: '450px', 
-              height: '100%', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)' 
-            }}
-          >
-            <div 
-              style={{ 
-                padding: '25px', 
-                borderBottom: '1px solid #F3F4F6', 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                backgroundColor: '#fff'
-              }}
-            >
+        <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', justifyContent: 'flex-end', backdropFilter: 'blur(5px)' }}>
+          <div style={{ backgroundColor: '#fff', width: '100%', maxWidth: '450px', height: '100%', display: 'flex', flexDirection: 'column', animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+            <div style={{ padding: '25px', borderBottom: '1px solid #F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {checkoutStep === 'payment' && (
-                  <button 
-                    onClick={() => setCheckoutStep('cart')} 
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#9CA3AF', padding: '0 10px 0 0' }}
-                  >
-                    ←
-                  </button>
-                )}
-                <h3 style={{ margin: 0, fontWeight: '900', fontSize: '1.5rem', color: '#111' }}>
-                  {checkoutStep === 'cart' ? 'Tu Canasta' : 'Pago y Envío'}
-                </h3>
+                {checkoutStep === 'payment' && <button onClick={() => setCheckoutStep('cart')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#9CA3AF', padding: '0 10px 0 0' }}>←</button>}
+                <h3 style={{ margin: 0, fontWeight: '900', fontSize: '1.5rem', color: '#111' }}>{checkoutStep === 'cart' ? 'Tu Canasta' : 'Pago y Envío'}</h3>
               </div>
-              <div 
-                onClick={() => { setIsCartOpen(false); setCheckoutStep('cart'); }} 
-                style={{ cursor: 'pointer', backgroundColor: '#F3F4F6', padding: '8px', borderRadius: '50%', display: 'flex' }}
-              >
-                <IconClose />
-              </div>
+              <div onClick={() => { setIsCartOpen(false); setCheckoutStep('cart'); }} style={{ cursor: 'pointer', backgroundColor: '#F3F4F6', padding: '8px', borderRadius: '50%', display: 'flex' }}><IconClose /></div>
             </div>
             
-            <div 
-              style={{ 
-                flex: 1, 
-                overflowY: 'auto', 
-                padding: '25px', 
-                backgroundColor: checkoutStep === 'cart' ? '#fff' : '#F9FAFB' 
-              }}
-            >
-              
-              {/* === PASO 1: LISTA DEL CARRITO === */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '25px', backgroundColor: checkoutStep === 'cart' ? '#fff' : '#F9FAFB' }}>
               {checkoutStep === 'cart' && (
                 carrito.length === 0 ? (
                   <div style={{ textAlign: 'center', marginTop: '80px', color: '#9CA3AF' }}>
-                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                      <IconCart />
-                    </div>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: '#F9FAFB', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}><IconCart /></div>
                     <h3 style={{ color: '#111', fontWeight: '900' }}>Canasta Vacía</h3>
                     <p style={{ marginTop: '10px', fontWeight: '600' }}>Agrega productos del súper para comenzar.</p>
                   </div>
                 ) : (
                   <div>
                     {carrito.map((item, i) => (
-                      <div 
-                        key={i} 
-                        style={{ 
-                          display: 'flex', 
-                          gap: '15px', 
-                          marginBottom: '20px', 
-                          alignItems: 'center', 
-                          borderBottom: '1px solid #F3F4F6', 
-                          paddingBottom: '20px' 
-                        }}
-                      >
-                        <img 
-                          src={item.image} 
-                          style={{ width: '70px', height: '70px', objectFit: 'contain', border: '1px solid #F3F4F6', borderRadius: '14px', padding: '5px' }} 
-                          alt="" 
-                        />
+                      <div key={i} style={{ display: 'flex', gap: '15px', marginBottom: '20px', alignItems: 'center', borderBottom: '1px solid #F3F4F6', paddingBottom: '20px' }}>
+                        <img src={item.image} style={{ width: '70px', height: '70px', objectFit: 'contain', border: '1px solid #F3F4F6', borderRadius: '14px', padding: '5px' }} alt="" />
                         <div style={{ flex: 1 }}>
                           <h4 style={{ margin: '0 0 6px 0', fontSize: '0.95rem', fontWeight: '800', color: '#111', lineHeight: '1.3' }}>{item.title}</h4>
-                          <p style={{ margin: 0, color: '#E31E24', fontWeight: '900', fontSize: '1.1rem' }}>
-                            RD${item.price.toFixed(2)}
-                          </p>
+                          <p style={{ margin: 0, color: '#E31E24', fontWeight: '900', fontSize: '1.1rem' }}>RD${item.price.toFixed(2)}</p>
                         </div>
-                        
-                        <div 
-                          style={{ 
-                            display: 'flex', 
-                            flexDirection: 'column',
-                            alignItems: 'flex-end',
-                            gap: '10px'
-                          }}
-                        >
-                          <div 
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              backgroundColor: '#F3F4F6', 
-                              borderRadius: '20px', 
-                              padding: '4px' 
-                            }}
-                          >
-                            <button 
-                              onClick={() => modificarCantidad(item.variantId, -1)} 
-                              style={{ 
-                                background: 'none', border: 'none', cursor: 'pointer', 
-                                color: item.quantity === 1 ? '#E31E24' : '#111', 
-                                width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%',
-                                backgroundColor: item.quantity === 1 ? '#FEE2E2' : 'transparent'
-                              }}
-                            >
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: '20px', padding: '4px' }}>
+                            <button onClick={() => modificarCantidad(item.variantId, -1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: item.quantity === 1 ? '#E31E24' : '#111', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', backgroundColor: item.quantity === 1 ? '#FEE2E2' : 'transparent' }}>
                               {item.quantity === 1 ? <IconTrash /> : <IconMinus />}
                             </button>
-                            
-                            <span style={{ fontWeight: '900', width: '25px', textAlign: 'center', fontSize: '1rem', color: '#111' }}>
-                              {item.quantity}
-                            </span>
-                            
-                            <button 
-                              onClick={() => modificarCantidad(item.variantId, 1)} 
-                              style={{ 
-                                background: '#fff', border: 'none', cursor: 'pointer', color: '#111', 
-                                width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%',
-                                boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
-                              }}
-                            >
-                              <IconAdd />
-                            </button>
+                            <span style={{ fontWeight: '900', width: '25px', textAlign: 'center', fontSize: '1rem', color: '#111' }}>{item.quantity}</span>
+                            <button onClick={() => modificarCantidad(item.variantId, 1)} style={{ background: '#fff', border: 'none', cursor: 'pointer', color: '#111', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}><IconAdd /></button>
                           </div>
                         </div>
                       </div>
@@ -1616,10 +863,8 @@ export default function App() {
                 )
               )}
 
-              {/* === PASO 2: SELECCIÓN DE PAGO Y CUPÓN === */}
               {checkoutStep === 'payment' && (
                 <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-                  
                   <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', marginBottom: '25px', border: '1px solid #E5E7EB', boxShadow: '0 4px 10px rgba(0,0,0,0.02)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                       <h4 style={{ margin: 0, fontWeight: '900', color: '#111', fontSize: '1.1rem' }}>Enviar a:</h4>
@@ -1629,75 +874,28 @@ export default function App() {
                     <p style={{ margin: 0, fontSize: '0.9rem', color: '#6B7280', lineHeight: '1.4' }}>{user.direccion}</p>
                     <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', color: '#6B7280', fontWeight: '700' }}>Cel: {user.telefono}</p>
                   </div>
-
                   <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '20px', marginBottom: '25px', border: '1px solid #E5E7EB', boxShadow: '0 4px 10px rgba(0,0,0,0.02)' }}>
                     <h4 style={{ margin: '0 0 15px 0', fontWeight: '900', color: '#111', fontSize: '1.1rem' }}>Código de Descuento</h4>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Ej. KOLMA10" 
-                        value={cupon} 
-                        onChange={e => setCupon(e.target.value)} 
-                        style={{ flex: 1, padding: '14px', borderRadius: '12px', border: '2px solid #F3F4F6', textTransform: 'uppercase', fontWeight: '700', fontSize: '1rem' }} 
-                      />
-                      <button 
-                        onClick={aplicarCupon}
-                        disabled={!cupon}
-                        style={{ backgroundColor: cupon ? '#111' : '#E5E7EB', color: '#fff', border: 'none', padding: '0 20px', borderRadius: '12px', fontWeight: '900', cursor: cupon ? 'pointer' : 'not-allowed', transition: 'background 0.2s' }}
-                      >
-                        Aplicar
-                      </button>
+                      <input type="text" placeholder="Ej. KOLMA10" value={cupon} onChange={e => setCupon(e.target.value)} style={{ flex: 1, padding: '14px', borderRadius: '12px', border: '2px solid #F3F4F6', textTransform: 'uppercase', fontWeight: '700', fontSize: '1rem' }} />
+                      <button onClick={aplicarCupon} disabled={!cupon} style={{ backgroundColor: cupon ? '#111' : '#E5E7EB', color: '#fff', border: 'none', padding: '0 20px', borderRadius: '12px', fontWeight: '900', cursor: cupon ? 'pointer' : 'not-allowed', transition: 'background 0.2s' }}>Aplicar</button>
                     </div>
                   </div>
-
                   <h4 style={{ margin: '0 0 15px 0', fontWeight: '900', fontSize: '1.1rem', color: '#111' }}>Método de Pago</h4>
-                  
-                  <div 
-                    onClick={() => setMetodoPago('efectivo')} 
-                    style={{ 
-                      backgroundColor: '#fff', 
-                      border: metodoPago === 'efectivo' ? '2px solid #E31E24' : '1px solid #E5E7EB', 
-                      borderRadius: '16px', 
-                      padding: '18px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '15px', 
-                      marginBottom: '15px', 
-                      cursor: 'pointer', 
-                      transition: 'all 0.2s',
-                      boxShadow: metodoPago === 'efectivo' ? '0 4px 15px rgba(227,30,36,0.1)' : 'none'
-                    }}
-                  >
+                  <div onClick={() => setMetodoPago('efectivo')} style={{ backgroundColor: '#fff', border: metodoPago === 'efectivo' ? '2px solid #E31E24' : '1px solid #E5E7EB', borderRadius: '16px', padding: '18px', display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: metodoPago === 'efectivo' ? '0 4px 15px rgba(227,30,36,0.1)' : 'none' }}>
                     <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: metodoPago === 'efectivo' ? '6px solid #E31E24' : '2px solid #D1D5DB', transition: 'all 0.2s' }}></div>
                     <div>
                       <p style={{ margin: 0, fontWeight: '900', fontSize: '1.05rem', color: '#111' }}>Pago contra entrega</p>
-                      <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#6B7280', fontWeight: '600' }}>Paga en efectivo al recibir tu pedido en Cotuí.</p>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#6B7280', fontWeight: '600' }}>Paga en efectivo al recibir en Cotuí.</p>
                     </div>
                   </div>
-
-                  <div 
-                    onClick={() => setMetodoPago('tarjeta')} 
-                    style={{ 
-                      backgroundColor: '#fff', 
-                      border: metodoPago === 'tarjeta' ? '2px solid #E31E24' : '1px solid #E5E7EB', 
-                      borderRadius: '16px', 
-                      padding: '18px', 
-                      display: 'flex', 
-                      alignItems: 'flex-start', 
-                      gap: '15px', 
-                      cursor: 'pointer', 
-                      transition: 'all 0.2s',
-                      opacity: metodoPago === 'tarjeta' ? 1 : 0.7
-                    }}
-                  >
+                  <div onClick={() => setMetodoPago('tarjeta')} style={{ backgroundColor: '#fff', border: metodoPago === 'tarjeta' ? '2px solid #E31E24' : '1px solid #E5E7EB', borderRadius: '16px', padding: '18px', display: 'flex', alignItems: 'flex-start', gap: '15px', cursor: 'pointer', transition: 'all 0.2s', opacity: metodoPago === 'tarjeta' ? 1 : 0.7 }}>
                     <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: metodoPago === 'tarjeta' ? '6px solid #E31E24' : '2px solid #D1D5DB', marginTop: '2px' }}></div>
                     <div>
                       <p style={{ margin: 0, fontWeight: '900', fontSize: '1.05rem', color: '#111' }}>Tarjeta de Crédito / Débito</p>
                       {metodoPago === 'tarjeta' && (
                         <div style={{ marginTop: '10px', backgroundColor: '#FEF2F2', border: '1px solid #FCA5A5', padding: '10px 12px', borderRadius: '8px' }}>
-                          <p style={{ margin: 0, fontSize: '0.85rem', color: '#991B1B', fontWeight: '800', lineHeight: '1.4' }}>
-                            ⚠️ Opción no disponible temporalmente. Por favor, selecciona Pago contra entrega.
-                          </p>
+                          <p style={{ margin: 0, fontSize: '0.85rem', color: '#991B1B', fontWeight: '800', lineHeight: '1.4' }}>⚠️ Opción no disponible temporalmente.</p>
                         </div>
                       )}
                     </div>
@@ -1706,81 +904,25 @@ export default function App() {
               )}
             </div>
 
-            <div 
-              style={{ 
-                padding: '25px', 
-                borderTop: '1px solid #E5E7EB', 
-                background: '#fff',
-                boxShadow: '0 -4px 20px rgba(0,0,0,0.05)'
-              }}
-            >
+            <div style={{ padding: '25px', borderTop: '1px solid #E5E7EB', background: '#fff', boxShadow: '0 -4px 20px rgba(0,0,0,0.05)' }}>
               {checkoutStep === 'payment' && (
                 <div style={{ marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#6B7280', fontWeight: '600' }}>
-                    <span>Subtotal</span>
-                    <span>RD$ {calcularSubtotal().toFixed(2)}</span>
-                  </div>
-                  {descuentoAplicado > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#22C55E', fontWeight: '800' }}>
-                      <span>Descuento</span>
-                      <span>- RD$ {descuentoAplicado.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#6B7280', fontWeight: '600' }}>
-                    <span>Delivery (Cotuí)</span>
-                    <span style={{ color: '#22C55E', fontWeight: '800' }}>GRATIS</span>
-                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#6B7280', fontWeight: '600' }}><span>Subtotal</span><span>RD$ {calcularSubtotal().toFixed(2)}</span></div>
+                  {descuentoAplicado > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#22C55E', fontWeight: '800' }}><span>Descuento</span><span>- RD$ {descuentoAplicado.toFixed(2)}</span></div>}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#6B7280', fontWeight: '600' }}><span>Delivery (Cotuí)</span><span style={{ color: '#22C55E', fontWeight: '800' }}>GRATIS</span></div>
                   <div style={{ borderTop: '1px dashed #E5E7EB', margin: '12px 0' }}></div>
                 </div>
               )}
-
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <span style={{ fontWeight: '900', fontSize: '1.2rem', color: '#111' }}>
-                  {checkoutStep === 'cart' ? 'Total Estimado' : 'Total a Pagar'}
-                </span>
-                <span style={{ fontWeight: '900', fontSize: '1.6rem', color: '#E31E24' }}>
-                  RD$ {calcularTotalFinal().toFixed(2)}
-                </span>
+                <span style={{ fontWeight: '900', fontSize: '1.2rem', color: '#111' }}>{checkoutStep === 'cart' ? 'Total Estimado' : 'Total a Pagar'}</span>
+                <span style={{ fontWeight: '900', fontSize: '1.6rem', color: '#E31E24' }}>RD$ {calcularTotalFinal().toFixed(2)}</span>
               </div>
-              
               {checkoutStep === 'cart' ? (
-                <button 
-                  onClick={avanzarAPago} 
-                  disabled={carrito.length === 0}
-                  style={{ 
-                    width: '100%', 
-                    backgroundColor: carrito.length === 0 ? '#E5E7EB' : '#E31E24', 
-                    color: carrito.length === 0 ? '#9CA3AF' : '#fff', 
-                    padding: '18px', 
-                    borderRadius: '16px', 
-                    border: 'none', 
-                    fontWeight: '900', 
-                    fontSize: '1.15rem', 
-                    cursor: carrito.length === 0 ? 'not-allowed' : 'pointer',
-                    boxShadow: carrito.length > 0 ? '0 6px 20px rgba(227,30,36,0.25)' : 'none',
-                    transition: 'all 0.2s'
-                  }}
-                >
+                <button onClick={avanzarAPago} disabled={carrito.length === 0} style={{ width: '100%', backgroundColor: carrito.length === 0 ? '#E5E7EB' : '#E31E24', color: carrito.length === 0 ? '#9CA3AF' : '#fff', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '1.15rem', cursor: carrito.length === 0 ? 'not-allowed' : 'pointer', boxShadow: carrito.length > 0 ? '0 6px 20px rgba(227,30,36,0.25)' : 'none', transition: 'all 0.2s' }}>
                   CONTINUAR AL PAGO
                 </button>
               ) : (
-                <button 
-                  onClick={finalizarPedido} 
-                  disabled={isProcessingOrder || metodoPago === 'tarjeta'}
-                  style={{ 
-                    width: '100%', 
-                    backgroundColor: (isProcessingOrder || metodoPago === 'tarjeta') ? '#E5E7EB' : '#E31E24', 
-                    color: (isProcessingOrder || metodoPago === 'tarjeta') ? '#9CA3AF' : '#fff', 
-                    padding: '18px', 
-                    borderRadius: '16px', 
-                    border: 'none', 
-                    fontWeight: '900', 
-                    fontSize: '1.15rem', 
-                    cursor: (isProcessingOrder || metodoPago === 'tarjeta') ? 'not-allowed' : 'pointer', 
-                    boxShadow: (isProcessingOrder || metodoPago === 'tarjeta') ? 'none' : '0 6px 20px rgba(227,30,36,0.25)',
-                    transition: 'all 0.2s'
-                  }}
-                >
+                <button onClick={finalizarPedido} disabled={isProcessingOrder || metodoPago === 'tarjeta'} style={{ width: '100%', backgroundColor: (isProcessingOrder || metodoPago === 'tarjeta') ? '#E5E7EB' : '#E31E24', color: (isProcessingOrder || metodoPago === 'tarjeta') ? '#9CA3AF' : '#fff', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '1.15rem', cursor: (isProcessingOrder || metodoPago === 'tarjeta') ? 'not-allowed' : 'pointer', boxShadow: (isProcessingOrder || metodoPago === 'tarjeta') ? 'none' : '0 6px 20px rgba(227,30,36,0.25)', transition: 'all 0.2s' }}>
                   {isProcessingOrder ? 'PROCESANDO...' : 'CONFIRMAR PEDIDO'}
                 </button>
               )}
@@ -1789,56 +931,23 @@ export default function App() {
         </div>
       )}
 
-      {/* ------------------------------------------- */}
-      {/* MODALES ADICIONALES (Login y Datos Faltantes) */}
-      {/* ------------------------------------------- */}
+      {/* MODALES ADICIONALES */}
       {isMissingInfoOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
           <div style={{ backgroundColor: '#fff', padding: '35px 30px', borderRadius: '24px', width: '90%', maxWidth: '400px', animation: 'fadeIn 0.3s' }}>
             <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '900', color: '#111', marginBottom: '15px' }}>Datos de Envío</h3>
-            <p style={{ color: '#6B7280', fontSize: '1rem', lineHeight: '1.5', marginBottom: '25px', fontWeight: '500' }}>Para entregar tu pedido en Cotuí, necesitamos que completes esta información.</p>
-            
-            <form 
-              onSubmit={(e) => { 
-                handleUpdateProfile(e); 
-                if (formData.telefono.length >= 10 && formData.direccion.length >= 5) {
-                  setCheckoutStep('payment'); 
-                }
-              }} 
-              style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}
-            >
+            <p style={{ color: '#6B7280', fontSize: '1rem', lineHeight: '1.5', marginBottom: '25px', fontWeight: '500' }}>Para entregar tu pedido en Cotuí, completa esta información.</p>
+            <form onSubmit={(e) => { handleUpdateProfile(e); if (formData.telefono.length >= 10 && formData.direccion.length >= 5) setCheckoutStep('payment'); }} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF' }}>TELÉFONO</label>
-                <input 
-                  placeholder="Ej: 8090000000" required 
-                  style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #E5E7EB', fontSize: '1rem', marginTop: '5px', fontWeight: '600' }} 
-                  value={formData.telefono} 
-                  onChange={e => setFormData({...formData, telefono: e.target.value})} 
-                />
+                <input placeholder="Ej: 8090000000" required style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #E5E7EB', fontSize: '1rem', marginTop: '5px', fontWeight: '600' }} value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} />
               </div>
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF' }}>DIRECCIÓN EN COTUÍ</label>
-                <textarea 
-                  placeholder="Sector, calle, casa..." required 
-                  style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #E5E7EB', height: '90px', resize: 'none', fontSize: '1rem', marginTop: '5px', fontWeight: '600' }} 
-                  value={formData.direccion} 
-                  onChange={e => setFormData({...formData, direccion: e.target.value})} 
-                />
+                <textarea placeholder="Sector, calle, casa..." required style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #E5E7EB', height: '90px', resize: 'none', fontSize: '1rem', marginTop: '5px', fontWeight: '600' }} value={formData.direccion} onChange={e => setFormData({...formData, direccion: e.target.value})} />
               </div>
-              <button 
-                type="submit" 
-                disabled={isSubmitting} 
-                style={{ backgroundColor: '#E31E24', color: '#fff', padding: '18px', borderRadius: '14px', border: 'none', fontWeight: '900', fontSize: '1.1rem', marginTop: '10px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(227,30,36,0.2)' }}
-              >
-                {isSubmitting ? 'Guardando...' : 'Guardar y Continuar'}
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setIsMissingInfoOpen(false)} 
-                style={{ color: '#9CA3AF', background: 'none', border: 'none', fontWeight: '800', fontSize: '1rem', cursor: 'pointer', padding: '10px' }}
-              >
-                Cancelar
-              </button>
+              <button type="submit" disabled={isSubmitting} style={{ backgroundColor: '#E31E24', color: '#fff', padding: '18px', borderRadius: '14px', border: 'none', fontWeight: '900', fontSize: '1.1rem', marginTop: '10px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(227,30,36,0.2)' }}>{isSubmitting ? 'Guardando...' : 'Guardar y Continuar'}</button>
+              <button type="button" onClick={() => setIsMissingInfoOpen(false)} style={{ color: '#9CA3AF', background: 'none', border: 'none', fontWeight: '800', fontSize: '1rem', cursor: 'pointer', padding: '10px' }}>Cancelar</button>
             </form>
           </div>
         </div>
@@ -1848,222 +957,94 @@ export default function App() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
           <div style={{ backgroundColor: '#fff', padding: '40px 30px', borderRadius: '24px', width: '90%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto', animation: 'fadeIn 0.3s' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '900', color: '#111' }}>
-                {authMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
-              </h3>
-              <div onClick={() => setIsAuthOpen(false)} style={{ cursor: 'pointer', backgroundColor: '#F3F4F6', padding: '8px', borderRadius: '50%', display: 'flex' }}>
-                <IconClose />
-              </div>
+              <h3 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '900', color: '#111' }}>{authMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}</h3>
+              <div onClick={() => setIsAuthOpen(false)} style={{ cursor: 'pointer', backgroundColor: '#F3F4F6', padding: '8px', borderRadius: '50%', display: 'flex' }}><IconClose /></div>
             </div>
-            
             <form onSubmit={handleAuthentication} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {authMode === 'register' && (
                 <div>
                   <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF' }}>NOMBRE COMPLETO</label>
-                  <input 
-                    placeholder="Ej: Juan Pérez" required 
-                    style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '5px', fontSize: '1rem', fontWeight: '600' }} 
-                    onChange={e => setFormData({...formData, nombre: e.target.value})} 
-                  />
+                  <input placeholder="Ej: Juan Pérez" required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '5px', fontSize: '1rem', fontWeight: '600' }} onChange={e => setFormData({...formData, nombre: e.target.value})} />
                 </div>
               )}
-
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF' }}>CORREO ELECTRÓNICO</label>
-                <input 
-                  type="email" placeholder="correo@ejemplo.com" required 
-                  style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '5px', fontSize: '1rem', fontWeight: '600' }} 
-                  onChange={e => setFormData({...formData, email: e.target.value})} 
-                />
+                <input type="email" placeholder="correo@ejemplo.com" required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '5px', fontSize: '1rem', fontWeight: '600' }} onChange={e => setFormData({...formData, email: e.target.value})} />
               </div>
-              
               {authMode === 'register' && (
                 <>
                   <div>
                     <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF' }}>TELÉFONO</label>
                     <div style={{ display: 'flex', border: '2px solid #E5E7EB', borderRadius: '12px', overflow: 'hidden', marginTop: '5px' }}>
                       <div style={{ background: '#F9FAFB', padding: '14px', fontWeight: '900', borderRight: '2px solid #E5E7EB', color: '#4B5563' }}>+1</div>
-                      <input 
-                        placeholder="8090000000" required 
-                        style={{ width: '100%', padding: '14px', border: 'none', fontSize: '1rem', fontWeight: '600', outline: 'none' }} 
-                        onChange={e => setFormData({...formData, telefono: e.target.value})} 
-                      />
+                      <input placeholder="8090000000" required style={{ width: '100%', padding: '14px', border: 'none', fontSize: '1rem', fontWeight: '600', outline: 'none' }} onChange={e => setFormData({...formData, telefono: e.target.value})} />
                     </div>
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF' }}>DIRECCIÓN EN COTUÍ</label>
-                    <input 
-                      placeholder="Sector, calle, número..." required 
-                      style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '5px', fontSize: '1rem', fontWeight: '600' }} 
-                      onChange={e => setFormData({...formData, direccion: e.target.value})} 
-                    />
+                    <input placeholder="Sector, calle, número..." required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '5px', fontSize: '1rem', fontWeight: '600' }} onChange={e => setFormData({...formData, direccion: e.target.value})} />
                   </div>
                 </>
               )}
-
               <div>
                 <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#9CA3AF' }}>CONTRASEÑA</label>
-                <input 
-                  type="password" placeholder="Mínimo 6 caracteres" required 
-                  style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '5px', fontSize: '1rem', fontWeight: '600' }} 
-                  onChange={e => setFormData({...formData, password: e.target.value})} 
-                />
+                <input type="password" placeholder="Mínimo 6 caracteres" required style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '2px solid #E5E7EB', marginTop: '5px', fontSize: '1rem', fontWeight: '600' }} onChange={e => setFormData({...formData, password: e.target.value})} />
               </div>
-
-              {errorAuth && (
-                <div style={{ backgroundColor: '#FEF2F2', padding: '12px', borderRadius: '10px', border: '1px solid #FCA5A5', marginTop: '5px' }}>
-                  <p style={{ margin: 0, color: '#991B1B', fontSize: '0.85rem', fontWeight: '800' }}>⚠️ {errorAuth}</p>
-                </div>
-              )}
-
-              <button 
-                type="submit" 
-                disabled={isSubmitting} 
-                style={{ width: '100%', backgroundColor: '#E31E24', color: '#fff', padding: '18px', borderRadius: '14px', border: 'none', fontWeight: '900', fontSize: '1.1rem', marginTop: '10px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(227,30,36,0.2)' }}
-              >
+              {errorAuth && <div style={{ backgroundColor: '#FEF2F2', padding: '12px', borderRadius: '10px', border: '1px solid #FCA5A5', marginTop: '5px' }}><p style={{ margin: 0, color: '#991B1B', fontSize: '0.85rem', fontWeight: '800' }}>⚠️ {errorAuth}</p></div>}
+              <button type="submit" disabled={isSubmitting} style={{ width: '100%', backgroundColor: '#E31E24', color: '#fff', padding: '18px', borderRadius: '14px', border: 'none', fontWeight: '900', fontSize: '1.1rem', marginTop: '10px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(227,30,36,0.2)' }}>
                 {isSubmitting ? 'Procesando...' : authMode === 'login' ? 'ENTRAR' : 'CREAR CUENTA'}
               </button>
             </form>
-
             <div style={{ marginTop: '25px', textAlign: 'center', fontSize: '0.95rem', borderTop: '2px dashed #E5E7EB', paddingTop: '20px' }}>
               {authMode === 'login' ? (
-                <p style={{ margin: 0, color: '#4B5563', fontWeight: '600' }}>
-                  ¿No tienes cuenta? <span onClick={() => setAuthMode('register')} style={{ color: '#E31E24', fontWeight: '900', cursor: 'pointer', padding: '5px' }}>Regístrate aquí</span>
-                </p>
+                <p style={{ margin: 0, color: '#4B5563', fontWeight: '600' }}>¿No tienes cuenta? <span onClick={() => setAuthMode('register')} style={{ color: '#E31E24', fontWeight: '900', cursor: 'pointer', padding: '5px' }}>Regístrate aquí</span></p>
               ) : (
-                <p style={{ margin: 0, color: '#4B5563', fontWeight: '600' }}>
-                  ¿Ya tienes cuenta? <span onClick={() => setAuthMode('login')} style={{ color: '#E31E24', fontWeight: '900', cursor: 'pointer', padding: '5px' }}>Inicia Sesión</span>
-                </p>
+                <p style={{ margin: 0, color: '#4B5563', fontWeight: '600' }}>¿Ya tienes cuenta? <span onClick={() => setAuthMode('login')} style={{ color: '#E31E24', fontWeight: '900', cursor: 'pointer', padding: '5px' }}>Inicia Sesión</span></p>
               )}
             </div>
           </div>
         </div>
       )}
 
-      {/* ------------------------------------------- */}
-      {/* MENÚ DE NAVEGACIÓN INFERIOR (Botón Flotante) */}
-      {/* ------------------------------------------- */}
-      <nav 
-        style={{ 
-          position: 'fixed', bottom: 0, left: 0, right: 0, 
-          backgroundColor: '#FFFFFF', 
-          borderTop: '1px solid #E5E7EB',
-          boxShadow: '0 -10px 25px rgba(0,0,0,0.05)', 
-          zIndex: 1000, 
-          paddingBottom: 'env(safe-area-inset-bottom)' 
-        }}
-      >
+      {/* NAVEGACIÓN INFERIOR */}
+      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: '#FFFFFF', borderTop: '1px solid #E5E7EB', boxShadow: '0 -10px 25px rgba(0,0,0,0.05)', zIndex: 1000, paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '75px', position: 'relative' }}>
-          
-          {/* 1. Pedidos */}
-          <div 
-            onClick={() => setActiveTab('pedidos')} 
-            style={{ width: '25%', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: activeTab === 'pedidos' ? '#E31E24' : '#94A3B8', transition: 'color 0.2s' }}
-          >
+          <div onClick={() => setActiveTab('pedidos')} style={{ width: '25%', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: activeTab === 'pedidos' ? '#E31E24' : '#94A3B8', transition: 'color 0.2s' }}>
             <IconTruck active={activeTab === 'pedidos'} />
             <span style={{ fontSize: '0.65rem', fontWeight: activeTab === 'pedidos' ? '900' : '700', marginTop: '4px' }}>Pedidos</span>
           </div>
-
-          {/* 2. Canasta */}
-          <div 
-            onClick={() => setIsCartOpen(true)} 
-            style={{ width: '25%', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: '#94A3B8', position: 'relative' }}
-          >
+          <div onClick={() => setIsCartOpen(true)} style={{ width: '25%', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: '#94A3B8', position: 'relative' }}>
             <div style={{ position: 'relative' }}>
               <IconOrders active={false} />
-              {carrito.length > 0 && (
-                <span style={{ position: 'absolute', top: '-6px', right: '-10px', backgroundColor: '#E31E24', color: '#fff', fontSize: '0.65rem', fontWeight: '900', width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff' }}>
-                  {carrito.reduce((acc, item) => acc + item.quantity, 0)}
-                </span>
-              )}
+              {carrito.length > 0 && <span style={{ position: 'absolute', top: '-6px', right: '-10px', backgroundColor: '#E31E24', color: '#fff', fontSize: '0.65rem', fontWeight: '900', width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff' }}>{carrito.reduce((acc, item) => acc + item.quantity, 0)}</span>}
             </div>
             <span style={{ fontSize: '0.65rem', fontWeight: '700', marginTop: '4px' }}>Canasta</span>
           </div>
-
-          {/* 3. Inicio (BOTÓN FLOTANTE CENTRAL) */}
           <div style={{ width: '25%', height: '100%', position: 'relative', display: 'flex', justifyContent: 'center' }}>
-            <button 
-              onClick={() => setActiveTab('inicio')} 
-              style={{ 
-                position: 'absolute', 
-                top: '-25px', 
-                backgroundColor: activeTab === 'inicio' ? '#E31E24' : '#111111', 
-                width: '64px', 
-                height: '64px', 
-                borderRadius: '50%', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                border: '6px solid #F9FAFB', 
-                boxShadow: '0 8px 20px rgba(0,0,0,0.15)', 
-                cursor: 'pointer',
-                transition: 'background-color 0.3s'
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-              </svg>
+            <button onClick={() => setActiveTab('inicio')} style={{ position: 'absolute', top: '-25px', backgroundColor: activeTab === 'inicio' ? '#E31E24' : '#111111', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '6px solid #F9FAFB', boxShadow: '0 8px 20px rgba(0,0,0,0.15)', cursor: 'pointer', transition: 'background-color 0.3s' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
             </button>
-            <span style={{ position: 'absolute', bottom: '10px', fontSize: '0.65rem', fontWeight: activeTab === 'inicio' ? '900' : '700', color: activeTab === 'inicio' ? '#E31E24' : '#94A3B8' }}>
-              Inicio
-            </span>
+            <span style={{ position: 'absolute', bottom: '10px', fontSize: '0.65rem', fontWeight: activeTab === 'inicio' ? '900' : '700', color: activeTab === 'inicio' ? '#E31E24' : '#94A3B8' }}>Inicio</span>
           </div>
-
-          {/* 4. Perfil */}
-          <div 
-            onClick={() => setActiveTab('perfil')} 
-            style={{ width: '25%', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: activeTab === 'perfil' ? '#E31E24' : '#94A3B8', transition: 'color 0.2s' }}
-          >
+          <div onClick={() => setActiveTab('perfil')} style={{ width: '25%', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', color: activeTab === 'perfil' ? '#E31E24' : '#94A3B8', transition: 'color 0.2s' }}>
             <IconProfile active={activeTab === 'perfil'} />
             <span style={{ fontSize: '0.65rem', fontWeight: activeTab === 'perfil' ? '900' : '700', marginTop: '4px' }}>Perfil</span>
           </div>
-
         </div>
       </nav>
 
       <style jsx global>{`
-        @keyframes slideInRight { 
-          0% { transform: translateX(100%); } 
-          100% { transform: translateX(0); } 
-        }
-        @keyframes slideUp { 
-          0% { transform: translateY(100%); } 
-          100% { transform: translateY(0); } 
-        }
-        @keyframes fadeIn { 
-          0% { opacity: 0; transform: translateY(10px); } 
-          100% { opacity: 1; transform: translateY(0); } 
-        }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes pulseAnim { 
-          0% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0.4); transform: scale(1); } 
-          50% { box-shadow: 0 0 0 15px rgba(227, 30, 36, 0); transform: scale(1.05); } 
-          100% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0); transform: scale(1); } 
-        }
+        @keyframes slideInRight { 0% { transform: translateX(100%); } 100% { transform: translateX(0); } }
+        @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+        @keyframes fadeIn { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulseAnim { 0% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0.4); transform: scale(1); } 50% { box-shadow: 0 0 0 15px rgba(227, 30, 36, 0); transform: scale(1.05); } 100% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0); transform: scale(1); } }
         .pulse-box { animation: pulseAnim 2s infinite ease-in-out; }
-        @keyframes driveAnim { 
-          0% { transform: translateX(-10px); } 
-          50% { transform: translateX(10px); } 
-          100% { transform: translateX(-10px); } 
-        }
+        @keyframes driveAnim { 0% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 100% { transform: translateX(-10px); } }
         .truck-animation { animation: driveAnim 2s infinite; }
-        ::-webkit-scrollbar { 
-          width: 0px; 
-          height: 0px; 
-          background: transparent; 
-        }
-        input::placeholder, textarea::placeholder { 
-          color: #9CA3AF; 
-          opacity: 0.7; 
-        }
-        input:focus, textarea:focus {
-          outline: none;
-          border-color: #E31E24 !important;
-        }
+        ::-webkit-scrollbar { width: 0px; height: 0px; background: transparent; }
+        input::placeholder, textarea::placeholder { color: #9CA3AF; opacity: 0.7; }
+        input:focus, textarea:focus { outline: none; border-color: #E31E24 !important; }
       `}</style>
       <Analytics />
     </div>
