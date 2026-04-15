@@ -1,20 +1,24 @@
 {
-  "name": "kolma-app",
+  "name": "kolmard-premium",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "tailwindcss": "latest",
-    "postcss": "latest",
+    "lucide-react": "latest",
+    "clsx": "latest",
+    "tailwind-merge": "latest"
+  },
+  "devDependencies": {
     "autoprefixer": "latest",
-    "@vercel/analytics": "latest"
+    "postcss": "latest",
+    "tailwindcss": "latest"
   }
 }
-
