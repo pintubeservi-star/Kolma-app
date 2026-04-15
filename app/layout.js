@@ -1,3 +1,5 @@
+import './globals.css' // <--- ESTA LÍNEA ES LA QUE ACTIVA EL DISEÑO
+
 export const metadata = {
   title: 'Kolma RD | Supermercado Digital',
   description: 'Tu supermercado digital en Cotuí. Calidad y rapidez en tus manos.',
@@ -33,7 +35,7 @@ export default function RootLayout({ children }) {
           }}
         />
       </head>
-      <body style={{ margin: 0, padding: 0, backgroundColor: '#000' }}>
+      <body style={{ margin: 0, padding: 0 }}>
         {children}
       </body>
     </html>
