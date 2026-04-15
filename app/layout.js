@@ -1,13 +1,41 @@
 import './globals.css'
 
+export const metadata = {
+  title: 'Kolma RD | Supermercado Digital',
+  description: 'Tu supermercado digital en Cotuí. Calidad y rapidez en tus manos.',
+  manifest: '/manifest.json',
+  themeColor: '#E31E24',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Kolma RD',
+  },
+  icons: {
+    apple: '/icon-192x192.png',
+  },
+}
+
 export default function RootLayout({ children }) {
   return (
     <html lang="es">
       <head>
-        {/* Aquí va tu script de PWA que ya tienes */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                    console.log('Kolma RD PWA lista');
+                  }).catch(function(err) {
+                    console.log('PWA Error:', err);
+                  });
+                });
+              }
+            `,
+          }}
+        />
       </head>
-      {/* QUITAMOS EL STYLE DEL BODY PARA QUE TAILWIND TOME EL CONTROL */}
-      <body>
+      <body style={{ margin: 0, padding: 0 }}>
         {children}
       </body>
     </html>
