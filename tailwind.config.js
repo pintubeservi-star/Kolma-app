@@ -11,7 +11,6 @@ module.exports = {
         kolma: {
           red: "#FF3D00",
           orange: "#FF9100",
-          dark: "#D32F2F"
         }
       },
       borderRadius: {
