@@ -1,8 +1,20 @@
-"dependencies": {
-  "next": "latest",
-  "react": "latest",
-  "react-dom": "latest",
-  "tailwindcss": "latest",
-  "postcss": "latest",
-  "autoprefixer": "latest"
+{
+  "name": "kolma-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "tailwindcss": "latest",
+    "postcss": "latest",
+    "autoprefixer": "latest",
+    "@vercel/analytics": "latest"
+  }
 }
+
