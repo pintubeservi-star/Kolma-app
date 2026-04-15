@@ -1,34 +1,41 @@
 'use client'
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Analytics } from "@vercel/analytics/react"
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 
-// ==========================================
-// 1. ICONOS PREMIUM (SVG) PWA OPTIMIZED
-// ==========================================
-const Icons = {
-  Add: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
-  Minus: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
-  Trash: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
-  Search: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line></svg>,
-  Home: ({ active }) => <svg width="24" height="24" viewBox="0 0 24 24" fill={active ? "#E31E24" : "none"} stroke={active ? "#E31E24" : "#9CA3AF"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>,
-  Truck: ({ active, color }) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color || (active ? "#E31E24" : "#9CA3AF")} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>,
-  Profile: ({ active }) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? "#E31E24" : "#9CA3AF"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
-  Cart: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>,
-  Close: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
-  Success: () => <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
-  Fire: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="#E31E24" stroke="#E31E24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15.2 22a7.1 7.1 0 0 1-7.1-7.1c0-3.3 2.5-6.4 5.3-8.8.4-.3.9-.7 1.4-1.1.2-.2.3-.5.1-.7-.1-.2-.4-.3-.6-.2-3.1 1.6-5.8 4.2-7.4 7.2-.2.4-.6.6-1 .4-.4-.2-.5-.6-.3-1C7.8 7 11.6 3.6 15.6 2c.4-.2.8.1.9.5.3 2.1 1.5 3.9 3.2 5.2 1.7 1.2 2.8 3.1 2.8 5.2A7.1 7.1 0 0 1 15.2 22z"></path></svg>,
-  Shield: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>,
-  Star: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="#FBBF24" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>,
-  Location: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
-  ChevronLeft: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>,
-  Money: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
-};
-
-// ==========================================
-// 2. CONFIGURACIÓN, UTILIDADES Y NEUROMARKETING
-// ==========================================
+// --- CONFIGURACIÓN DE ENTORNO Y MARCA ---
+const APP_ID = "kolma-rd-premium-001";
+const MAP_CENTER = [19.0528, -70.1492]; // Cotuí, RD
 const DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN || "q0q09e-cp.myshopify.com";
 const ACCESS_TOKEN = process.env.NEXT_PUBLIC_SHOPIFY_ACCESS_TOKEN || "c9bda45020488455d7fe2d8b7e22f352";
+
+// ==========================================
+// 1. ICONOS NATIVOS (Sin dependencias externas para evitar errores en Vercel)
+// ==========================================
+const Icon = ({ children, size = 24, className = "" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+);
+const Icons = {
+  Search: (p) => <Icon {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Icon>,
+  ShoppingBag: (p) => <Icon {...p}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></Icon>,
+  User: (p) => <Icon {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>,
+  MapPin: (p) => <Icon {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></Icon>,
+  Plus: (p) => <Icon {...p}><path d="M5 12h14"/><path d="M12 5v14"/></Icon>,
+  Minus: (p) => <Icon {...p}><path d="M5 12h14"/></Icon>,
+  X: (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>,
+  Trash: (p) => <Icon {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></Icon>,
+  CheckCircle: (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></Icon>,
+  Flame: (p) => <Icon {...p}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></Icon>,
+  Zap: (p) => <Icon {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Icon>,
+  Phone: (p) => <Icon {...p}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></Icon>,
+  ArrowRight: (p) => <Icon {...p}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></Icon>,
+  CreditCard: (p) => <Icon {...p}><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></Icon>,
+  Home: (p) => <Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>,
+  MapIcon: (p) => <Icon {...p}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></Icon>,
+  LogOut: (p) => <Icon {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></Icon>,
+  Navigation: (p) => <Icon {...p}><polygon points="3 11 22 2 13 21 11 13 3 11"/></Icon>,
+  Cpu: (p) => <Icon {...p}><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></Icon>,
+  ShoppingBasket: (p) => <Icon {...p}><path d="m5 11 4-7"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/></Icon>,
+  TrendingUp: (p) => <Icon {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></Icon>
+};
 
 const formatTime = (secs) => {
   const h = Math.floor(secs / 3600).toString().padStart(2, '0');
@@ -43,18 +50,13 @@ const getCategoryEmoji = (title) => {
   if (t.includes('carne') || t.includes('pollo')) return '🥩';
   if (t.includes('lacteo') || t.includes('queso') || t.includes('leche')) return '🥛';
   if (t.includes('bebida') || t.includes('jugo')) return '🥤';
-  if (t.includes('limpieza') || t.includes('hogar')) return '🧼';
-  if (t.includes('licor') || t.includes('cerveza') || t.includes('vino')) return '🍷';
   if (t.includes('pan') || t.includes('harina')) return '🍞';
   if (t.includes('fruta') || t.includes('vegetal')) return '🥑';
-  if (t.includes('snack') || t.includes('dulce')) return '🍫';
-  if (t.includes('cuidado') || t.includes('personal')) return '🧴';
-  if (t.includes('bebé') || t.includes('baby')) return '🍼';
   return '🛍️'; 
 };
 
 // ==========================================
-// 3. MAPA DE TRACKING EN VIVO (SHIPDAY INTEGRATION)
+// COMPONENTE: MAPA EN VIVO SHIPDAY
 // ==========================================
 const LiveTrackingMap = ({ order, onClose }) => {
   const mapRef = useRef(null);
@@ -62,39 +64,28 @@ const LiveTrackingMap = ({ order, onClose }) => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
     const initMap = () => {
       const L = window.L;
       if (!L || mapRef.current) return;
 
-      // Coordenadas Cotuí
-      const cotuiCoords = [19.0528, -70.1435];
-      mapRef.current = L.map('live-map', { zoomControl: false, attributionControl: false }).setView(cotuiCoords, 16);
-      
-      // Estilo de mapa claro y premium tipo Uber
+      mapRef.current = L.map('live-map', { zoomControl: false, attributionControl: false }).setView(MAP_CENTER, 15);
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapRef.current);
 
-      const driverHtml = `<div style="background-color: #E31E24; width: 45px; height: 45px; border-radius: 50%; border: 4px solid white; box-shadow: 0 5px 15px rgba(227,30,36,0.5); display: flex; align-items: center; justify-content: center; animation: pulseDriver 2s infinite;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+      const driverHtml = `<div class="w-12 h-12 bg-[#FF3D00] rounded-[20px] flex items-center justify-center text-white shadow-2xl shadow-red-500/50 border-4 border-white animate-pulse">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
                           </div>`;
       
-      const driverIcon = L.divIcon({ className: 'custom-driver-pin', html: driverHtml, iconSize: [45, 45], iconAnchor: [22, 22] });
-      markerRef.current = L.marker(cotuiCoords, { icon: driverIcon, zIndexOffset: 1000 }).addTo(mapRef.current);
+      const driverIcon = L.divIcon({ className: 'custom-driver-pin', html: driverHtml, iconSize: [48, 48], iconAnchor: [24, 24] });
+      markerRef.current = L.marker(MAP_CENTER, { icon: driverIcon, zIndexOffset: 1000 }).addTo(mapRef.current);
     };
 
     if (!window.L) {
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = initMap;
-      document.head.appendChild(script);
-      const link = document.createElement('link');
-      link.rel = 'stylesheet'; link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
+      const script = document.createElement('script'); script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; script.onload = initMap; document.head.appendChild(script);
+      const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(link);
     } else { initMap(); }
   }, []);
 
   useEffect(() => {
-    // Si llegan coordenadas de la API Shipday, mover el marcador
     if (order?.driverLat && order?.driverLng && markerRef.current) {
       const pos = [order.driverLat, order.driverLng];
       markerRef.current.setLatLng(pos);
@@ -103,108 +94,69 @@ const LiveTrackingMap = ({ order, onClose }) => {
   }, [order?.driverLat, order?.driverLng]);
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 4000, display: 'flex', flexDirection: 'column', backgroundColor: '#000' }}>
-      <button onClick={onClose} style={{ position: 'absolute', top: 'env(safe-area-inset-top, 40px)', left: '20px', width: '45px', height: '45px', background: '#fff', borderRadius: '50%', border: 'none', zIndex: 4002, boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-        <Icons.ChevronLeft />
+    <div className="fixed inset-0 z-[100] bg-black flex flex-col animate-in fade-in duration-300">
+      <button onClick={onClose} className="absolute top-12 left-6 z-[110] w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-95 transition-transform">
+        <Icons.X size={24} />
       </button>
-
-      {/* Contenedor del Mapa */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: '45%', zIndex: 4000 }}>
-        <div id="live-map" style={{ width: '100%', height: '100%', backgroundColor: '#E5E7EB' }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '100px', background: 'linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,1))', zIndex: 4001 }} />
-      </div>
-
-      {/* Panel Inferior de Shipday */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%', backgroundColor: '#fff', zIndex: 4002, borderRadius: '32px 32px 0 0', padding: '25px', boxShadow: '0 -10px 40px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ width: '40px', height: '5px', backgroundColor: '#E5E7EB', borderRadius: '3px', margin: '0 auto 20px' }} />
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '25px' }}>
+      <div className="absolute inset-0 bottom-[45%] z-[100]"><div id="live-map" className="w-full h-full bg-slate-100" /></div>
+      <div className="absolute bottom-0 inset-x-0 h-[50%] bg-white z-[110] rounded-t-[48px] p-8 shadow-[0_-20px_50px_rgba(0,0,0,0.15)] flex flex-col">
+        <div className="w-12 h-2 bg-slate-100 rounded-full mx-auto mb-8" />
+        <div className="flex justify-between items-start mb-8">
           <div>
-            <h2 style={{ margin: 0, fontSize: '26px', fontWeight: '900', color: '#111' }}>{order.eta ? `Llega en ${order.eta} min` : 'En camino a Cotuí'}</h2>
-            <p style={{ margin: '5px 0 0 0', fontSize: '15px', color: '#E31E24', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span className="pulse-dot"></span> {order.shipdayMsg || 'Conectando con repartidor...'}
+            <h2 className="text-3xl font-black tracking-tighter text-slate-900">{order.eta ? `Llega en ${order.eta} min` : 'En camino'}</h2>
+            <p className="text-[#FF3D00] font-black text-sm uppercase tracking-widest mt-1 flex items-center gap-2">
+               <span className="w-2 h-2 bg-[#FF3D00] rounded-full animate-ping"></span> {order.shipdayMsg || 'Conectando radar...'}
             </p>
           </div>
-          <div style={{ backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', padding: '8px 12px', borderRadius: '12px' }}>
-            <span style={{ fontSize: '12px', fontWeight: '900', color: '#111' }}>#{order.id.slice(-5)}</span>
-          </div>
+          <div className="bg-orange-50 px-4 py-2 rounded-2xl border border-orange-100"><span className="text-[#FF9100] font-black text-sm">#{order.id.slice(-5)}</span></div>
         </div>
-
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '30px' }}>
-          <div style={{ flex: 1, height: '6px', borderRadius: '3px', backgroundColor: '#E31E24' }} />
-          <div className="shimmer-bar" style={{ flex: 1, height: '6px', borderRadius: '3px', backgroundColor: order.driverName ? '#E31E24' : '#E5E7EB' }} />
-          <div style={{ flex: 1, height: '6px', borderRadius: '3px', backgroundColor: order.estado === 'Entregado' ? '#E31E24' : '#E5E7EB' }} />
+        <div className="flex gap-2 mb-8">
+          <div className="flex-1 h-2 rounded-full bg-[#FF3D00]" />
+          <div className={`flex-1 h-2 rounded-full ${order.driverName ? 'bg-[#FF3D00]' : 'bg-slate-100'}`} />
+          <div className={`flex-1 h-2 rounded-full ${order.status === 'Entregado' ? 'bg-[#FF3D00]' : 'bg-slate-100'}`} />
         </div>
-
         {order.driverName ? (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: '20px', borderRadius: '24px', border: '1px solid #F3F4F6', boxShadow: '0 8px 20px rgba(0,0,0,0.03)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#E5E7EB', backgroundImage: 'url(https://i.pravatar.cc/150?u=kolma_driver)', backgroundSize: 'cover', border: '3px solid #fff', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}></div>
+          <div className="bg-slate-50 border border-slate-100 rounded-[32px] p-5 flex justify-between items-center mt-auto">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-slate-200 rounded-2xl bg-cover border-2 border-white shadow-md" style={{backgroundImage: 'url(https://i.pravatar.cc/150?u=kolma_driver)'}} />
               <div>
-                <p style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#111' }}>{order.driverName}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '4px' }}>
-                  <Icons.Shield /><span style={{ fontSize: '13px', fontWeight: '700', color: '#6B7280' }}>Repartidor Kolma</span>
-                </div>
+                <p className="font-black text-lg text-slate-900 leading-none mb-1">{order.driverName}</p>
+                <p className="text-xs font-bold text-slate-400 flex items-center gap-1"><Icons.CheckCircle size={12} className="text-green-500" /> Repartidor Verificado</p>
               </div>
             </div>
             {order.driverPhone && (
-              <a href={`tel:${order.driverPhone}`} style={{ width: '48px', height: '48px', background: '#111', borderRadius: '50%', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-              </a>
+              <a href={`tel:${order.driverPhone}`} className="w-14 h-14 bg-gradient-to-br from-[#FF3D00] to-[#FF9100] rounded-2xl flex items-center justify-center text-white shadow-xl shadow-orange-200 active:scale-95 transition-transform"><Icons.Phone size={24} /></a>
             )}
           </div>
         ) : (
-           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', backgroundColor: '#FEF2F2', padding: '20px', borderRadius: '24px', border: '1px solid #FCA5A5' }}>
-              <div className="loader" style={{ width: '30px', height: '30px', border: '4px solid #FCA5A5', borderTop: '4px solid #E31E24', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-              <div>
-                <p style={{ margin: 0, fontSize: '16px', fontWeight: '900', color: '#991B1B' }}>Buscando a tu repartidor...</p>
-                <p style={{ margin: '4px 0 0 0', fontSize: '14px', fontWeight: '600', color: '#B91C1C' }}>Empacando orden y calculando ruta.</p>
-              </div>
-           </div>
+          <div className="bg-red-50 border border-red-100 rounded-[32px] p-5 flex items-center gap-4 mt-auto">
+             <div className="w-10 h-10 border-4 border-red-200 border-t-[#FF3D00] rounded-full animate-spin" />
+             <div><p className="font-black text-slate-900">Empacando orden</p><p className="text-xs font-bold text-slate-500">Buscando al repartidor más cercano</p></div>
+          </div>
         )}
       </div>
     </div>
   );
 };
 
-// ==========================================
-// 4. COMPONENTE PRINCIPAL (PWA APP)
-// ==========================================
 export default function App() {
-  // Estado Global - UI & Navegación
-  const [activeTab, setActiveTab] = useState('inicio');
+  const [view, setView] = useState('home'); 
+  const [activeCategory, setActiveCategory] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeCategory, setActiveCategory] = useState('Todas');
-  const [showProductModal, setShowProductModal] = useState(null);
-  
-  // Estado Global - Data (Shopify)
   const [products, setProducts] = useState([]);
-  const [collections, setCollections] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Estado Global - Usuario & Auth
-  const [user, setUser] = useState(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState('register');
-  const [authForm, setAuthForm] = useState({ nombre: '', email: '', password: '', telefono: '', direccion: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Estado Global - Carrito & Checkout
   const [cart, setCart] = useState([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [checkoutStep, setCheckoutStep] = useState('cart'); 
+  const [user, setUser] = useState(null);
+  const [checkoutStep, setCheckoutStep] = useState('cart');
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
-  
-  // Estado Global - Órdenes & Shipday
   const [orders, setOrders] = useState([]);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [isTrackingOpen, setIsTrackingOpen] = useState(false);
-  const [showSuccessBlast, setShowSuccessBlast] = useState(false);
-  
-  // ------------------------------------------
-  // BANNER DINÁMICO (Urgencia -> Expira -> Oferta Regular)
-  // ------------------------------------------
-  const [bannerTimer, setBannerTimer] = useState(120); // 2 Minutos de prueba para que veas el cambio
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authForm, setAuthForm] = useState({ name: '', email: '', phone: '', address: '', pwd: '' });
+  const [showUpsell, setShowUpsell] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [bannerTimer, setBannerTimer] = useState(120);
   const [bannerState, setBannerState] = useState('urgency'); 
   
   useEffect(() => {
@@ -212,306 +164,275 @@ export default function App() {
       const timerId = setInterval(() => setBannerTimer(prev => prev - 1), 1000);
       return () => clearInterval(timerId);
     } else {
-      setBannerState('regular'); // Cambio automático de estado
+      setBannerState('regular');
     }
   }, [bannerTimer]);
 
-  // ------------------------------------------
-  // INICIALIZACIÓN: SHOPIFY FETCH & LOCAL STORAGE
-  // ------------------------------------------
   useEffect(() => {
-    const token = localStorage.getItem('kolma_token');
-    if (token) {
-      setUser({
-        id: token,
-        nombre: localStorage.getItem('kolma_name') || 'Cliente',
-        email: localStorage.getItem('kolma_email'),
-        telefono: localStorage.getItem('kolma_phone') || '',
-        direccion: localStorage.getItem('kolma_address') || ''
-      });
-      const savedOrders = JSON.parse(localStorage.getItem('kolma_orders') || '[]');
-      setOrders(savedOrders);
-      if (savedOrders.length > 0) {
-        const last = savedOrders[savedOrders.length - 1];
-        if (last.estado !== 'Finalizado') setCurrentOrder(last);
-      }
-    }
-
     const fetchShopify = async () => {
       try {
         const res = await fetch(`https://${DOMAIN}/api/2024-04/graphql.json`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Shopify-Storefront-Access-Token': ACCESS_TOKEN },
-          body: JSON.stringify({
-            query: `{ 
-              collections(first: 20) { edges { node { id title } } }
-              products(first: 50) { edges { node { id title tags collections(first: 5) { edges { node { title } } } images(first: 1) { edges { node { url } } } variants(first: 1) { edges { node { id price { amount } compareAtPrice { amount } } } } } } } 
-            }`
-          })
+          body: JSON.stringify({ query: `{ products(first: 50) { edges { node { id title collections(first: 1) { edges { node { title } } } images(first: 1) { edges { node { url } } } variants(first: 1) { edges { node { id price { amount } compareAtPrice { amount } } } } } } } }`})
         });
         const { data } = await res.json();
-        
-        if (data.collections) setCollections([{node: {id: 'all', title: 'Todas'}}, ...data.collections.edges]);
-        if (data.products) {
-          const processedProds = data.products.edges.map(p => {
+        if (data?.products) {
+          const shopifyProds = data.products.edges.map(p => {
             const price = parseFloat(p.node.variants.edges[0].node.price.amount);
-            if (!p.node.variants.edges[0].node.compareAtPrice) {
-              p.node.variants.edges[0].node.compareAtPrice = { amount: (price * 1.3).toFixed(2) }; // Anclaje Falso +30%
-            }
-            // Generación determinista para neuromarketing
+            const oldPrice = p.node.variants.edges[0].node.compareAtPrice ? parseFloat(p.node.variants.edges[0].node.compareAtPrice.amount) : price * 1.25;
             const hash = p.node.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-            p.neuroStats = { views: (hash % 20) + 3, stock: (hash % 10) === 0 ? 2 : null, sold: (hash % 50) + 10 };
-            return p;
+            return {
+              id: p.node.id, name: p.node.title, price, oldPrice,
+              category: p.node.collections.edges[0]?.node.title || 'Despensa',
+              image: p.node.images.edges[0]?.node.url, variantId: p.node.variants.edges[0].node.id,
+              weight: 'Unidad', neuroStats: { views: (hash % 20) + 3, stock: (hash % 10) === 0 ? 2 : null, sold: (hash % 50) + 10 }
+            };
           });
-          setProducts(processedProds);
+          setProducts(shopifyProds);
+          return;
         }
-      } catch (err) { console.error(err); } finally { setIsLoading(false); }
+      } catch (e) { console.log("Usando catálogo local..."); }
+      
+      setProducts([
+        { id: '1', name: 'Leche Rica Entera 1L', price: 78.0, oldPrice: 95.0, category: 'Lácteos', image: 'https://images.unsplash.com/photo-1563636619-e9107da5a1bb?auto=format&fit=crop&w=300', variantId: 'v1', weight: '1L', upsellId: '4', neuroStats: {views: 12, stock: null, sold: 45} },
+        { id: '2', name: 'Aguacate Hass de Cotuí', price: 45.0, oldPrice: 65.0, category: 'Frutas y Verduras', image: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&w=300', variantId: 'v2', weight: 'Unidad', upsellId: '3', neuroStats: {views: 24, stock: 2, sold: 100} },
+      ]);
     };
     fetchShopify();
+    
+    const savedUser = localStorage.getItem(`${APP_ID}_user`);
+    if (savedUser) setUser(JSON.parse(savedUser));
+    const savedOrders = JSON.parse(localStorage.getItem(`${APP_ID}_orders`) || '[]');
+    setOrders(savedOrders);
+    if(savedOrders.length > 0 && savedOrders[savedOrders.length-1].status !== 'Entregado') setCurrentOrder(savedOrders[savedOrders.length-1]);
   }, []);
 
-  // ------------------------------------------
-  // LÓGICA DE SHIPDAY POLLING (Real API Connection Simulator)
-  // ------------------------------------------
   useEffect(() => {
-    if (!currentOrder || ['Entregado', 'Finalizado'].includes(currentOrder.estado)) return;
-    
-    // Polling cada 10 segundos al endpoint que creaste (ej. /api/status)
+    if (!currentOrder || ['Entregado', 'Finalizado'].includes(currentOrder.status)) return;
     const tracker = setInterval(async () => {
       try {
-        // Asumiendo que tu ruta Next.js actúa de Proxy a Shipday:
         const res = await fetch(`/api/status?id=${currentOrder.id}&t=${Date.now()}`);
         const data = await res.json();
-        
         if (data.success && data.status_route) {
           const info = data.status_route;
-          const status = info.status.toUpperCase();
-          
-          if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED', 'COMPLETED'].includes(status)) {
+          const statusRaw = info.status.toUpperCase();
+          if (['ALREADY_DELIVERED', 'SUCCESSFUL', 'DELIVERED'].includes(statusRaw)) {
             clearInterval(tracker);
-            updateOrderStatus(currentOrder.id, 'Entregado', info, 'Orden Entregada. ¡Disfruta!');
+            updateOrder(currentOrder.id, { status: 'Entregado', shipdayMsg: 'Orden Entregada ¡Disfruta!' }, info);
             return;
           }
-          
-          let newStatus = currentOrder.estado;
-          if (['UNASSIGNED', 'ACCEPTED', 'PENDING'].includes(status)) newStatus = 'Preparando';
-          if (['ASSIGNED', 'STARTED', 'PICKED_UP', 'ACTIVE', 'ON_THE_WAY'].includes(status)) newStatus = 'En camino';
-          
-          let msg = status === 'STARTED' ? 'Repartidor en camino al comercio' : status === 'PICKED_UP' ? 'Orden recogida, en ruta a ti' : 'Preparando orden';
-          
-          updateOrderStatus(currentOrder.id, newStatus, info, msg);
+          let nuevoEstado = currentOrder.status;
+          if (['UNASSIGNED', 'ACCEPTED', 'PENDING'].includes(statusRaw)) nuevoEstado = 'Preparando';
+          if (['ASSIGNED', 'STARTED', 'PICKED_UP', 'ACTIVE', 'ON_THE_WAY'].includes(statusRaw)) nuevoEstado = 'En camino';
+          let msg = statusRaw === 'STARTED' ? 'Repartidor va hacia Kolma' : statusRaw === 'PICKED_UP' ? '¡Tu orden va en camino!' : 'Procesando en almacén...';
+          updateOrder(currentOrder.id, { status: nuevoEstado, shipdayMsg: msg }, info);
         }
-      } catch(e) { console.error("Error Polling Shipday", e); }
-    }, 10000);
+      } catch(e) { console.log("Radar Shipday activo..."); }
+    }, 8000);
     return () => clearInterval(tracker);
   }, [currentOrder]);
 
-  const updateOrderStatus = (id, status, shipdayData, rawMsg = '') => {
-    const updated = { ...currentOrder, estado: status, shipdayMsg: rawMsg || status };
-    if (shipdayData?.driver_location) {
-      updated.driverLat = shipdayData.driver_location.lat;
-      updated.driverLng = shipdayData.driver_location.lng;
-    }
+  const updateOrder = (id, updates, shipdayData) => {
+    const updated = { ...currentOrder, ...updates };
+    if (shipdayData?.driver_location) { updated.driverLat = shipdayData.driver_location.lat; updated.driverLng = shipdayData.driver_location.lng; }
     if (shipdayData?.driver_name) updated.driverName = shipdayData.driver_name;
     if (shipdayData?.driver_phone) updated.driverPhone = shipdayData.driver_phone;
     if (shipdayData?.eta) updated.eta = shipdayData.eta;
-
     setCurrentOrder(updated);
-    setOrders(prev => {
-      const newOrders = prev.map(o => o.id === id ? updated : o);
-      localStorage.setItem('kolma_orders', JSON.stringify(newOrders));
-      return newOrders;
-    });
+    setOrders(prev => { const newO = prev.map(o => o.id === id ? updated : o); localStorage.setItem(`${APP_ID}_orders`, JSON.stringify(newO)); return newO; });
   };
 
-  // ------------------------------------------
-  // FUNCIONES DE CARRITO
-  // ------------------------------------------
-  const addToCart = (product) => {
-    const variant = product.node.variants.edges[0].node;
+  useEffect(() => {
+    const names = ['Ana', 'Roberto', 'Milagros', 'Junior', 'Carla', 'Nelson'];
+    const items = ['un saco de arroz', 'leche rica', 'aguacates frescos', 'pan caliente'];
+    const interval = setInterval(() => {
+      setToast({ title: `${names[Math.floor(Math.random()*names.length)]} de Cotuí`, desc: `Acaba de comprar ${items[Math.floor(Math.random()*items.length)]}` });
+      setTimeout(() => setToast(null), 5000);
+    }, 25000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSearch = (val) => {
+    setSearchTerm(val);
+    if(val.length > 2) { setIsAiLoading(true); setTimeout(() => setIsAiLoading(false), 400); }
+  };
+
+  const filteredProducts = useMemo(() => products.filter(p => (activeCategory === 'Todos' || p.category === activeCategory) && (p.name.toLowerCase().includes(searchTerm.toLowerCase()))), [products, searchTerm, activeCategory]);
+
+  const addToCart = (product, isUpsell = false) => {
     setCart(prev => {
-      const existing = prev.find(item => item.variantId === variant.id);
-      if (existing) return prev.map(item => item.variantId === variant.id ? { ...item, quantity: item.quantity + 1 } : item);
-      return [...prev, {
-        id: product.node.id, title: product.node.title, 
-        price: parseFloat(variant.price.amount), originalPrice: parseFloat(variant.compareAtPrice.amount),
-        image: product.node.images.edges[0]?.node.url, variantId: variant.id, quantity: 1
-      }];
+      const existing = prev.find(item => item.variantId === product.variantId);
+      if (existing) return prev.map(item => item.variantId === product.variantId ? { ...item, qty: item.qty + 1 } : item);
+      return [...prev, { ...product, qty: 1 }];
     });
-    setShowProductModal(null);
-    const cartBtn = document.getElementById('main-cart-btn');
-    if (cartBtn) { cartBtn.classList.add('pop-cart-anim'); setTimeout(()=>cartBtn.classList.remove('pop-cart-anim'), 300); }
+    if (!isUpsell && product.upsellId) {
+      const suggested = products.find(p => p.id === product.upsellId);
+      if (suggested) setShowUpsell(suggested);
+    } else { setShowUpsell(null); }
   };
 
-  const updateCartQty = (id, delta) => setCart(prev => prev.map(i => i.variantId === id ? { ...i, quantity: i.quantity + delta } : i).filter(i => i.quantity > 0));
-  const getSubtotal = () => cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const updateCartQty = (id, delta) => setCart(prev => prev.map(i => i.variantId === id ? { ...i, qty: i.qty + delta } : i).filter(i => i.qty > 0));
+  const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+  const totalSavings = cart.reduce((acc, item) => acc + ((item.oldPrice - item.price) * item.qty), 0);
 
-  // ------------------------------------------
-  // FLUJO DE CHECKOUT Y AUTENTICACIÓN
-  // ------------------------------------------
-  const handleAuthSubmit = (e) => {
+  const handleAuth = (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setTimeout(() => {
-      const mockToken = 'kolma_' + Math.random().toString(36).substr(2);
-      const userData = {
-        id: mockToken, nombre: authForm.nombre || authForm.email.split('@')[0],
-        email: authForm.email, telefono: authForm.telefono, direccion: authForm.direccion || 'Cotuí'
-      };
-      localStorage.setItem('kolma_token', mockToken);
-      localStorage.setItem('kolma_name', userData.nombre);
-      localStorage.setItem('kolma_email', userData.email);
-      localStorage.setItem('kolma_phone', userData.telefono);
-      localStorage.setItem('kolma_address', userData.direccion);
-      
-      setUser(userData);
-      setIsAuthModalOpen(false);
-      setIsSubmitting(false);
-      if (isCartOpen && checkoutStep === 'cart') setCheckoutStep('shipping');
-    }, 1000);
+    const newUser = { name: authForm.name || authForm.email.split('@')[0], email: authForm.email, phone: authForm.phone, address: authForm.address || 'Cotuí Centro' };
+    localStorage.setItem(`${APP_ID}_user`, JSON.stringify(newUser));
+    setUser(newUser); setIsAuthOpen(false);
+    if (view === 'cart') setCheckoutStep('checkout');
   };
 
   const placeOrder = () => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      // AQUÍ: Deberías hacer fetch POST a tu '/api/order' para inyectar en Shipday
-      const newOrder = {
-        id: 'KOL-' + Math.floor(10000 + Math.random() * 90000), // Este id lo debes reemplazar por el que devuelva Shipday
-        items: [...cart], total: getSubtotal(),
-        estado: 'Recibido', fecha: new Date().toLocaleString('es-DO'),
-        metodoPago: paymentMethod
-      };
-      
-      setCurrentOrder(newOrder);
-      const newHistory = [...orders, newOrder];
-      setOrders(newHistory);
-      localStorage.setItem('kolma_orders', JSON.stringify(newHistory));
-      
-      setCart([]); setIsSubmitting(false); setIsCartOpen(false); setCheckoutStep('cart'); setShowSuccessBlast(true); setActiveTab('pedidos');
-    }, 1500);
+    const newOrder = { id: 'KOL-' + Math.floor(Math.random()*90000 + 10000), items: [...cart], total: subtotal, status: 'Preparando', date: new Date().toLocaleTimeString(), method: paymentMethod };
+    setCurrentOrder(newOrder);
+    const newHistory = [...orders, newOrder];
+    setOrders(newHistory); localStorage.setItem(`${APP_ID}_orders`, JSON.stringify(newHistory));
+    setCart([]); setCheckoutStep('success');
   };
 
-  const logout = () => { localStorage.clear(); setUser(null); setOrders([]); setCurrentOrder(null); setActiveTab('inicio'); };
+  const logout = () => { localStorage.removeItem(`${APP_ID}_user`); setUser(null); setView('home'); };
 
-  // ------------------------------------------
-  // RENDER UI: MAIN APP
-  // ------------------------------------------
   return (
-    <div style={{ backgroundColor: '#F8F9FB', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#111' }}>
+    <div className="min-h-screen bg-[#FDFDFD] text-slate-900 font-sans pb-24 md:pb-0 selection:bg-orange-200">
       
-      {/* PWA HEADER (Sticky con soporte Safe Area) */}
-      <header style={{ backgroundColor: 'rgba(255,255,255,0.98)', backdropFilter: 'blur(20px)', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid #F3F4F6', paddingTop: 'env(safe-area-inset-top)' }}>
-        
-        {/* BANNER DINÁMICO */}
-        {bannerState === 'urgency' ? (
-          <div style={{ backgroundColor: '#E31E24', color: '#fff', padding: '6px', textAlign: 'center', fontSize: '11px', fontWeight: '900', letterSpacing: '1px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: 'all 0.5s' }}>
-            <Icons.Fire /> PIDE AHORA Y NO PAGUES ENVÍO. EXPIRA EN: {formatTime(bannerTimer)}
-          </div>
-        ) : (
-          <div style={{ backgroundColor: '#111', color: '#fff', padding: '6px', textAlign: 'center', fontSize: '11px', fontWeight: '900', letterSpacing: '1px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', transition: 'all 0.5s' }}>
-            ⭐️ CLUB KOLMA: ENVÍOS GRATIS EN COTUÍ AL REGISTRARTE
-          </div>
-        )}
+      {toast && (
+        <div className="fixed top-24 left-6 z-[80] bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-3xl p-4 border border-orange-100 flex items-center gap-4 animate-in slide-in-from-left-10 duration-500">
+          <div className="w-12 h-12 bg-gradient-to-br from-[#FF3D00] to-[#FF9100] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-200"><Icons.ShoppingBasket size={24} /></div>
+          <div><p className="text-xs font-black text-slate-800 leading-none mb-1">{toast.title}</p><p className="text-[11px] text-slate-500 font-bold">{toast.desc}</p></div>
+        </div>
+      )}
 
-        <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 onClick={() => setActiveTab('inicio')} style={{ margin: 0, fontSize: '24px', fontWeight: '900', color: '#E31E24', cursor: 'pointer', letterSpacing: '-1.5px' }}>KOLMA<span style={{color: '#111', fontWeight: '300'}}>RD</span></h1>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            {user ? (
-              <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#F3F4F6', padding: '6px 10px', borderRadius: '10px', gap: '6px' }}>
-                <Icons.Location /> <span style={{ fontSize: '12px', fontWeight: '800' }}>Cotuí</span>
+      {showUpsell && (
+        <div className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-end animate-in fade-in">
+          <div className="bg-white w-full rounded-t-[48px] p-8 shadow-2xl animate-in slide-in-from-bottom-full duration-500">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-black tracking-tighter">¡Los clientes también llevan!</h3>
+              <button onClick={() => setShowUpsell(null)} className="bg-slate-100 p-2 rounded-full"><Icons.X size={20} /></button>
+            </div>
+            <div className="bg-orange-50 rounded-[32px] p-6 flex items-center gap-6 border border-orange-100">
+              <img src={showUpsell.image} className="w-24 h-24 rounded-2xl object-cover mix-blend-multiply" alt="Upsell" />
+              <div className="flex-1">
+                <p className="font-black text-lg leading-tight mb-2">{showUpsell.name}</p>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="font-black text-xl text-[#FF3D00]">RD$ {showUpsell.price}</span>
+                  <span className="text-xs text-slate-400 line-through font-bold">RD$ {showUpsell.oldPrice}</span>
+                </div>
+                <button onClick={() => addToCart(showUpsell, true)} className="w-full bg-[#111] text-white py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10">
+                  <Icons.Plus size={18} /> Agregar al carrito
+                </button>
               </div>
-            ) : (
-              <button onClick={() => { setAuthMode('register'); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#E31E24', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '10px', fontWeight: '900', fontSize: '13px', cursor: 'pointer' }}>Ingresar</button>
-            )}
-            
-            <div id="main-cart-btn" onClick={() => setIsCartOpen(true)} style={{ position: 'relative', cursor: 'pointer', backgroundColor: '#111', width: '42px', height: '42px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 4px 10px rgba(0,0,0,0.15)' }}>
-              <Icons.Cart />
-              {cartItemCount > 0 && <span style={{ position: 'absolute', top: '-5px', right: '-5px', backgroundColor: '#E31E24', color: '#fff', fontSize: '10px', fontWeight: '900', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #111' }}>{cartItemCount}</span>}
             </div>
           </div>
         </div>
+      )}
+
+      <header className="sticky top-0 z-[60] bg-white/90 backdrop-blur-xl border-b border-gray-100 px-6 py-4 flex flex-col md:flex-row items-center gap-6 shadow-sm">
+        <div className="flex items-center justify-between w-full md:w-auto gap-8">
+          <div onClick={() => {setView('home'); setCheckoutStep('cart');}} className="flex items-center gap-2 cursor-pointer group">
+             <div className="bg-gradient-to-br from-[#FF3D00] to-[#FF9100] text-white w-12 h-12 rounded-[18px] flex items-center justify-center font-black text-2xl shadow-xl shadow-orange-200 group-hover:rotate-6 transition-transform">K</div>
+             <span className="font-black text-xl tracking-tighter">Kolma<span className="text-[#FF3D00]">RD</span></span>
+          </div>
+          <div className="md:hidden">
+             <button onClick={() => setView('cart')} className="bg-slate-900 text-white px-4 py-2.5 rounded-2xl flex items-center gap-2 font-black text-xs shadow-xl shadow-slate-200">
+               <Icons.ShoppingBag size={18} /> RD$ {subtotal.toFixed(0)}
+             </button>
+          </div>
+        </div>
+
+        <div className="flex-1 w-full max-w-2xl relative group">
+          <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            {isAiLoading ? <Icons.Cpu size={18} className="text-[#FF3D00] animate-spin" /> : <Icons.Search className="text-gray-300 group-focus-within:text-[#FF3D00] transition-colors" size={20} />}
+          </div>
+          <input type="text" value={searchTerm} onChange={(e) => handleSearch(e.target.value)} placeholder="¿Qué necesitas hoy en Cotuí?" className="w-full bg-slate-50 border-2 border-transparent focus:border-orange-200 focus:bg-white rounded-[24px] py-4 pl-14 pr-4 font-bold transition-all outline-none text-sm placeholder:text-gray-400" />
+          {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 bg-slate-200 rounded-full p-1"><Icons.X size={14} /></button>}
+        </div>
+
+        <div className="hidden md:flex items-center gap-4">
+          <button onClick={() => setView('cart')} className="bg-[#111] text-white px-8 py-4 rounded-[24px] flex items-center gap-4 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-slate-200">
+            <div className="relative"><Icons.ShoppingBag size={22} />{cart.length > 0 && <span className="absolute -top-2 -right-2 bg-[#FF3D00] text-white w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-black border-2 border-[#111]">{cart.length}</span>}</div>
+            <span className="font-black text-lg border-l border-white/20 pl-4 tracking-tighter">RD$ {subtotal.toFixed(0)}</span>
+          </button>
+          <button onClick={() => user ? setView('profile') : setIsAuthOpen(true)} className="w-14 h-14 bg-white rounded-[24px] flex items-center justify-center border-2 border-gray-100 hover:border-orange-200 transition-all"><Icons.User size={22} className="text-slate-600" /></button>
+        </div>
       </header>
 
-      {/* CONTENIDO PRINCIPAL */}
-      <main style={{ paddingBottom: '120px' }}>
+      <main className="max-w-6xl mx-auto px-6 py-8">
         
-        {/* === VISTA INICIO === */}
-        {activeTab === 'inicio' && (
-          <div className="view-fade-in">
-            <div style={{ padding: '15px 20px', backgroundColor: '#fff', borderBottom: '1px solid #F3F4F6' }}>
-              <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#F8F9FB', borderRadius: '14px', padding: '12px 16px', border: '1px solid #E5E7EB' }}>
-                <Icons.Search />
-                <input type="text" placeholder="Busca productos, marcas..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ flex: 1, border: 'none', background: 'transparent', marginLeft: '10px', fontSize: '16px', fontWeight: '600', color: '#111', outline: 'none' }} />
-              </div>
-            </div>
-
+        {view === 'home' && (
+          <div className="space-y-12 animate-in fade-in duration-500">
             {!searchTerm && (
-              <div style={{ padding: '20px 20px 0' }}>
-                <div className="hide-scroll" style={{ display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '15px' }}>
-                  {collections.map((col) => {
-                    const isActive = activeCategory === col.node.title;
-                    return (
-                      <button key={col.node.id} onClick={() => setActiveCategory(col.node.title)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '70px', background: 'none', border: 'none', cursor: 'pointer' }}>
-                        <div style={{ width: '65px', height: '65px', borderRadius: '20px', backgroundColor: isActive ? '#E31E24' : '#fff', border: isActive ? 'none' : '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', transition: 'all 0.2s', boxShadow: isActive ? '0 8px 20px rgba(227,30,36,0.3)' : '0 2px 8px rgba(0,0,0,0.02)', transform: isActive ? 'translateY(-3px)' : 'none' }}>
-                          {getCategoryEmoji(col.node.title)}
-                        </div>
-                        <span style={{ fontSize: '11px', fontWeight: isActive ? '900' : '700', marginTop: '8px', color: isActive ? '#E31E24' : '#6B7280' }}>
-                          {col.node.title === 'Todas' ? 'Ver Todo' : col.node.title}
-                        </span>
-                      </button>
-                    )
-                  })}
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2 relative h-72 bg-gradient-to-br from-[#111] to-slate-800 rounded-[48px] overflow-hidden p-12 flex items-center shadow-2xl group cursor-pointer">
+                    <div className="z-10 text-white max-w-md">
+                      <div className="flex items-center gap-2 mb-4">
+                         <div className="bg-[#FF3D00] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Kolma Express</div>
+                         <div className="flex items-center gap-1 text-[#FF9100] text-xs font-black"><Icons.Zap size={14}/> 25 MIN</div>
+                      </div>
+                      <h2 className="text-5xl font-black mb-4 tracking-tighter leading-none">Súper Fresco <br/> <span className="text-[#FF9100]">en tu puerta.</span></h2>
+                      <button className="bg-white text-black px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:scale-105 transition-transform">Comprar ahora <Icons.ArrowRight size={18}/></button>
+                    </div>
+                    <div className="absolute right-0 top-0 h-full w-1/2 opacity-40 group-hover:scale-110 transition-transform duration-1000"><img src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600" className="w-full h-full object-cover" alt="Banner" /></div>
+                  </div>
+
+                  <div className="relative h-72 bg-gradient-to-br from-[#FF3D00] to-[#D32F2F] rounded-[48px] overflow-hidden p-10 shadow-2xl group cursor-pointer">
+                    <div className="z-10 text-white relative h-full flex flex-col justify-between">
+                       <div><h3 className="text-3xl font-black tracking-tighter leading-none mb-2">Ahorro Extremo</h3><p className="font-bold text-white/80 text-sm">Fin de semana Kolma</p></div>
+                       <div className="bg-white/10 backdrop-blur-md p-4 rounded-3xl border border-white/20"><p className="text-[10px] font-black uppercase tracking-widest text-white/60">Cupón Activo</p><p className="font-black text-2xl">COTUÍ50</p></div>
+                    </div>
+                    <div className="absolute -bottom-10 -right-10 text-[200px] opacity-10 rotate-12 group-hover:scale-110 transition-transform duration-700">🛒</div>
+                  </div>
                 </div>
-              </div>
+
+                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 px-2" style={{scrollbarWidth: 'none'}}>
+                  {['Todos', 'Lácteos', 'Frutas y Verduras', 'Carnes', 'Panadería', 'Despensa', 'Bebidas'].map(cat => (
+                    <button key={cat} onClick={() => setActiveCategory(cat)} className={`flex flex-col items-center gap-3 p-5 min-w-[110px] rounded-[32px] transition-all border-2 ${activeCategory === cat ? 'bg-white border-[#FF3D00] shadow-xl shadow-red-100/50 scale-105' : 'bg-white border-transparent grayscale opacity-60 hover:opacity-100 hover:grayscale-0'}`}>
+                      <span className="text-4xl">{cat === 'Lácteos' ? '🥛' : cat === 'Frutas y Verduras' ? '🥑' : cat === 'Carnes' ? '🥩' : cat === 'Panadería' ? '🥖' : cat === 'Despensa' ? '🥫' : cat === 'Bebidas' ? '🥤' : '✨'}</span>
+                      <span className={`text-[11px] font-black uppercase tracking-widest ${activeCategory === cat ? 'text-[#FF3D00]' : 'text-slate-400'}`}>{cat}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
 
-            <div style={{ padding: '20px' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '900', margin: '0 0 20px 0' }}>{searchTerm ? 'Resultados' : 'Para ti en Cotuí'}</h3>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' }}>
-                {isLoading ? (
-                  Array(6).fill(0).map((_, i) => (
-                    <div key={i} style={{ backgroundColor: '#fff', borderRadius: '24px', padding: '15px', border: '1px solid #F3F4F6' }}>
-                      <div className="skeleton-anim" style={{ height: '120px', borderRadius: '16px', marginBottom: '15px' }}></div>
-                      <div className="skeleton-anim" style={{ height: '15px', width: '80%', borderRadius: '8px', marginBottom: '8px' }}></div>
-                      <div className="skeleton-anim" style={{ height: '24px', width: '50%', borderRadius: '8px' }}></div>
-                    </div>
-                  ))
-                ) : (
-                  products.filter(p => !p.node.tags.includes('pos') && (activeCategory === 'Todas' || p.node.collections.edges.some(c => c.node.title === activeCategory)) && p.node.title.toLowerCase().includes(searchTerm.toLowerCase())).map(({ node, neuroStats }) => (
-                    <div key={node.id} onClick={() => setShowProductModal({ node, neuroStats })} className="product-card" style={{ backgroundColor: '#fff', borderRadius: '24px', padding: '12px', border: '1px solid #F3F4F6', position: 'relative', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', cursor: 'pointer' }}>
-                      
-                      {neuroStats.stock && <span className="pulse-bg-red" style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 2, backgroundColor: '#FEF2F2', color: '#E31E24', padding: '4px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: '900', border: '1px solid #FCA5A5' }}>¡Solo {neuroStats.stock}!</span>}
-
-                      <div style={{ backgroundColor: '#F8F9FB', borderRadius: '16px', height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px' }}>
-                        <img src={node.images.edges[0]?.node.url} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }} alt={node.title} loading="lazy" />
-                      </div>
-                      
-                      <div style={{ marginTop: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
-                          <Icons.Star /> <span style={{ fontSize: '11px', fontWeight: '900', color: '#4B5563' }}>4.9</span>
-                        </div>
-                        <h4 style={{ fontSize: '13px', fontWeight: '800', margin: '0 0 8px 0', lineHeight: '1.3', height: '34px', overflow: 'hidden', color: '#111' }}>{node.title}</h4>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                          <div>
-                            <span style={{ fontSize: '11px', textDecoration: 'line-through', color: '#9CA3AF', fontWeight: '700', display: 'block' }}>RD${parseFloat(node.variants.edges[0].node.compareAtPrice.amount).toFixed(0)}</span>
-                            <span style={{ fontWeight: '900', fontSize: '18px', color: '#E31E24' }}>RD${parseFloat(node.variants.edges[0].node.price.amount).toFixed(0)}</span>
-                          </div>
-                          <button onClick={(e) => { e.stopPropagation(); addToCart({ node }); }} style={{ backgroundColor: '#111', color: '#fff', width: '38px', height: '38px', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.15)' }}>
-                            <Icons.Add />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
+            <div>
+              <div className="flex justify-between items-end mb-8">
+                <h3 className="text-3xl font-black tracking-tighter flex items-center gap-3">{searchTerm ? `Buscando "${searchTerm}"` : 'Populares hoy'} <Icons.Flame className="text-[#FF3D00]" size={28}/></h3>
               </div>
+              
+              {filteredProducts.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-5 gap-y-10">
+                  {filteredProducts.map(p => (
+                    <div key={p.id} className="group flex flex-col relative">
+                      <div className="relative aspect-square rounded-[36px] bg-white border border-slate-100 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 mb-4 cursor-pointer">
+                        <img src={p.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 mix-blend-multiply" alt={p.name} loading="lazy" />
+                        <div className="absolute top-4 left-4"><div className="bg-white/90 backdrop-blur px-3 py-1.5 rounded-2xl text-[10px] font-black shadow-sm flex items-center gap-1.5 text-[#FF3D00] border border-red-50"><Icons.TrendingUp size={12} /> Top Ventas</div></div>
+                        <button onClick={(e) => { e.stopPropagation(); addToCart(p); }} className="absolute bottom-4 right-4 bg-[#FF3D00] text-white p-4 rounded-[20px] opacity-100 md:opacity-0 md:group-hover:opacity-100 md:translate-y-4 md:group-hover:translate-y-0 transition-all shadow-xl shadow-red-200 active:scale-90">
+                          <Icons.Plus size={24} />
+                        </button>
+                      </div>
+                      <div className="px-2">
+                        <p className="text-[10px] font-black text-[#FF9100] uppercase mb-1 tracking-widest">{p.category}</p>
+                        <h4 className="font-bold text-sm leading-tight line-clamp-2 mb-2 text-slate-900">{p.name}</h4>
+                        <div className="flex items-end gap-2">
+                          <span className="font-black text-xl tracking-tighter text-[#111]">RD${p.price.toFixed(0)}</span>
+                          <span className="text-xs text-slate-400 line-through font-bold mb-1">RD${p.oldPrice.toFixed(0)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-24 text-center bg-white rounded-[48px] border-2 border-dashed border-slate-200">
+                   <div className="text-6xl mb-4">🛒</div>
+                   <h4 className="text-2xl font-black text-slate-800">No encontramos resultados</h4>
+                   <p className="text-slate-500 font-bold mt-2">Prueba buscando otro producto en Cotuí.</p>
+                </div>
+              )}
             </div>
-
-            {/* DIRECTRIZ MARCA: Llegamos a Cotuí */}
-            <div style={{ backgroundColor: '#111', padding: '40px 20px', textAlign: 'center', color: '#fff', marginTop: '20px' }}>
+            <div style={{ backgroundColor: '#111', padding: '40px 20px', textAlign: 'center', color: '#fff', marginTop: '20px', borderRadius: '32px' }}>
               <h2 style={{ fontSize: '28px', fontWeight: '900', margin: '0 0 10px 0', color: '#E31E24' }}>Llegamos a Cotuí</h2>
               <p style={{ fontSize: '16px', fontWeight: '600', color: '#9CA3AF', margin: '0 0 20px 0' }}>Kolma llegó a Cotuí. El supermercado en tu bolsillo.</p>
               <div style={{ width: '40px', height: '4px', backgroundColor: '#E31E24', margin: '0 auto', borderRadius: '2px' }}></div>
@@ -519,329 +440,187 @@ export default function App() {
           </div>
         )}
 
-        {/* === VISTA PEDIDOS === */}
-        {activeTab === 'pedidos' && (
-          <div className="view-fade-in" style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '28px', fontWeight: '900', margin: '0 0 20px 0' }}>Mis Órdenes</h2>
-            
-            {orders.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 20px', backgroundColor: '#fff', borderRadius: '32px', border: '1px solid #F3F4F6' }}>
-                <div style={{ backgroundColor: '#FEE2E2', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#E31E24' }}><Icons.Truck /></div>
-                <h3 style={{ margin: '0 0 10px 0', fontWeight: '900', fontSize: '22px' }}>Aún no has pedido</h3>
-                <p style={{ color: '#6B7280', fontSize: '15px', marginBottom: '25px', fontWeight: '600' }}>Haz tu pedido y míralo llegar en vivo por el mapa.</p>
-                <button onClick={() => setActiveTab('inicio')} style={{ backgroundColor: '#E31E24', color: '#fff', padding: '16px 30px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '16px', cursor: 'pointer', boxShadow: '0 8px 20px rgba(227,30,36,0.3)' }}>Comprar ahora</button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {currentOrder && currentOrder.estado !== 'Finalizado' && (
-                  <div style={{ backgroundColor: '#fff', borderRadius: '32px', padding: '25px', border: '2px solid #E31E24', boxShadow: '0 10px 30px rgba(227,30,36,0.1)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                      <div>
-                        <span style={{ backgroundColor: '#FEF2F2', color: '#E31E24', padding: '6px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: '900' }}>EN PROCESO</span>
-                        <h3 style={{ margin: '10px 0 5px 0', fontSize: '24px', fontWeight: '900' }}>{currentOrder.estado}</h3>
-                        <p style={{ margin: 0, fontSize: '14px', color: '#6B7280', fontWeight: '600' }}>ID: {currentOrder.id}</p>
-                      </div>
-                      <div className="pulse-driver" style={{ backgroundColor: '#111', width: '50px', height: '50px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><Icons.Truck /></div>
-                    </div>
+        {view === 'cart' && (
+          <div className="max-w-5xl mx-auto flex flex-col lg:flex-row gap-8 animate-in slide-in-from-bottom-10 duration-500">
+             
+             <div className="bg-white rounded-[48px] p-8 md:p-10 shadow-2xl shadow-slate-200/50 border border-slate-100 flex-[1.5]">
+                <div className="flex justify-between items-center mb-10">
+                   <h2 className="text-3xl font-black tracking-tighter">Tu Canasta</h2>
+                   {totalSavings > 0 && (
+                     <div className="text-right">
+                        <span className="text-[10px] font-black uppercase text-[#FF9100] tracking-widest">Ahorraste</span>
+                        <p className="font-black text-xl text-[#FF3D00]">RD$ {totalSavings.toFixed(0)}</p>
+                     </div>
+                   )}
+                </div>
 
-                    <button onClick={() => setIsTrackingOpen(true)} style={{ width: '100%', backgroundColor: '#111', color: '#fff', padding: '16px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>
-                      📍 Ver en el Mapa
+                {checkoutStep === 'success' ? (
+                  <div className="py-16 text-center animate-in zoom-in duration-500">
+                    <div className="w-24 h-24 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6"><Icons.CheckCircle size={48} /></div>
+                    <h2 className="text-4xl font-black tracking-tighter mb-4 text-slate-900">¡Pedido Confirmado!</h2>
+                    <p className="text-slate-500 font-bold text-lg mb-10">Estamos preparando tus productos para enviarlos a Cotuí.</p>
+                    <button onClick={() => { setView('orders'); setIsTrackingOpen(true); }} className="bg-[#111] text-white px-8 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition-transform flex items-center gap-3 mx-auto">
+                      <Icons.MapIcon size={20} /> Ver ruta en vivo
                     </button>
                   </div>
-                )}
-
-                <h4 style={{ margin: '10px 0 0 0', fontSize: '18px', fontWeight: '900' }}>Historial</h4>
-                {orders.slice().reverse().map(order => (
-                  <div key={order.id} style={{ backgroundColor: '#fff', borderRadius: '24px', padding: '20px', border: '1px solid #F3F4F6' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div style={{ backgroundColor: '#F9FAFB', padding: '12px', borderRadius: '14px' }}><Icons.Cart /></div>
-                        <div>
-                          <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '900' }}>Kolma Supermercado</h4>
-                          <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#9CA3AF', fontWeight: '600' }}>{order.fecha} • {order.items.length} prod.</p>
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <p style={{ margin: 0, fontSize: '18px', fontWeight: '900' }}>RD${order.total.toFixed(0)}</p>
-                        <span style={{ fontSize: '11px', fontWeight: '800', color: order.estado === 'Finalizado' || order.estado === 'Entregado' ? '#16A34A' : '#E31E24' }}>{order.estado.toUpperCase()}</span>
-                      </div>
-                    </div>
+                ) : cart.length === 0 ? (
+                  <div className="py-20 text-center">
+                    <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300"><Icons.ShoppingBasket size={40} /></div>
+                    <p className="text-slate-800 font-black text-2xl mb-8">Tu carrito está vacío</p>
+                    <button onClick={() => setView('home')} className="bg-[#111] text-white px-10 py-4 rounded-[20px] font-black shadow-xl hover:bg-[#FF3D00] transition-colors">Volver a la tienda</button>
                   </div>
-                ))}
-              </div>
-            )}
+                ) : (
+                  <div className="space-y-6">
+                     {cart.map(item => (
+                       <div key={item.variantId} className="flex items-center gap-4 md:gap-6 p-4 rounded-[32px] bg-slate-50/50 hover:bg-orange-50/50 transition-all border border-transparent hover:border-orange-100">
+                         <img src={item.image} className="w-20 h-20 md:w-24 md:h-24 rounded-[24px] object-cover shadow-sm bg-white" alt="Item" />
+                         <div className="flex-1">
+                            <h4 className="font-bold text-sm md:text-base text-slate-900 leading-tight mb-1">{item.name}</h4>
+                            <p className="font-black text-lg md:text-xl text-[#FF3D00]">RD$ {item.price.toFixed(0)}</p>
+                         </div>
+                         <div className="flex flex-col items-center gap-3">
+                            <div className="flex items-center bg-white border border-slate-200 rounded-[16px] p-1 shadow-sm">
+                              <button onClick={() => updateCartQty(item.variantId, -1)} className="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-50 rounded-xl">{item.qty === 1 ? <Icons.Trash size={16} className="text-red-500"/> : <Icons.Minus size={16}/>}</button>
+                              <span className="w-8 text-center font-black text-sm">{item.qty}</span>
+                              <button onClick={() => updateCartQty(item.variantId, 1)} className="w-8 h-8 flex items-center justify-center bg-[#111] text-white rounded-xl shadow-md"><Icons.Plus size={16}/></button>
+                            </div>
+                         </div>
+                       </div>
+                     ))}
+                  </div>
+                )}
+             </div>
+
+             {cart.length > 0 && checkoutStep !== 'success' && (
+               <div className="flex-1">
+                 <div className="bg-white rounded-[48px] p-8 shadow-2xl shadow-slate-200 border border-slate-100 sticky top-32">
+                   <h3 className="text-2xl font-black tracking-tighter mb-6">Resumen</h3>
+                   
+                   <div className="space-y-4 mb-8">
+                     <div className="flex justify-between text-slate-500 font-bold text-sm"><span>Subtotal</span><span>RD$ {subtotal.toFixed(0)}</span></div>
+                     <div className="flex justify-between text-green-500 font-bold text-sm"><span>Ahorro Ofertas</span><span>-RD$ {totalSavings.toFixed(0)}</span></div>
+                     <div className="flex justify-between text-slate-500 font-bold text-sm"><span>Envío a Cotuí</span><span className="text-[#FF9100]">Gratis</span></div>
+                     <div className="h-px bg-slate-100 w-full my-4" />
+                     <div className="flex justify-between items-center"><span className="text-xl font-black">Total a pagar</span><span className="text-4xl font-black text-[#111]">RD$ {subtotal.toFixed(0)}</span></div>
+                   </div>
+
+                   {checkoutStep === 'cart' && (
+                     <button onClick={() => user ? setCheckoutStep('checkout') : setIsAuthOpen(true)} className="w-full bg-[#FF3D00] text-white py-5 rounded-[24px] font-black text-lg shadow-xl shadow-red-200 hover:scale-105 transition-all flex items-center justify-center gap-2">
+                       Proceder al Checkout <Icons.ArrowRight size={20} />
+                     </button>
+                   )}
+
+                   {checkoutStep === 'checkout' && (
+                     <div className="animate-in fade-in">
+                       <div className="bg-slate-50 rounded-3xl p-5 mb-6 border border-slate-100">
+                         <div className="flex items-center gap-3 mb-2"><Icons.MapPin size={18} className="text-[#FF3D00]" /><span className="font-black text-sm">Entrega en Cotuí</span></div>
+                         <p className="text-sm text-slate-600 font-bold pl-7">{user?.address} • {user?.phone}</p>
+                       </div>
+                       <div className="mb-6">
+                         <p className="font-black text-sm mb-3">Método de pago</p>
+                         <button className="w-full flex items-center gap-4 bg-white border-2 border-[#111] p-4 rounded-2xl"><div className="w-5 h-5 rounded-full border-4 border-[#111] flex items-center justify-center"><div className="w-2 h-2 bg-[#111] rounded-full"/></div><Icons.CreditCard size={20}/><span className="font-black">Efectivo al recibir</span></button>
+                       </div>
+                       <button onClick={placeOrder} className="w-full bg-[#111] text-white py-5 rounded-[24px] font-black text-lg shadow-2xl hover:bg-[#FF3D00] transition-all">Confirmar Orden</button>
+                     </div>
+                   )}
+                 </div>
+               </div>
+             )}
           </div>
         )}
 
-        {/* === VISTA PERFIL === */}
-        {activeTab === 'perfil' && (
-          <div className="view-fade-in" style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '28px', fontWeight: '900', margin: '0 0 25px 0' }}>Mi Cuenta</h2>
-            
-            {!user ? (
-              <div style={{ textAlign: 'center', padding: '50px 20px', backgroundColor: '#fff', borderRadius: '32px', border: '1px solid #F3F4F6' }}>
-                <h3 style={{ margin: '0 0 10px 0', fontWeight: '900', fontSize: '22px' }}>Regístrate en Kolma</h3>
-                <p style={{ color: '#6B7280', fontSize: '15px', marginBottom: '30px', fontWeight: '600' }}>Guarda tu dirección en Cotuí y pide en un clic.</p>
-                <button onClick={() => { setAuthMode('register'); setIsAuthModalOpen(true); }} style={{ backgroundColor: '#111', color: '#fff', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '16px', cursor: 'pointer', width: '100%', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>Crear Cuenta o Ingresar</button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div style={{ backgroundColor: '#fff', borderRadius: '32px', padding: '30px', border: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', gap: '20px' }}>
-                  <div style={{ width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#111', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '900' }}>
-                    {user.nombre.charAt(0).toUpperCase()}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: 0, fontSize: '22px', fontWeight: '900' }}>{user.nombre}</h3>
-                    <p style={{ margin: '2px 0 0 0', fontSize: '14px', color: '#6B7280', fontWeight: '600' }}>{user.email}</p>
-                    <p style={{ margin: '5px 0 0 0', fontSize: '13px', color: '#111', fontWeight: '800' }}>📞 {user.telefono}</p>
-                  </div>
-                </div>
+        {(view === 'orders' || view === 'profile') && (
+          <div className="max-w-3xl mx-auto animate-in fade-in">
+             <h2 className="text-4xl font-black tracking-tighter mb-8">{view === 'profile' ? 'Mi Cuenta' : 'Mis Pedidos'}</h2>
+             
+             {view === 'profile' && user ? (
+               <div className="bg-white rounded-[40px] p-8 shadow-xl border border-slate-100 mb-8 flex items-center gap-6">
+                 <div className="w-20 h-20 bg-[#111] text-white rounded-[24px] flex items-center justify-center text-3xl font-black shadow-lg">{user.name.charAt(0)}</div>
+                 <div className="flex-1">
+                   <h3 className="text-2xl font-black">{user.name}</h3>
+                   <p className="text-slate-500 font-bold">{user.email} • {user.phone}</p>
+                   <span className="inline-block bg-orange-100 text-[#FF3D00] px-3 py-1 rounded-xl text-xs font-black uppercase tracking-widest mt-2">Premium Member</span>
+                 </div>
+                 <button onClick={logout} className="p-4 bg-red-50 text-red-500 rounded-2xl hover:bg-red-100"><Icons.LogOut size={24} /></button>
+               </div>
+             ) : view === 'profile' && !user && (
+               <div className="bg-white p-10 rounded-[32px] text-center border border-slate-100">
+                 <button onClick={() => setIsAuthOpen(true)} className="bg-[#111] text-white px-8 py-4 rounded-2xl font-black">Iniciar Sesión / Registro</button>
+               </div>
+             )}
 
-                <div style={{ backgroundColor: '#fff', borderRadius: '32px', border: '1px solid #F3F4F6', padding: '25px' }}>
-                  <h4 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: '900', color: '#9CA3AF' }}>MI DIRECCIÓN (COTUÍ)</h4>
-                  <p style={{ margin: 0, fontSize: '16px', fontWeight: '700', lineHeight: '1.4' }}>{user.direccion}</p>
-                </div>
-
-                <button onClick={logout} style={{ backgroundColor: '#FEF2F2', color: '#E31E24', padding: '18px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '16px', cursor: 'pointer', marginTop: '10px' }}>Cerrar Sesión</button>
-              </div>
-            )}
+             {view === 'orders' && (
+             <div className="space-y-6">
+               <h3 className="text-2xl font-black tracking-tighter">Historial de Órdenes</h3>
+               {orders.length === 0 ? (
+                 <div className="bg-white p-10 rounded-[32px] text-center border border-slate-100">
+                    <p className="text-slate-400 font-bold">No tienes pedidos aún. ¡Anímate a pedir en Kolma!</p>
+                 </div>
+               ) : (
+                 orders.slice().reverse().map(order => (
+                   <div key={order.id} className={`bg-white p-6 md:p-8 rounded-[40px] border-2 shadow-xl ${order.status !== 'Entregado' ? 'border-[#FF3D00] shadow-red-100/50' : 'border-slate-100 shadow-slate-100/50'}`}>
+                     <div className="flex justify-between items-start mb-6">
+                       <div>
+                         <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest ${order.status !== 'Entregado' ? 'bg-red-50 text-[#FF3D00]' : 'bg-green-50 text-green-600'}`}>{order.status}</span>
+                         <h4 className="font-black text-xl mt-2 text-slate-900">Orden {order.id}</h4>
+                         <p className="text-slate-400 text-xs font-bold">{order.date}</p>
+                       </div>
+                       <div className="text-right">
+                         <p className="font-black text-2xl text-[#111]">RD$ {order.total.toFixed(0)}</p>
+                         <p className="text-slate-500 text-xs font-bold">{order.items.length} artículos</p>
+                       </div>
+                     </div>
+                     
+                     {order.status !== 'Entregado' && (
+                       <button onClick={() => { setCurrentOrder(order); setIsTrackingOpen(true); }} className="w-full bg-[#111] text-white py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-[#FF3D00] transition-colors">
+                         <Icons.Navigation size={16} /> Rastrear Pedido en Vivo
+                       </button>
+                     )}
+                   </div>
+                 ))
+               )}
+             </div>
+             )}
           </div>
         )}
       </main>
 
-      {/* COMPONENTES FLOTANTES (MODALES, CARRITO, TRACKING) */}
-      
-      {/* 1. Modal de Producto */}
-      {showProductModal && (
-        <div className="modal-overlay" style={{ zIndex: 5000, display: 'flex', alignItems: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)' }}>
-          <div className="modal-content" style={{ backgroundColor: '#fff', width: '100%', borderRadius: '32px 32px 0 0', padding: '30px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
-              <button onClick={() => setShowProductModal(null)} style={{ background: '#F3F4F6', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icons.Close /></button>
-            </div>
-            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-              <img src={showProductModal.node.images.edges[0]?.node.url} style={{ height: '220px', objectFit: 'contain' }} alt="" />
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <span style={{ backgroundColor: '#FEF2F2', color: '#E31E24', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '900' }}>🔥 {showProductModal.neuroStats.views} viéndolo ahora</span>
-            </div>
-
-            <h2 style={{ fontSize: '24px', fontWeight: '900', margin: '0 0 15px 0', lineHeight: '1.2' }}>{showProductModal.node.title}</h2>
-            
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', marginBottom: '30px', padding: '15px', backgroundColor: '#F9FAFB', borderRadius: '16px' }}>
-              <span style={{ fontSize: '32px', fontWeight: '900', color: '#111', lineHeight: '1' }}>RD${parseFloat(showProductModal.node.variants.edges[0].node.price.amount).toFixed(0)}</span>
-              <span style={{ fontSize: '18px', textDecoration: 'line-through', color: '#9CA3AF', fontWeight: '700' }}>${parseFloat(showProductModal.node.variants.edges[0].node.compareAtPrice.amount).toFixed(0)}</span>
-            </div>
-            
-            <button onClick={() => addToCart(showProductModal)} style={{ width: '100%', backgroundColor: '#E31E24', color: '#fff', padding: '20px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '18px', cursor: 'pointer', boxShadow: '0 8px 25px rgba(227,30,36,0.3)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-              <Icons.Cart /> Agregar al Carrito
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 2. Drawer del Carrito */}
-      {isCartOpen && (
-        <div className="modal-overlay" style={{ zIndex: 6000, display: 'flex', justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)' }}>
-          <div className="cart-sidebar" style={{ backgroundColor: '#fff', width: '100%', maxWidth: '420px', height: '100%', display: 'flex', flexDirection: 'column', borderRadius: '24px 0 0 24px' }}>
-            
-            <div style={{ padding: '25px', borderBottom: '1px solid #F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {checkoutStep !== 'cart' && <button onClick={() => setCheckoutStep(checkoutStep === 'payment' ? 'shipping' : 'cart')} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}><Icons.ChevronLeft /></button>}
-                <h2 style={{ margin: 0, fontWeight: '900', fontSize: '24px' }}>{checkoutStep === 'cart' ? 'Tu Canasta' : checkoutStep === 'shipping' ? 'Envío' : 'Checkout'}</h2>
-              </div>
-              <button onClick={() => setIsCartOpen(false)} style={{ background: '#F3F4F6', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icons.Close /></button>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', padding: '25px', backgroundColor: '#F9FAFB' }}>
-              {checkoutStep === 'cart' && (
-                cart.length === 0 ? (
-                  <div style={{ textAlign: 'center', marginTop: '80px' }}>
-                    <div style={{ backgroundColor: '#fff', width: '90px', height: '90px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 5px 15px rgba(0,0,0,0.05)', color: '#9CA3AF' }}><Icons.Cart /></div>
-                    <h3 style={{ fontWeight: '900', fontSize: '20px' }}>Canasta vacía</h3>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '16px', marginBottom: '20px', border: '1px solid #E5E7EB' }}>
-                      <p style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: '900', display: 'flex', justifyContent: 'space-between' }}>
-                        {getSubtotal() >= 1500 ? <span style={{ color: '#16A34A' }}>¡Envío GRATIS!</span> : <span>Faltan RD${1500 - getSubtotal()} para envío GRATIS</span>}
-                      </p>
-                      <div style={{ height: '8px', backgroundColor: '#F3F4F6', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ width: `${Math.min(100, (getSubtotal() / 1500) * 100)}%`, height: '100%', backgroundColor: getSubtotal() >= 1500 ? '#16A34A' : '#E31E24', transition: 'width 0.3s' }} />
-                      </div>
-                    </div>
-
-                    {cart.map((item, i) => (
-                      <div key={i} style={{ display: 'flex', gap: '15px', marginBottom: '15px', backgroundColor: '#fff', padding: '15px', borderRadius: '20px', border: '1px solid #F3F4F6' }}>
-                        <img src={item.image} style={{ width: '65px', height: '65px', objectFit: 'contain', backgroundColor: '#F8F9FB', borderRadius: '14px', padding: '5px' }} alt="" />
-                        <div style={{ flex: 1 }}>
-                          <h4 style={{ margin: '0 0 6px 0', fontSize: '14px', fontWeight: '800' }}>{item.title}</h4>
-                          <p style={{ margin: 0, color: '#E31E24', fontWeight: '900', fontSize: '16px' }}>RD${item.price.toFixed(0)}</p>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: '12px', padding: '4px', border: '1px solid #E5E7EB' }}>
-                          <button onClick={() => updateCartQty(item.variantId, -1)} style={{ background: 'none', border: 'none', color: '#111', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>{item.quantity === 1 ? <Icons.Trash /> : <Icons.Minus />}</button>
-                          <span style={{ fontWeight: '900', width: '22px', textAlign: 'center', fontSize: '14px' }}>{item.quantity}</span>
-                          <button onClick={() => updateCartQty(item.variantId, 1)} style={{ background: '#fff', border: 'none', color: '#111', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}><Icons.Add /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                )
-              )}
-
-              {checkoutStep === 'shipping' && (
-                <div className="view-fade-in">
-                  <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: '900' }}>Confirma tu dirección</h3>
-                  <div style={{ backgroundColor: '#fff', borderRadius: '24px', padding: '25px', border: '2px solid #E31E24' }}>
-                    <p style={{ margin: '0 0 5px 0', fontWeight: '900', fontSize: '16px' }}>{user?.nombre}</p>
-                    <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#6B7280', fontWeight: '600' }}>{user?.direccion}</p>
-                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '800' }}>📞 {user?.telefono}</p>
-                  </div>
-                </div>
-              )}
-
-              {checkoutStep === 'payment' && (
-                <div className="view-fade-in">
-                  <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: '900' }}>Método de Pago</h3>
-                  <div onClick={() => setPaymentMethod('efectivo')} style={{ backgroundColor: '#fff', border: paymentMethod === 'efectivo' ? '2px solid #111' : '1px solid #E5E7EB', borderRadius: '20px', padding: '20px', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: paymentMethod === 'efectivo' ? '7px solid #111' : '2px solid #D1D5DB' }}></div>
-                    <div style={{ backgroundColor: '#F3F4F6', padding: '10px', borderRadius: '12px' }}><Icons.Money /></div>
-                    <div>
-                      <h4 style={{ margin: 0, fontWeight: '900', fontSize: '16px' }}>Efectivo al recibir</h4>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Total y Botón Checkout */}
-            <div style={{ padding: '25px', backgroundColor: '#fff', boxShadow: '0 -10px 30px rgba(0,0,0,0.05)', borderRadius: '32px 32px 0 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <span style={{ fontWeight: '900', fontSize: '20px', color: '#111' }}>Total Final</span>
-                <span style={{ fontWeight: '900', fontSize: '32px', color: '#E31E24' }}>RD${getSubtotal().toFixed(0)}</span>
-              </div>
-              
-              {checkoutStep === 'cart' && (
-                <button onClick={() => { if(cart.length > 0) { user ? setCheckoutStep('shipping') : setIsAuthModalOpen(true) } }} style={{ width: '100%', backgroundColor: cart.length === 0 ? '#E5E7EB' : '#111', color: '#fff', padding: '20px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '18px', cursor: cart.length > 0 ? 'pointer' : 'not-allowed', boxShadow: cart.length > 0 ? '0 8px 25px rgba(0,0,0,0.2)' : 'none' }}>
-                  Proceder al Checkout
-                </button>
-              )}
-              {checkoutStep === 'shipping' && (
-                <button onClick={() => setCheckoutStep('payment')} style={{ width: '100%', backgroundColor: '#111', color: '#fff', padding: '20px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '18px', cursor: 'pointer', boxShadow: '0 8px 25px rgba(0,0,0,0.2)' }}>Continuar a Pago</button>
-              )}
-              {checkoutStep === 'payment' && (
-                <button onClick={placeOrder} disabled={isSubmitting} style={{ width: '100%', backgroundColor: '#E31E24', color: '#fff', padding: '20px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '18px', cursor: isSubmitting ? 'not-allowed' : 'pointer', boxShadow: '0 8px 25px rgba(227,30,36,0.3)' }}>
-                  {isSubmitting ? 'Procesando...' : 'Confirmar Orden'}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. Modal de Autenticación */}
-      {isAuthModalOpen && (
-        <div className="modal-overlay" style={{ zIndex: 7000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
-          <div className="modal-content" style={{ backgroundColor: '#fff', padding: '40px 30px', borderRadius: '32px', width: '90%', maxWidth: '420px', position: 'relative' }}>
-            <button onClick={() => setIsAuthModalOpen(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: '#F3F4F6', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icons.Close /></button>
-            
-            <h2 style={{ fontSize: '28px', fontWeight: '900', margin: '0 0 10px 0' }}>{authMode === 'login' ? 'Bienvenido' : 'Únete a Kolma'}</h2>
-            <p style={{ color: '#6B7280', fontSize: '15px', fontWeight: '600', marginBottom: '30px' }}>{authMode === 'login' ? 'Inicia sesión para pedir.' : 'Crea tu cuenta y guarda tu dirección en Cotuí.'}</p>
-
-            <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              {authMode === 'register' && <input placeholder="Nombre completo" required style={{ padding: '18px', borderRadius: '16px', border: '2px solid #E5E7EB', fontSize: '16px', fontWeight: '600', backgroundColor: '#F9FAFB' }} onChange={e => setAuthForm({...authForm, nombre: e.target.value})} />}
-              <input type="email" placeholder="Correo electrónico" required style={{ padding: '18px', borderRadius: '16px', border: '2px solid #E5E7EB', fontSize: '16px', fontWeight: '600', backgroundColor: '#F9FAFB' }} onChange={e => setAuthForm({...authForm, email: e.target.value})} />
-              {authMode === 'register' && (
-                <>
-                  <input placeholder="Teléfono (Ej: 809...)" required style={{ padding: '18px', borderRadius: '16px', border: '2px solid #E5E7EB', fontSize: '16px', fontWeight: '600', backgroundColor: '#F9FAFB' }} onChange={e => setAuthForm({...authForm, telefono: e.target.value})} />
-                  <textarea placeholder="Dirección completa en Cotuí" required style={{ padding: '18px', borderRadius: '16px', border: '2px solid #E5E7EB', fontSize: '16px', fontWeight: '600', backgroundColor: '#F9FAFB', height: '80px', resize: 'none' }} onChange={e => setAuthForm({...authForm, direccion: e.target.value})} />
-                </>
-              )}
-              <input type="password" placeholder="Contraseña" required style={{ padding: '18px', borderRadius: '16px', border: '2px solid #E5E7EB', fontSize: '16px', fontWeight: '600', backgroundColor: '#F9FAFB' }} onChange={e => setAuthForm({...authForm, password: e.target.value})} />
-              
-              <button type="submit" disabled={isSubmitting} style={{ width: '100%', backgroundColor: '#111', color: '#fff', padding: '20px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '18px', cursor: 'pointer', marginTop: '10px' }}>
-                {isSubmitting ? 'Cargando...' : authMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
-              </button>
+      {isAuthOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white rounded-[48px] p-8 w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-300">
+            <button onClick={() => setIsAuthOpen(false)} className="absolute top-6 right-6 p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200"><Icons.X size={20} /></button>
+            <div className="w-16 h-16 bg-gradient-to-br from-[#FF3D00] to-[#FF9100] rounded-[24px] flex items-center justify-center text-white text-3xl font-black mb-6 shadow-xl shadow-orange-200">K</div>
+            <h2 className="text-3xl font-black tracking-tighter mb-2">Ingresa a Kolma</h2>
+            <p className="text-slate-500 font-bold text-sm mb-8">Guarda tu dirección en Cotuí y pide en un clic.</p>
+            <form onSubmit={handleAuth} className="space-y-4">
+              <input type="text" placeholder="Nombre completo" required className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-sm outline-none focus:border-[#FF9100] focus:bg-white transition-all" onChange={e => setAuthForm({...authForm, name: e.target.value})} />
+              <input type="email" placeholder="Correo electrónico" required className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-sm outline-none focus:border-[#FF9100] focus:bg-white transition-all" onChange={e => setAuthForm({...authForm, email: e.target.value})} />
+              <input type="tel" placeholder="Teléfono" required className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-sm outline-none focus:border-[#FF9100] focus:bg-white transition-all" onChange={e => setAuthForm({...authForm, phone: e.target.value})} />
+              <textarea placeholder="Dirección en Cotuí (Sector, Calle...)" required className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-bold text-sm outline-none focus:border-[#FF9100] focus:bg-white transition-all h-24 resize-none" onChange={e => setAuthForm({...authForm, address: e.target.value})} />
+              <button type="submit" className="w-full bg-[#111] text-white py-4 rounded-2xl font-black text-lg hover:scale-105 active:scale-95 transition-all shadow-xl mt-2">Continuar</button>
             </form>
-            <div style={{ marginTop: '25px', textAlign: 'center' }}>
-              <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#6B7280' }}>
-                {authMode === 'login' ? '¿No tienes cuenta?' : '¿Ya eres miembro?'} 
-                <span onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')} style={{ color: '#E31E24', fontWeight: '900', marginLeft: '5px', cursor: 'pointer' }}>
-                  {authMode === 'login' ? 'Regístrate aquí' : 'Inicia Sesión'}
-                </span>
-              </p>
-            </div>
           </div>
         </div>
       )}
 
-      {/* 4. Mapa Shipday Fullscreen Overlay */}
       {isTrackingOpen && currentOrder && <LiveTrackingMap order={currentOrder} onClose={() => setIsTrackingOpen(false)} />}
 
-      {/* 5. Modal de Éxito de Compra */}
-      {showSuccessBlast && (
-        <div className="modal-overlay" style={{ zIndex: 8000, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', flexDirection: 'column', textAlign: 'center', padding: '20px' }}>
-          <div className="success-pop" style={{ marginBottom: '30px' }}><Icons.Success /></div>
-          <h1 style={{ fontSize: '36px', fontWeight: '900', color: '#111', margin: '0 0 15px 0' }}>¡Pedido Confirmado!</h1>
-          <p style={{ fontSize: '18px', color: '#6B7280', fontWeight: '600', maxWidth: '400px', margin: '0 0 40px 0' }}>Preparamos tus productos para enviarlos a Cotuí.</p>
-          <button onClick={() => setShowSuccessBlast(false)} style={{ backgroundColor: '#111', color: '#fff', padding: '20px 40px', borderRadius: '16px', border: 'none', fontWeight: '900', fontSize: '18px', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>Ver Seguimiento</button>
-        </div>
-      )}
-
-      {/* NAV INFERIOR PWA NATIVA */}
-      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(255,255,255,0.98)', backdropFilter: 'blur(10px)', borderTop: '1px solid #F3F4F6', zIndex: 100, paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', height: '70px', maxWidth: '600px', margin: '0 auto' }}>
-          <div onClick={() => setActiveTab('inicio')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', width: '33%' }}>
-            <Icons.Home active={activeTab === 'inicio'} />
-            <span style={{ fontSize: '11px', fontWeight: '800', marginTop: '6px', color: activeTab === 'inicio' ? '#E31E24' : '#9CA3AF' }}>Tienda</span>
-          </div>
-          <div onClick={() => setActiveTab('pedidos')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', width: '33%' }}>
-            <Icons.Truck active={activeTab === 'pedidos'} />
-            <span style={{ fontSize: '11px', fontWeight: '800', marginTop: '6px', color: activeTab === 'pedidos' ? '#E31E24' : '#9CA3AF' }}>Pedidos</span>
-          </div>
-          <div onClick={() => setActiveTab('perfil')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', width: '33%' }}>
-            <Icons.Profile active={activeTab === 'perfil'} />
-            <span style={{ fontSize: '11px', fontWeight: '800', marginTop: '6px', color: activeTab === 'perfil' ? '#E31E24' : '#9CA3AF' }}>Cuenta</span>
-          </div>
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50 px-6 py-4 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+        <div className="flex justify-between items-center max-w-sm mx-auto">
+          <button onClick={() => setView('home')} className={`flex flex-col items-center gap-1 ${view === 'home' ? 'text-[#FF3D00]' : 'text-slate-400'}`}>
+            <Icons.Home size={24} />
+            <span className="text-[10px] font-black uppercase">Inicio</span>
+          </button>
+          <button onClick={() => setView('orders')} className={`flex flex-col items-center gap-1 ${view === 'orders' ? 'text-[#FF3D00]' : 'text-slate-400'}`}>
+            <Icons.MapIcon size={24} />
+            <span className="text-[10px] font-black uppercase">Rutas</span>
+          </button>
+          <button onClick={() => user ? setView('profile') : setIsAuthOpen(true)} className={`flex flex-col items-center gap-1 ${view === 'profile' ? 'text-[#FF3D00]' : 'text-slate-400'}`}>
+            <Icons.User size={24} />
+            <span className="text-[10px] font-black uppercase">Perfil</span>
+          </button>
         </div>
       </nav>
-
-      <style jsx global>{`
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0; background-color: #F8F9FB; overscroll-behavior-y: none; }
-        input, textarea, button { font-family: inherit; }
-        input:focus, textarea:focus { outline: none; border-color: #111 !important; }
-        
-        .view-fade-in { animation: fadeIn 0.4s ease-out; }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
-        .modal-content { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        .cart-sidebar { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .product-card:active { transform: scale(0.98); }
-        
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        @keyframes popCartAnim { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        @keyframes successPop { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(227,30,36,0.4); } 70% { box-shadow: 0 0 0 8px rgba(227,30,36,0); } 100% { box-shadow: 0 0 0 0 rgba(227,30,36,0); } }
-        @keyframes pulseDriver { 0% { box-shadow: 0 0 0 0 rgba(227,30,36,0.6); } 70% { box-shadow: 0 0 0 20px rgba(227,30,36,0); } 100% { box-shadow: 0 0 0 0 rgba(227,30,36,0); } }
-        @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        .pop-cart-anim { animation: popCartAnim 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .success-pop { animation: successPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .pulse-bg-red { animation: pulseRed 2s infinite; }
-        .pulse-driver { animation: pulseDriver 2s infinite; }
-        .pulse-dot { display: inline-block; width: 8px; height: 8px; background-color: #E31E24; border-radius: 50%; animation: pulseRed 1.5s infinite; }
-        .skeleton-anim { background: linear-gradient(90deg, #F3F4F6 25%, #E5E7EB 50%, #F3F4F6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
-        .shimmer-bar { background: linear-gradient(90deg, #E5E7EB 25%, #F3F4F6 50%, #E5E7EB 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #E31E24; border-radius: 50%; animation: spin 1s linear infinite; }
-      `}</style>
-      <Analytics />
     </div>
   );
 }
