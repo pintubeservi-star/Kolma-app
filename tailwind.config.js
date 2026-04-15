@@ -6,7 +6,19 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        kolma: {
+          red: "#FF3D00",
+          orange: "#FF9100",
+          dark: "#D32F2F"
+        }
+      },
+      borderRadius: {
+        '4xl': '2rem',
+        '5xl': '3rem',
+      }
+    },
   },
   plugins: [],
 }
