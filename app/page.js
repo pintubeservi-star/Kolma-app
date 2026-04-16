@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 
-// Iconos SVG Nativos
 const Icons = {
   Search: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
   Bag: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>,
@@ -21,49 +20,24 @@ const Icons = {
 const COTUI_CENTER = [19.0528, -70.1492];
 
 export default function KolmaRD() {
-  const [view, setView] = useState('home'); // home, cart, tracking, auth
+  const [view, setView] = useState('home'); 
   const [cart, setCart] = useState([]);
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [toast, setToast] = useState(null);
-  const [showUpsell, setShowUpsell] = useState(null);
   const [user, setUser] = useState(null);
-  
-  // Auth Form State
   const [authMode, setAuthMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // 1. OBTENER PRODUCTOS DE SHOPIFY
+  // Llama a la API interna segura
   useEffect(() => {
     const fetchShopifyProducts = async () => {
       try {
-        const query = `
-          {
-            products(first: 20) {
-              edges {
-                node {
-                  id
-                  title
-                  productType
-                  images(first: 1) { edges { node { url } } }
-                  variants(first: 1) { edges { node { price { amount } compareAtPrice { amount } } } }
-                }
-              }
-            }
-          }
-        `;
-        const res = await fetch(`https://${process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN}/api/2023-10/graphql.json`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Shopify-Storefront-Access-Token': process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN,
-          },
-          body: JSON.stringify({ query }),
-        });
-        
+        const res = await fetch('/api/products');
         const json = await res.json();
+        
         if(json.data) {
            const formattedProducts = json.data.products.edges.map(({node}) => ({
              id: node.id,
@@ -71,18 +45,12 @@ export default function KolmaRD() {
              category: node.productType || 'Despensa',
              price: parseFloat(node.variants.edges[0]?.node?.price?.amount || 0),
              oldPrice: parseFloat(node.variants.edges[0]?.node?.compareAtPrice?.amount || 0),
-             image: node.images.edges[0]?.node?.url || 'https://via.placeholder.com/300',
-             upsellId: null
+             image: node.images.edges[0]?.node?.url || 'https://via.placeholder.com/300'
            }));
            setProducts(formattedProducts);
         }
       } catch (error) {
-        console.error("Error fetching Shopify", error);
-        // Fallback de prueba si fallan credenciales
-        setProducts([
-          { id: '1', name: 'Leche Rica Entera 1L', price: 78, oldPrice: 95, category: 'Lácteos', image: 'https://images.unsplash.com/photo-1563636619-e9107da5a1bb?auto=format&fit=crop&w=300' },
-          { id: '2', name: 'Aguacate Hass Cotuí', price: 45, oldPrice: 65, category: 'Frutas y Verduras', image: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&w=300' },
-        ]);
+        console.error("Error fetching", error);
       }
     };
     fetchShopifyProducts();
@@ -107,7 +75,6 @@ export default function KolmaRD() {
 
   const subtotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
 
-  // 2. REGISTRO / LOGIN (Simulado Frontend/Shopify Customer API)
   const handleAuth = (e) => {
     e.preventDefault();
     if(email && password) {
@@ -118,7 +85,7 @@ export default function KolmaRD() {
     }
   };
 
-  // 3. CHECKOUT & SHIPDAY INTEGRATION
+  // Llama a la API interna segura
   const handleCheckout = async () => {
     if(!user) {
         setView('auth');
@@ -126,7 +93,6 @@ export default function KolmaRD() {
     }
     
     try {
-        // Enviar a Shipday
         const shipdayPayload = {
             orderNumber: `KOLMA-${Math.floor(Math.random() * 10000)}`,
             customerName: user.name,
@@ -139,21 +105,17 @@ export default function KolmaRD() {
             totalOrderCost: subtotal
         };
 
-        await fetch("https://api.shipday.com/orders", {
+        await fetch("/api/checkout", {
             method: 'POST',
-            headers: {
-                'Authorization': `Basic ${process.env.NEXT_PUBLIC_SHIPDAY_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(shipdayPayload)
         });
 
-        // Proceder a tracking
         setView('tracking');
-        setCart([]); // Vaciar carrito
+        setCart([]);
     } catch(err) {
-        console.error("Shipday error:", err);
-        setView('tracking'); // Forzado para demo visual
+        console.error("Error", err);
+        setView('tracking'); 
     }
   };
 
@@ -171,7 +133,6 @@ export default function KolmaRD() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 md:pb-0 font-sans selection:bg-red-500 selection:text-white">
-      {/* Toast Notificación */}
       {toast && (
         <div className="fixed top-24 left-6 z-[100] bg-white shadow-2xl rounded-2xl p-4 border border-gray-100 flex items-center gap-4 transition-all duration-500 ease-out translate-y-0 opacity-100">
           <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center text-white shadow-lg">
@@ -184,7 +145,6 @@ export default function KolmaRD() {
         </div>
       )}
 
-      {/* Header Premium */}
       <header className="sticky top-0 z-[60] bg-white/80 backdrop-blur-xl border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-4">
           <div onClick={() => setView('home')} className="bg-gradient-to-br from-red-600 to-orange-500 text-white w-12 h-12 rounded-xl flex items-center justify-center font-black text-2xl shadow-lg cursor-pointer hover:opacity-90 active:scale-95 transition-all">K</div>
@@ -222,7 +182,6 @@ export default function KolmaRD() {
 
       <main className="max-w-7xl mx-auto p-6 md:p-10">
         
-        {/* VISTA AUTH (LOGIN/REGISTRO) */}
         {view === 'auth' && (
             <div className="max-w-md mx-auto bg-white rounded-[40px] p-10 shadow-2xl border border-gray-100 mt-10">
                 <h2 className="text-3xl font-black tracking-tight text-gray-900 mb-2 text-center">
@@ -246,7 +205,6 @@ export default function KolmaRD() {
 
         {view === 'home' && (
           <div className="space-y-12">
-            {/* Banner Premium */}
             {!searchTerm && (
               <div className="relative h-[300px] bg-gradient-to-r from-gray-900 to-gray-800 rounded-[32px] overflow-hidden p-10 flex items-center group cursor-pointer shadow-2xl">
                 <div className="z-10 text-white max-w-md">
@@ -261,7 +219,6 @@ export default function KolmaRD() {
               </div>
             )}
 
-            {/* Categorías */}
             <div className="flex gap-4 overflow-x-auto no-scrollbar pb-6 pt-2">
               {['Todos', 'Lácteos', 'Frutas y Verduras', 'Carnes', 'Panadería'].map(cat => (
                 <button 
@@ -277,7 +234,6 @@ export default function KolmaRD() {
               ))}
             </div>
 
-            {/* Grid de Productos */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 md:gap-8">
               {filteredProducts.map(p => (
                 <div key={p.id} className="group relative flex flex-col bg-white p-4 rounded-[28px] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300">
@@ -302,7 +258,6 @@ export default function KolmaRD() {
           </div>
         )}
 
-        {/* Vista del Carrito */}
         {view === 'cart' && (
           <div className="max-w-3xl mx-auto bg-white rounded-[40px] p-8 md:p-12 shadow-2xl border border-gray-100">
              <h2 className="text-4xl font-black tracking-tight text-gray-900 mb-10 text-center">Tu Canasta</h2>
@@ -336,7 +291,6 @@ export default function KolmaRD() {
           </div>
         )}
 
-        {/* Seguimiento de Orden */}
         {view === 'tracking' && (
           <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10">
             <div className="bg-white rounded-[40px] p-10 md:p-12 shadow-2xl border border-gray-100">
@@ -369,7 +323,6 @@ export default function KolmaRD() {
         )}
       </main>
 
-      {/* Menú Móvil */}
       <nav className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-xl border-t border-gray-200 px-8 py-5 flex justify-around md:hidden z-50 pb-8">
         <button onClick={() => {setView('home'); setSearchTerm('');}} className={`p-3 rounded-2xl transition-all duration-300 ${view === 'home' ? 'text-gray-900 scale-110' : 'text-gray-400'}`}>
           <Icons.Search size={28} />
