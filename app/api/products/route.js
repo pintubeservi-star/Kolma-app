@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
+    const domain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
+    const token = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+
     const query = `
       {
         products(first: 20) {
@@ -17,11 +20,11 @@ export async function GET() {
         }
       }
     `;
-    const res = await fetch(`https://${process.env.SHOPIFY_DOMAIN}/api/2023-10/graphql.json`, {
+    const res = await fetch(`https://${domain}/api/2023-10/graphql.json`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': process.env.SHOPIFY_TOKEN,
+        'X-Shopify-Storefront-Access-Token': token,
       },
       body: JSON.stringify({ query }),
     });
