@@ -14,8 +14,14 @@ body {
   overflow-x: hidden;
 }
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { 
+  display: none; 
+}
+
+.no-scrollbar { 
+  -ms-overflow-style: none; 
+  scrollbar-width: none; 
+}
 
 .leaflet-container {
   width: 100%;
@@ -30,5 +36,3 @@ body {
   border-radius: 50%;
   box-shadow: 0 10px 20px rgba(255, 61, 0, 0.4);
 }
-
-```
