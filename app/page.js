@@ -1,35 +1,17 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 
-// Iconos SVG Nativos Premium
+// Iconos SVG Nativos
 const Icons = {
-  Search: ({ size = 24, className = "" }) => (
-    <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-  ),
-  Bag: ({ size = 24, className = "" }) => (
-    <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
-  ),
-  User: ({ size = 24, className = "" }) => (
-    <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-  ),
-  Plus: ({ size = 24, className = "" }) => (
-    <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-  ),
-  Minus: ({ size = 24, className = "" }) => (
-    <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" /></svg>
-  ),
-  ArrowRight: ({ size = 24, className = "" }) => (
-    <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-  ),
-  Phone: ({ size = 24, className = "" }) => (
-    <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-  ),
-  Message: ({ size = 24, className = "" }) => (
-    <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-  ),
-  Basket: ({ size = 24, className = "" }) => (
-    <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-  ),
+  Search: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
+  Bag: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>,
+  User: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
+  Plus: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>,
+  Minus: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" /></svg>,
+  ArrowRight: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>,
+  Phone: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>,
+  Message: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>,
+  Basket: ({ size = 24, className = "" }) => <svg width={size} height={size} className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
   Lacteos: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18h12l1-9H5l1 9zM10 6h4l.5 3h-5L10 6z" /><circle cx="12" cy="14" r="2" /></svg>,
   Frutas: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 3a8 8 0 0 1 8 7.2c0 7.3-8 11.8-8 11.8z" /><circle cx="12" cy="10" r="3" /></svg>,
   Carnes: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M15 5c0 3.5-2.5 4.5-5 4.5s-5-1-5-4.5 2.24-4 5-4 5 .5 5 4zM15 5c0 4-4 15-4 15s-6-11-6-15" /><line x1="10" y1="2" x2="10" y2="8" /></svg>,
@@ -39,31 +21,71 @@ const Icons = {
 const COTUI_CENTER = [19.0528, -70.1492];
 
 export default function KolmaRD() {
-  const [view, setView] = useState('home');
+  const [view, setView] = useState('home'); // home, cart, tracking, auth
   const [cart, setCart] = useState([]);
+  const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [toast, setToast] = useState(null);
   const [showUpsell, setShowUpsell] = useState(null);
+  const [user, setUser] = useState(null);
+  
+  // Auth Form State
+  const [authMode, setAuthMode] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const products = [
-    { id: '1', name: 'Leche Rica Entera 1L', price: 78, oldPrice: 95, category: 'Lácteos', image: 'https://images.unsplash.com/photo-1563636619-e9107da5a1bb?auto=format&fit=crop&w=300', upsellId: '4' },
-    { id: '2', name: 'Aguacate Hass Cotuí', price: 45, oldPrice: 65, category: 'Frutas y Verduras', image: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&w=300', upsellId: '3' },
-    { id: '3', name: 'Pechuga Pollo Premium', price: 185, oldPrice: 230, category: 'Carnes', image: 'https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&w=300' },
-    { id: '4', name: 'Pan Sobao Caliente', price: 55, oldPrice: 75, category: 'Panadería', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=300', upsellId: '1' },
-    { id: '5', name: 'Arroz Kolma Selecto 5lb', price: 160, oldPrice: 195, category: 'Despensa', image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=300' },
-  ];
-
+  // 1. OBTENER PRODUCTOS DE SHOPIFY
   useEffect(() => {
-    const interval = setInterval(() => {
-      const names = ['Ana', 'Rosa', 'Miguel', 'Junior'];
-      setToast({
-        title: `${names[Math.floor(Math.random()*names.length)]} en Cotuí`,
-        desc: "Acaba de realizar un pedido express."
-      });
-      setTimeout(() => setToast(null), 4000);
-    }, 25000);
-    return () => clearInterval(interval);
+    const fetchShopifyProducts = async () => {
+      try {
+        const query = `
+          {
+            products(first: 20) {
+              edges {
+                node {
+                  id
+                  title
+                  productType
+                  images(first: 1) { edges { node { url } } }
+                  variants(first: 1) { edges { node { price { amount } compareAtPrice { amount } } } }
+                }
+              }
+            }
+          }
+        `;
+        const res = await fetch(`https://${process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN}/api/2023-10/graphql.json`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Shopify-Storefront-Access-Token': process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN,
+          },
+          body: JSON.stringify({ query }),
+        });
+        
+        const json = await res.json();
+        if(json.data) {
+           const formattedProducts = json.data.products.edges.map(({node}) => ({
+             id: node.id,
+             name: node.title,
+             category: node.productType || 'Despensa',
+             price: parseFloat(node.variants.edges[0]?.node?.price?.amount || 0),
+             oldPrice: parseFloat(node.variants.edges[0]?.node?.compareAtPrice?.amount || 0),
+             image: node.images.edges[0]?.node?.url || 'https://via.placeholder.com/300',
+             upsellId: null
+           }));
+           setProducts(formattedProducts);
+        }
+      } catch (error) {
+        console.error("Error fetching Shopify", error);
+        // Fallback de prueba si fallan credenciales
+        setProducts([
+          { id: '1', name: 'Leche Rica Entera 1L', price: 78, oldPrice: 95, category: 'Lácteos', image: 'https://images.unsplash.com/photo-1563636619-e9107da5a1bb?auto=format&fit=crop&w=300' },
+          { id: '2', name: 'Aguacate Hass Cotuí', price: 45, oldPrice: 65, category: 'Frutas y Verduras', image: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&w=300' },
+        ]);
+      }
+    };
+    fetchShopifyProducts();
   }, []);
 
   const filteredProducts = useMemo(() => {
@@ -71,22 +93,69 @@ export default function KolmaRD() {
       (activeCategory === 'Todos' || p.category === activeCategory) &&
       (p.name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-  }, [searchTerm, activeCategory]);
+  }, [searchTerm, activeCategory, products]);
 
-  const addToCart = (product, isUpsell = false) => {
+  const addToCart = (product) => {
     setCart(prev => {
       const exists = prev.find(i => i.id === product.id);
       if (exists) return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
       return [...prev, { ...product, qty: 1 }];
     });
-    if (!isUpsell && product.upsellId) {
-      setShowUpsell(products.find(p => p.id === product.upsellId));
-    } else {
-      setShowUpsell(null);
-    }
+    setToast({ title: "Agregado", desc: `${product.name} en tu canasta.` });
+    setTimeout(() => setToast(null), 2000);
   };
 
   const subtotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+
+  // 2. REGISTRO / LOGIN (Simulado Frontend/Shopify Customer API)
+  const handleAuth = (e) => {
+    e.preventDefault();
+    if(email && password) {
+       setUser({ email, name: email.split('@')[0] });
+       setView('home');
+       setToast({ title: `Bienvenido, ${email.split('@')[0]}`, desc: "Sesión iniciada con éxito." });
+       setTimeout(() => setToast(null), 3000);
+    }
+  };
+
+  // 3. CHECKOUT & SHIPDAY INTEGRATION
+  const handleCheckout = async () => {
+    if(!user) {
+        setView('auth');
+        return;
+    }
+    
+    try {
+        // Enviar a Shipday
+        const shipdayPayload = {
+            orderNumber: `KOLMA-${Math.floor(Math.random() * 10000)}`,
+            customerName: user.name,
+            customerEmail: user.email,
+            customerPhoneNumber: "18090000000",
+            customerAddress: "Centro de Cotuí, República Dominicana",
+            restaurantName: "Kolma RD",
+            restaurantAddress: "Cotuí Centro",
+            orderItem: cart.map(item => ({ name: item.name, quantity: item.qty, unitPrice: item.price })),
+            totalOrderCost: subtotal
+        };
+
+        await fetch("https://api.shipday.com/orders", {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${process.env.NEXT_PUBLIC_SHIPDAY_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(shipdayPayload)
+        });
+
+        // Proceder a tracking
+        setView('tracking');
+        setCart([]); // Vaciar carrito
+    } catch(err) {
+        console.error("Shipday error:", err);
+        setView('tracking'); // Forzado para demo visual
+    }
+  };
 
   const MapView = () => {
     useEffect(() => {
@@ -125,26 +194,56 @@ export default function KolmaRD() {
           </div>
         </div>
 
-        <div className="flex-1 max-w-lg mx-6 relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-            <Icons.Search size={18} />
-          </div>
-          <input 
-            type="text" 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Lo mejor de Cotuí hoy..." 
-            className="w-full bg-gray-100 rounded-full py-3 pl-12 pr-4 font-semibold text-gray-800 placeholder-gray-400 outline-none border-2 border-transparent focus:border-red-500 focus:bg-white transition-all text-sm shadow-inner"
-          />
-        </div>
+        {view === 'home' && (
+            <div className="flex-1 max-w-lg mx-6 relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <Icons.Search size={18} />
+            </div>
+            <input 
+                type="text" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Busca en el super..." 
+                className="w-full bg-gray-100 rounded-full py-3 pl-12 pr-4 font-semibold text-gray-800 placeholder-gray-400 outline-none border-2 border-transparent focus:border-red-500 focus:bg-white transition-all text-sm shadow-inner"
+            />
+            </div>
+        )}
 
-        <button onClick={() => setView('cart')} className="bg-gray-900 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-lg hover:bg-black hover:-translate-y-0.5 active:scale-95 transition-all">
-          <Icons.Bag size={20} />
-          <span className="font-bold border-l border-white/20 pl-3">RD$ {subtotal}</span>
-        </button>
+        <div className="flex items-center gap-4">
+            <button onClick={() => user ? setToast({title: user.name, desc: "Sesión activa"}) : setView('auth')} className="hidden md:flex bg-gray-100 text-gray-900 p-3 rounded-full items-center justify-center shadow-sm hover:bg-gray-200 transition-all">
+               <Icons.User size={20} />
+            </button>
+            <button onClick={() => setView('cart')} className="bg-gray-900 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-lg hover:bg-black hover:-translate-y-0.5 active:scale-95 transition-all">
+            <Icons.Bag size={20} />
+            <span className="font-bold border-l border-white/20 pl-3">RD$ {subtotal}</span>
+            </button>
+        </div>
       </header>
 
       <main className="max-w-7xl mx-auto p-6 md:p-10">
+        
+        {/* VISTA AUTH (LOGIN/REGISTRO) */}
+        {view === 'auth' && (
+            <div className="max-w-md mx-auto bg-white rounded-[40px] p-10 shadow-2xl border border-gray-100 mt-10">
+                <h2 className="text-3xl font-black tracking-tight text-gray-900 mb-2 text-center">
+                    {authMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
+                </h2>
+                <p className="text-gray-500 text-center font-medium mb-8">Para comprar en KolmaRD</p>
+                
+                <form onSubmit={handleAuth} className="space-y-4">
+                    <input type="email" placeholder="Correo electrónico" required value={email} onChange={e=>setEmail(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-semibold outline-none focus:border-red-500 transition-all" />
+                    <input type="password" placeholder="Contraseña" required value={password} onChange={e=>setPassword(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 font-semibold outline-none focus:border-red-500 transition-all" />
+                    <button type="submit" className="w-full bg-red-600 text-white font-bold text-lg py-4 rounded-2xl hover:bg-red-700 transition-all shadow-lg shadow-red-500/30 mt-4">
+                        {authMode === 'login' ? 'Entrar' : 'Registrarme'}
+                    </button>
+                </form>
+
+                <p className="text-center mt-6 text-sm font-bold text-gray-500 cursor-pointer hover:text-red-600" onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
+                    {authMode === 'login' ? '¿No tienes cuenta? Regístrate' : 'Ya tengo cuenta. Iniciar sesión'}
+                </p>
+            </div>
+        )}
+
         {view === 'home' && (
           <div className="space-y-12">
             {/* Banner Premium */}
@@ -152,7 +251,7 @@ export default function KolmaRD() {
               <div className="relative h-[300px] bg-gradient-to-r from-gray-900 to-gray-800 rounded-[32px] overflow-hidden p-10 flex items-center group cursor-pointer shadow-2xl">
                 <div className="z-10 text-white max-w-md">
                   <span className="bg-red-600 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide mb-6 inline-block shadow-md">KolmaRD Express</span>
-                  <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight leading-tight">Frescura Local <br/> <span className="text-orange-400">en 20 Minutos.</span></h2>
+                  <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight leading-tight">El súper <br/> <span className="text-orange-400">de Cotuí.</span></h2>
                   <button className="bg-white text-gray-900 px-6 py-3 rounded-full font-bold text-sm flex items-center gap-2 shadow-lg hover:bg-gray-50 transition-colors">
                     Comprar ahora <Icons.ArrowRight size={18}/>
                   </button>
@@ -162,7 +261,7 @@ export default function KolmaRD() {
               </div>
             )}
 
-            {/* Categorías Premium */}
+            {/* Categorías */}
             <div className="flex gap-4 overflow-x-auto no-scrollbar pb-6 pt-2">
               {['Todos', 'Lácteos', 'Frutas y Verduras', 'Carnes', 'Panadería'].map(cat => (
                 <button 
@@ -178,7 +277,7 @@ export default function KolmaRD() {
               ))}
             </div>
 
-            {/* Grid de Productos Premium */}
+            {/* Grid de Productos */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 md:gap-8">
               {filteredProducts.map(p => (
                 <div key={p.id} className="group relative flex flex-col bg-white p-4 rounded-[28px] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300">
@@ -195,7 +294,7 @@ export default function KolmaRD() {
                   <h4 className="font-bold text-gray-900 text-base leading-tight truncate mb-2">{p.name}</h4>
                   <div className="flex items-center gap-3 mt-auto">
                     <span className="font-black text-xl text-gray-900 tracking-tight">RD$ {p.price}</span>
-                    <span className="text-xs text-gray-400 line-through font-semibold">RD$ {p.oldPrice}</span>
+                    {p.oldPrice > 0 && <span className="text-xs text-gray-400 line-through font-semibold">RD$ {p.oldPrice}</span>}
                   </div>
                 </div>
               ))}
@@ -221,7 +320,7 @@ export default function KolmaRD() {
                      <div className="flex items-center gap-3 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
                         <button onClick={() => setCart(prev => prev.map(i => i.id === item.id ? {...i, qty: Math.max(0, i.qty - 1)} : i).filter(i => i.qty > 0))} className="w-10 h-10 flex items-center justify-center bg-white text-gray-600 hover:text-gray-900 rounded-xl shadow-sm transition-colors"><Icons.Minus size={18}/></button>
                         <span className="font-bold text-gray-900 w-6 text-center">{item.qty}</span>
-                        <button onClick={() => addToCart(item, true)} className="w-10 h-10 flex items-center justify-center bg-white text-gray-600 hover:text-gray-900 rounded-xl shadow-sm transition-colors"><Icons.Plus size={18}/></button>
+                        <button onClick={() => addToCart(item)} className="w-10 h-10 flex items-center justify-center bg-white text-gray-600 hover:text-gray-900 rounded-xl shadow-sm transition-colors"><Icons.Plus size={18}/></button>
                      </div>
                    </div>
                  ))}
@@ -230,7 +329,7 @@ export default function KolmaRD() {
                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Total a pagar</p>
                        <h3 className="text-5xl font-black text-gray-900 tracking-tight">RD$ {subtotal}</h3>
                     </div>
-                    <button onClick={() => setView('tracking')} className="w-full md:w-auto bg-gray-900 text-white px-12 py-5 rounded-full font-bold text-xl shadow-xl shadow-gray-900/20 hover:bg-black hover:-translate-y-1 transition-all">Pagar Ahora</button>
+                    <button onClick={handleCheckout} className="w-full md:w-auto bg-gray-900 text-white px-12 py-5 rounded-full font-bold text-xl shadow-xl shadow-gray-900/20 hover:bg-black hover:-translate-y-1 transition-all">Pagar Ahora</button>
                  </div>
                </div>
              )}
@@ -257,41 +356,18 @@ export default function KolmaRD() {
                      <div className="w-14 h-14 bg-gradient-to-tr from-red-500 to-orange-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg">🛵</div>
                      <div>
                         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Socio Repartidor</p>
-                        <p className="font-bold text-xl tracking-tight leading-none text-white">José Martínez</p>
+                        <p className="font-bold text-xl tracking-tight leading-none text-white">Socio Shipday</p>
                      </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <button className="p-4 bg-white/10 rounded-2xl hover:bg-white/20 transition-all text-white"><Icons.Phone size={20}/></button>
-                    <button className="p-4 bg-red-600 rounded-2xl shadow-lg shadow-red-600/30 text-white hover:bg-red-500 transition-colors"><Icons.Message size={20}/></button>
                   </div>
                </div>
             </div>
             <div className="h-[500px] lg:h-[600px] overflow-hidden rounded-[40px] shadow-2xl border border-gray-100 sticky top-32 bg-gray-100 flex items-center justify-center">
-               {/* Aquí renderizaría el mapa si Leaflet está disponible */}
                <MapView />
                {!window.L && <p className="text-gray-400 font-bold">Cargando Mapa...</p>}
             </div>
           </div>
         )}
       </main>
-
-      {/* Upsell Modal */}
-      {showUpsell && (
-        <div className="fixed inset-0 z-[200] bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl border-t-8 border-red-500 text-center animate-in zoom-in duration-300">
-            <h3 className="text-2xl font-black text-gray-900 mb-6 tracking-tight">¿Te faltó esto?</h3>
-            <div className="bg-gray-50 p-4 rounded-2xl flex items-center gap-4 mb-6 border border-gray-100">
-               <img src={showUpsell.image} alt={showUpsell.name} className="w-20 h-20 rounded-xl object-cover shadow-sm" />
-               <div className="flex-1 text-left">
-                  <h4 className="font-bold text-sm text-gray-900 leading-tight mb-1">{showUpsell.name}</h4>
-                  <p className="font-black text-lg text-red-600">RD$ {showUpsell.price}</p>
-               </div>
-               <button onClick={() => addToCart(showUpsell, true)} className="bg-gray-900 text-white p-3 rounded-xl hover:bg-red-600 transition-colors shadow-md"><Icons.Plus size={20}/></button>
-            </div>
-            <button onClick={() => setShowUpsell(null)} className="w-full text-gray-500 font-bold text-sm hover:text-gray-900 transition-colors py-2">No, gracias. Ir a pagar.</button>
-          </div>
-        </div>
-      )}
 
       {/* Menú Móvil */}
       <nav className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-xl border-t border-gray-200 px-8 py-5 flex justify-around md:hidden z-50 pb-8">
@@ -302,7 +378,7 @@ export default function KolmaRD() {
           <Icons.Bag size={24} />
           {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-orange-500 text-white w-6 h-6 rounded-full text-[11px] flex items-center justify-center font-bold border-2 border-white shadow-sm">{cart.length}</span>}
         </button>
-        <button onClick={() => setView('home')} className="p-3 rounded-2xl text-gray-400 transition-all duration-300 hover:text-gray-900">
+        <button onClick={() => setView('auth')} className={`p-3 rounded-2xl transition-all duration-300 ${view === 'auth' ? 'text-gray-900 scale-110' : 'text-gray-400'}`}>
           <Icons.User size={28} />
         </button>
       </nav>
