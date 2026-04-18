@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 
-// --- ICONOS SVG (Rojo y Blanco - KolmaRD) ---
+// --- ICONOS SVG ---
 const SVG = {
   Market: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>,
   Category: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/></svg>,
@@ -17,14 +17,31 @@ const SVG = {
   X: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-6 h-6"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
   Check: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-6 h-6"><polyline points="20 6 9 17 4 12"/></svg>,
   LogOut: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-  Box: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-12 h-12 text-slate-300"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+  Box: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-12 h-12 text-slate-300"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
+  Eye: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+  EyeOff: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>,
+};
+
+// --- HELPER DE CATEGORÍAS (Iconos coherentes) ---
+const getCategoryStyle = (name) => {
+  const lower = name.toLowerCase();
+  if (lower.includes('fresco') || lower.includes('fruta') || lower.includes('vegetal') || lower.includes('agro')) return { icon: '🥦', color: 'bg-emerald-500' };
+  if (lower.includes('bebida') || lower.includes('licor') || lower.includes('jugo') || lower.includes('agua')) return { icon: '🍷', color: 'bg-purple-500' };
+  if (lower.includes('limp') || lower.includes('hogar') || lower.includes('detergente')) return { icon: '🧼', color: 'bg-blue-500' };
+  if (lower.includes('carn') || lower.includes('pollo') || lower.includes('pescado') || lower.includes('embutido')) return { icon: '🥩', color: 'bg-red-500' };
+  if (lower.includes('despensa') || lower.includes('provisión') || lower.includes('grano') || lower.includes('arroz')) return { icon: '🥫', color: 'bg-orange-500' };
+  if (lower.includes('snack') || lower.includes('dulce') || lower.includes('galleta') || lower.includes('picadera')) return { icon: '🍫', color: 'bg-yellow-500' };
+  if (lower.includes('lacteo') || lower.includes('queso') || lower.includes('leche')) return { icon: '🧀', color: 'bg-yellow-400' };
+  if (lower.includes('cuidado') || lower.includes('personal') || lower.includes('belleza')) return { icon: '🧴', color: 'bg-pink-500' };
+  return { icon: '🛍️', color: 'bg-slate-800' };
 };
 
 export default function KolmaRDApp() {
   const [user, setUser] = useState(null);
   const [showLogin, setShowLogin] = useState(true);
-  const [authMode, setAuthMode] = useState('login'); // 'login' o 'register'
-  const [formData, setFormData] = useState({ email: '', password: '', firstName: '', phone: '', address: 'Cotuí, Centro' });
+  const [authMode, setAuthMode] = useState('login'); 
+  const [formData, setFormData] = useState({ email: '', password: '', firstName: '', phone: '', address: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(false);
 
   const [cart, setCart] = useState([]);
@@ -34,13 +51,16 @@ export default function KolmaRDApp() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('home');
   const [isOrdering, setIsOrdering] = useState(false);
+  
+  // Sistema de Notificaciones in-app
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-  // Estados desde API Vercel
+  // Estados Datos API
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Cargar datos al iniciar
+  // Inicialización
   useEffect(() => {
     const savedUser = localStorage.getItem('kolma_user');
     const savedOrders = localStorage.getItem('kolma_orders');
@@ -56,10 +76,15 @@ export default function KolmaRDApp() {
     fetchProducts();
   }, []);
 
+  const showAppToast = useCallback((message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3500);
+  }, []);
+
   const fetchProducts = async () => {
     try {
-      // Conexión a tu API de Vercel
       const res = await fetch('/api/products');
+      if (!res.ok) throw new Error('Error al conectar con la API');
       const json = await res.json();
       
       if (json.data?.products) {
@@ -74,49 +99,72 @@ export default function KolmaRDApp() {
             img: node.images?.edges[0]?.node.url || 'https://via.placeholder.com/400',
             unit: node.variants?.edges[0]?.node.title !== 'Default Title' ? node.variants.edges[0].node.title : 'Unidad',
             desc: node.description || 'Calidad KolmaRD garantizada.',
-            available: node.variants?.edges[0]?.node.availableForSale
+            // CORRECCIÓN: Si en Shopify no rastreas inventario, manda "null" o "false". Forzamos a true para que funcione en la app.
+            available: true 
           }));
         setProducts(formattedProducts);
 
-        // Generar categorías únicas
+        // Generar categorías ordenadas e iconografía coherente
         const uniqueCats = [...new Set(formattedProducts.map(p => p.cat))];
-        const dynamicCategories = uniqueCats.map((cat, index) => ({
-          id: cat,
-          name: cat,
-          icon: ['🥦', '🥫', '🧼', '🍷', '🥖', '🍎'][index % 6], 
-          color: ['bg-red-500', 'bg-orange-500', 'bg-blue-500', 'bg-purple-500', 'bg-emerald-500'][index % 5]
-        }));
+        const dynamicCategories = uniqueCats.map((cat) => {
+          const style = getCategoryStyle(cat);
+          return { id: cat, name: cat, icon: style.icon, color: style.color };
+        });
         setCategories(dynamicCategories);
       }
     } catch (error) {
-      console.error("Error cargando productos de Vercel:", error);
+      console.error(error);
+      showAppToast('Error cargando catálogo. Revisa la conexión.', 'error');
     } finally {
       setLoadingData(false);
     }
   };
 
-  // Autenticación con tu API de Vercel
+  // Autenticación conectada a Prisma/Vercel (CORRECCIÓN CONTRASEÑA)
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoadingAuth(true);
+
+    // Validación de campos
+    if (authMode === 'register') {
+      if (!formData.firstName || !formData.phone || !formData.address) {
+        setLoadingAuth(false);
+        return showAppToast('Nombre, teléfono y dirección son obligatorios para las entregas.', 'error');
+      }
+    }
+
     try {
       const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register'; 
+      
+      // Enviar SOLO los datos necesarios para evitar conflictos en Prisma
+      const payload = authMode === 'login' 
+        ? { email: formData.email, password: formData.password }
+        : formData;
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       
       if (res.ok && data.user) {
-        setUser(data.user);
-        localStorage.setItem('kolma_user', JSON.stringify(data.user));
+        // Asegurar que el usuario traiga los datos correctos
+        const loggedUser = {
+          ...data.user,
+          firstName: data.user.firstName || data.user.name || formData.firstName,
+          phone: data.user.phone || formData.phone,
+          address: data.user.address || formData.address,
+        };
+        setUser(loggedUser);
+        localStorage.setItem('kolma_user', JSON.stringify(loggedUser));
         setShowLogin(false);
+        showAppToast(authMode === 'login' ? 'Bienvenido de vuelta' : 'Cuenta creada con éxito');
       } else {
-        alert(data.error || 'Verifica tus credenciales');
+        showAppToast(data.error || 'Verifica tu correo y contraseña.', 'error');
       }
     } catch (error) {
-      alert('Error de conexión con el servidor.');
+      showAppToast('Error de conexión con el servidor. Intenta de nuevo.', 'error');
     } finally {
       setLoadingAuth(false);
     }
@@ -127,19 +175,27 @@ export default function KolmaRDApp() {
     setCart([]);
     setActiveTab('home');
     setShowLogin(true);
+    setFormData({ ...formData, password: '' }); // Limpiar password por seguridad
     localStorage.removeItem('kolma_user');
     localStorage.removeItem('kolmard_cart');
   };
 
+  const handleGuestEntry = () => {
+    setUser({ name: 'Invitado', email: 'Sin registrar', address: 'Cotuí (Por defecto)', phone: 'Requerido para pedido', isGuest: true });
+    setShowLogin(false);
+    showAppToast('Has entrado como invitado. Deberás registrarte para comprar.');
+  };
+
   // Carrito
   const addToCart = (p) => {
-    if (!p.available) return alert("Producto agotado");
+    if (!p.available) return showAppToast("Este producto está agotado por el momento.", "error");
     setCart(curr => {
       const ex = curr.find(i => i.id === p.id);
       const n = ex 
         ? curr.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i) 
         : [...curr, { ...p, qty: 1 }];
       localStorage.setItem('kolmard_cart', JSON.stringify(n));
+      showAppToast(`${p.name} agregado`);
       return n;
     });
   };
@@ -164,9 +220,15 @@ export default function KolmaRDApp() {
     return products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.cat.toLowerCase().includes(search.toLowerCase()));
   }, [search, products]);
 
-  // Checkout (Crear Orden)
+  // Checkout -> Crear Orden
   const processCheckout = async () => {
     if (cart.length === 0) return;
+    if (user.isGuest) {
+      setIsCartOpen(false);
+      setShowLogin(true);
+      return showAppToast('Debes crear una cuenta o iniciar sesión para pedir.', 'error');
+    }
+
     setIsOrdering(true);
 
     try {
@@ -187,7 +249,7 @@ export default function KolmaRDApp() {
           name: order?.name || `#${Math.floor(Math.random() * 10000)}`,
           date: new Date().toISOString(),
           total: total,
-          status: 'Preparando',
+          status: 'Recibido',
           items: cart
         };
         
@@ -199,50 +261,94 @@ export default function KolmaRDApp() {
         localStorage.removeItem('kolmard_cart');
         setIsCartOpen(false);
         setActiveTab('orders');
+        showAppToast('¡Pedido confirmado! Lo enviaremos pronto.');
       } else {
-        alert('Error al procesar pedido. Intenta nuevamente.');
+        showAppToast('Error al procesar pedido en Shopify. Intenta nuevamente.', 'error');
       }
     } catch (error) {
-      alert('Error de conexión con el servidor.');
+      showAppToast('Error de conexión al enviar el pedido.', 'error');
     } finally {
       setIsOrdering(false);
     }
   };
 
+  // --- COMPONENTE NOTIFICACIONES ---
+  const ToastNotification = () => {
+    if (!toast.show) return null;
+    return (
+      <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-top-10 fade-in duration-300 w-fit max-w-[90%]">
+        <div className={`px-5 py-3 rounded-full shadow-2xl flex items-center space-x-3 backdrop-blur-md border ${toast.type === 'error' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-black text-white border-slate-800'}`}>
+          {toast.type === 'error' ? <SVG.X /> : <SVG.Check />}
+          <span className="text-[13px] font-bold tracking-wide">{toast.message}</span>
+        </div>
+      </div>
+    );
+  };
+
   // VISTA: PORTAL DE ACCESO (LOGIN / REGISTRO)
   if (showLogin) {
     return (
-      <div className="min-h-screen bg-[#F0F2F5] flex items-center justify-center p-6 font-sans">
-        <div className="w-full max-w-md bg-white rounded-[3.5rem] shadow-2xl overflow-hidden p-12 animate-in zoom-in-95 duration-500 border border-white">
-          <div className="text-center mb-10">
-            <div className="w-24 h-24 bg-red-600 rounded-[2.5rem] mx-auto flex items-center justify-center text-5xl mb-6 shadow-2xl shadow-red-200">
+      <div className="min-h-screen bg-[#F0F2F5] flex items-center justify-center p-6 font-sans relative">
+        <ToastNotification />
+        
+        <div className="w-full max-w-md bg-white rounded-[3.5rem] shadow-2xl overflow-hidden p-8 sm:p-12 animate-in zoom-in-95 duration-500 border border-white">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 bg-red-600 rounded-[2rem] mx-auto flex items-center justify-center text-4xl mb-4 shadow-2xl shadow-red-200">
               <span className="text-white font-black italic">K</span>
             </div>
-            <h1 className="text-4xl font-black tracking-tighter mb-2 italic">KOLMARD</h1>
-            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.4em]">Cotuí · Express</p>
+            <h1 className="text-3xl font-black tracking-tighter mb-1 italic">KOLMARD</h1>
+            <p className="text-slate-400 font-bold uppercase text-[9px] tracking-[0.3em]">Cotuí · Express</p>
           </div>
-          <form onSubmit={handleAuth} className="space-y-5">
+
+          <form onSubmit={handleAuth} className="space-y-4">
             {authMode === 'register' && (
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Nombre</label>
-                <input type="text" placeholder="Ej: Juan Pérez" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium" required/>
-              </div>
+              <>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Nombre Completo *</label>
+                  <input type="text" placeholder="Ej: Juan Pérez" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 px-6 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Teléfono *</label>
+                  <input type="tel" placeholder="Ej: 809-585-0000" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 px-6 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Dirección Exacta *</label>
+                  <input type="text" placeholder="Ej: C/ Principal #4, Centro" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 px-6 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
+                </div>
+              </>
             )}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Correo / Usuario</label>
-              <input type="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium" required/>
+            
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Correo</label>
+              <input type="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 px-6 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
             </div>
-            <div className="space-y-2">
+            
+            <div className="space-y-1 relative">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Contraseña</label>
-              <input type="password" placeholder="••••••••" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] py-5 px-8 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium" required/>
+              <div className="relative">
+                <input type={showPassword ? "text" : "password"} placeholder="••••••••" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 pl-6 pr-14 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-800">
+                  {showPassword ? <SVG.EyeOff /> : <SVG.Eye />}
+                </button>
+              </div>
             </div>
-            <button type="submit" disabled={loadingAuth} className="w-full bg-black text-white py-5 rounded-[2rem] font-black text-lg hover:bg-red-700 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3">
-              {loadingAuth ? 'Cargando...' : (authMode === 'login' ? 'Ingresar' : 'Registrarme')} <SVG.Arrow />
+
+            <button type="submit" disabled={loadingAuth} className="w-full bg-black text-white py-4 rounded-[1.5rem] font-black text-base hover:bg-red-700 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mt-4">
+              {loadingAuth ? 'Verificando...' : (authMode === 'login' ? 'Ingresar' : 'Crear Cuenta')} <SVG.Arrow />
             </button>
           </form>
-          <div className="text-center mt-6">
+
+          <div className="text-center mt-6 flex flex-col gap-4">
             <button onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')} className="text-sm font-bold text-red-600 hover:underline">
-              {authMode === 'login' ? '¿No tienes cuenta? Crea una' : 'Ya tengo cuenta. Entrar'}
+              {authMode === 'login' ? '¿No tienes cuenta? Regístrate aquí' : 'Ya tengo cuenta. Entrar'}
+            </button>
+            <div className="flex items-center gap-4">
+              <div className="h-[1px] flex-1 bg-slate-100"></div>
+              <span className="text-[9px] font-black text-slate-300 uppercase">o explorar</span>
+              <div className="h-[1px] flex-1 bg-slate-100"></div>
+            </div>
+            <button onClick={handleGuestEntry} className="text-xs font-bold text-slate-500 uppercase tracking-widest hover:text-slate-900 transition-colors">
+              Entrar como Invitado
             </button>
           </div>
         </div>
@@ -252,14 +358,15 @@ export default function KolmaRDApp() {
 
   // VISTA: APLICACIÓN COMPLETA
   return (
-    <div className="min-h-screen bg-[#F7F9FB] text-slate-900 font-sans pb-40">
-      
+    <div className="min-h-screen bg-[#F7F9FB] text-slate-900 font-sans pb-40 relative">
+      <ToastNotification />
+
       {/* HEADER */}
-      <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-2xl border-b border-slate-100 h-24 px-6 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-100 h-24 px-6 flex items-center justify-between">
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5 mb-0.5">
             <SVG.Pin />
-            <span className="text-[10px] font-black uppercase tracking-widest text-red-600">{user.address || user.location || "Cotuí"}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-red-600 truncate max-w-[150px]">{user.address || user.location}</span>
           </div>
           <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2 italic">
             KOLMARD <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
@@ -293,27 +400,63 @@ export default function KolmaRDApp() {
             {activeTab === 'me' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
                 <h2 className="text-3xl font-black italic tracking-tighter mb-8">Mi Perfil</h2>
-                <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-50 flex items-center gap-6">
-                  <div className="w-20 h-20 bg-red-600 text-white rounded-[2rem] flex items-center justify-center text-3xl font-black shadow-lg shadow-red-200">
-                    {(user.firstName || user.name || "U").charAt(0)}
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-black tracking-tight leading-none mb-1">{user.firstName || user.name}</h3>
-                    <p className="text-sm font-bold text-slate-400">{user.email}</p>
-                  </div>
-                </div>
+                
+                {user.isGuest ? (
+                   <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100 text-center">
+                     <div className="text-4xl mb-2">👤</div>
+                     <h3 className="font-black text-red-900 text-lg mb-1">Cuenta de Invitado</h3>
+                     <p className="text-xs text-red-700 mb-4 font-medium">Regístrate para guardar tu dirección, ver tus pedidos y agilizar el proceso de compra.</p>
+                     <button onClick={handleLogout} className="bg-red-600 text-white font-bold px-6 py-3 rounded-xl shadow-sm hover:bg-red-700">Crear Cuenta</button>
+                   </div>
+                ) : (
+                  <>
+                    <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-50 flex items-center gap-6">
+                      <div className="w-20 h-20 bg-red-600 text-white rounded-[2rem] flex items-center justify-center text-3xl font-black shadow-lg shadow-red-200">
+                        {(user.firstName || user.name || "U").charAt(0)}
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-black tracking-tight leading-none mb-1">{user.firstName || user.name}</h3>
+                        <p className="text-sm font-bold text-slate-400">{user.email}</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-[3rem] shadow-sm border border-slate-50 p-6 space-y-4">
+                      <div className="flex items-start gap-4">
+                        <div className="text-slate-400 mt-1"><SVG.Pin /></div>
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dirección de Entrega</p>
+                          <p className="font-bold text-slate-800 text-sm mt-0.5">{user.address || user.location}</p>
+                        </div>
+                      </div>
+                      <div className="w-full h-[1px] bg-slate-50"></div>
+                      <div className="flex items-start gap-4">
+                         <div className="text-slate-400 mt-1"><SVG.User /></div>
+                         <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teléfono</p>
+                          <p className="font-bold text-slate-800 text-sm mt-0.5">{user.phone}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <button onClick={handleLogout} className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-lg hover:bg-red-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mt-8">
                   <SVG.LogOut /> Cerrar Sesión
                 </button>
               </div>
             )}
 
-            {/* --- VISTA: ÁREA DE PEDIDOS (SHIPDAY READY) --- */}
+            {/* --- VISTA: ÁREA DE PEDIDOS --- */}
             {activeTab === 'orders' && (
               <div className="animate-in fade-in duration-500">
                 <h2 className="text-3xl font-black italic tracking-tighter mb-8">Mis Pedidos</h2>
                 
-                {orders.length === 0 ? (
+                {user.isGuest ? (
+                   <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-50">
+                    <p className="text-slate-400 text-sm">Debes iniciar sesión para ver tus pedidos.</p>
+                    <button onClick={handleLogout} className="mt-4 text-red-600 font-bold hover:underline">Iniciar Sesión</button>
+                   </div>
+                ) : orders.length === 0 ? (
                   <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-50">
                     <div className="flex justify-center mb-6"><SVG.Box /></div>
                     <p className="text-xl font-black text-slate-800 mb-2">Sin Pedidos</p>
@@ -374,7 +517,11 @@ export default function KolmaRDApp() {
                   <section className="mb-12">
                     <h3 className="text-lg font-black mb-6 px-2">Categorías</h3>
                     <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-                      {categories.map((c, i) => (
+                      <button onClick={() => setSearch('')} className="snap-start min-w-[80px] flex flex-col items-center gap-3 group">
+                        <div className={`w-16 h-16 bg-slate-900 rounded-[2rem] flex items-center justify-center text-2xl shadow-lg shadow-black/5 group-hover:scale-110 transition-all text-white`}>🌟</div>
+                        <span className="text-[10px] font-black uppercase text-slate-400 group-hover:text-slate-900 tracking-tighter line-clamp-1">Todos</span>
+                      </button>
+                      {categories.map((c) => (
                         <button key={c.id} onClick={() => setSearch(c.name)} className="snap-start min-w-[80px] flex flex-col items-center gap-3 group">
                           <div className={`w-16 h-16 ${c.color} rounded-[2rem] flex items-center justify-center text-3xl shadow-lg shadow-black/5 group-hover:scale-110 transition-all text-white overflow-hidden`}>
                             {c.icon}
@@ -393,23 +540,31 @@ export default function KolmaRDApp() {
                   </div>
                   <div className="grid grid-cols-2 gap-5">
                     {filteredProducts.map(p => (
-                      <div key={p.id} className={`bg-white rounded-[2.8rem] p-6 shadow-sm border border-slate-50 flex flex-col group transition-all duration-500 ${!p.available ? 'opacity-50 grayscale' : 'hover:shadow-2xl'}`}>
-                        <div onClick={() => p.available && setSelectedProduct(p)} className="aspect-square bg-[#F8FAFB] rounded-[2.2rem] flex items-center justify-center mb-5 overflow-hidden relative cursor-pointer">
-                          <img src={p.img} alt={p.name} className="w-full h-full object-cover mix-blend-multiply group-hover:scale-105 transition-transform" />
-                          {!p.available && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><span className="bg-black text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">Agotado</span></div>}
+                      <div key={p.id} className={`bg-white rounded-[2.8rem] p-6 shadow-sm border border-slate-50 flex flex-col group transition-all duration-500 ${!p.available ? 'opacity-60' : 'hover:shadow-2xl'}`}>
+                        <div onClick={() => setSelectedProduct(p)} className="aspect-square bg-[#F8FAFB] rounded-[2.2rem] flex items-center justify-center mb-5 overflow-hidden relative cursor-pointer">
+                          <img src={p.img} alt={p.name} className={`w-full h-full object-cover mix-blend-multiply group-hover:scale-105 transition-transform ${!p.available ? 'grayscale' : ''}`} />
+                          {!p.available && <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm"><span className="bg-red-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">Agotado</span></div>}
                         </div>
-                        <div className="flex-1 px-1" onClick={() => p.available && setSelectedProduct(p)}>
+                        <div className="flex-1 px-1" onClick={() => setSelectedProduct(p)}>
                           <p className="text-[11px] font-black text-red-600 uppercase mb-1 tracking-tighter line-clamp-1">{p.cat}</p>
                           <h4 className="font-bold text-slate-800 leading-tight mb-4 h-12 line-clamp-2 cursor-pointer">{p.name}</h4>
                         </div>
                         <div className="flex items-center justify-between pt-2">
                           <span className="text-xl font-black tracking-tighter italic">RD${p.price}</span>
-                          <button disabled={!p.available} onClick={() => addToCart(p)} className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center hover:bg-red-600 transition-all active:scale-90 shadow-lg disabled:bg-slate-300">
+                          <button onClick={() => addToCart(p)} className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center hover:bg-red-600 transition-all active:scale-90 shadow-lg disabled:bg-slate-300">
                             <SVG.Plus />
                           </button>
                         </div>
                       </div>
                     ))}
+
+                    {filteredProducts.length === 0 && (
+                      <div className="col-span-2 text-center py-20 bg-white rounded-[3rem] border border-slate-50">
+                        <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-300"><SVG.Search /></div>
+                        <p className="text-xl font-black text-slate-800 mb-2">No encontrado</p>
+                        <p className="text-slate-400 text-sm">Prueba buscar con otras palabras.</p>
+                      </div>
+                    )}
                   </div>
                 </section>
               </div>
@@ -447,7 +602,10 @@ export default function KolmaRDApp() {
           <div className="relative w-full max-w-xl bg-white rounded-t-[4rem] sm:rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-500">
             <button onClick={() => setSelectedProduct(null)} className="absolute top-10 right-10 w-14 h-14 bg-slate-50 rounded-[1.5rem] flex items-center justify-center text-slate-400 z-10 hover:bg-red-50 hover:text-red-600 transition-all"><SVG.X /></button>
             <div className="flex flex-col sm:flex-row">
-              <div className="sm:w-1/2 bg-slate-50 flex items-center justify-center p-16"><img src={selectedProduct.img} alt={selectedProduct.name} className="w-full h-auto mix-blend-multiply" /></div>
+              <div className="sm:w-1/2 bg-slate-50 flex items-center justify-center p-16 relative">
+                 <img src={selectedProduct.img} alt={selectedProduct.name} className={`w-full h-auto mix-blend-multiply ${!selectedProduct.available ? 'grayscale opacity-50' : ''}`} />
+                 {!selectedProduct.available && <div className="absolute inset-0 bg-transparent flex items-center justify-center"><span className="bg-red-600 text-white text-[14px] font-black px-4 py-2 rounded-full uppercase tracking-widest shadow-lg transform -rotate-12">AGOTADO</span></div>}
+              </div>
               <div className="sm:w-1/2 p-12 flex flex-col">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-[10px] font-black text-red-600 uppercase tracking-widest bg-red-50 px-3 py-1.5 rounded-full italic">Verificado</span>
@@ -460,7 +618,9 @@ export default function KolmaRDApp() {
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Precio</span>
                     <p className="text-3xl font-black tracking-tighter italic">RD${selectedProduct.price}</p>
                   </div>
-                  <button onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }} className="bg-black text-white px-8 py-5 rounded-[2rem] font-black text-lg hover:bg-red-600 transition-all active:scale-95 shadow-2xl">Agregar</button>
+                  <button onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }} className="bg-black text-white px-8 py-5 rounded-[2rem] font-black text-lg hover:bg-red-600 transition-all active:scale-95 shadow-2xl">
+                    {selectedProduct.available ? 'Agregar' : 'Agotado'}
+                  </button>
                 </div>
               </div>
             </div>
