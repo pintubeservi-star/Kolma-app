@@ -97,6 +97,35 @@ export default function KolmaRD() {
   const [formData, setFormData] = useState({ email: '', password: '', firstName: '', address: '', phone: '' });
   const [toast, setToast] = useState(null);
 
+  // --- AUTENTICACIÓN CON SHOPIFY ---
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register'; 
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok && data.user) {
+        setUser(data.user);
+        localStorage.setItem('kolmard_user', JSON.stringify(data.user));
+        setView('home');
+        showToast(authMode === 'login' ? '¡Bienvenido de vuelta!' : 'Cuenta creada con éxito');
+      } else {
+        showToast(data.error || 'Error en la autenticación');
+      }
+    } catch (error) {
+      showToast('Error de conexión al servidor');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // --- CARGA DE PRODUCTOS (Cerebro Shopify) ---
   useEffect(() => {
     const link = document.createElement('link');
@@ -119,19 +148,28 @@ export default function KolmaRD() {
       const res = await fetch('/api/products');
       const json = await res.json();
       if (json.data?.products) {
-        const formatted = json.data.products.edges.map(({ node }) => ({
-          id: node.id,
-          name: node.title,
-          price: parseFloat(node.variants?.edges?.[0]?.node?.price?.amount || 0),
-          img: node.images?.edges?.[0]?.node?.url || 'https://via.placeholder.com/600',
-          category: node.productType || 'Otros',
-          // Conectamos con el tag "Oferta" de Shopify
-          collection: node.tags?.some(tag => tag.toLowerCase().includes('oferta')) ? 'Ofertas' : 'General',
-          description: node.description || 'Producto fresco de KolmaRD.'
-        }));
+        const formatted = json.data.products.edges
+          .filter(({ node }) => {
+            const tags = node.tags || [];
+            return !tags.some(tag => tag.toLowerCase() === 'pos');
+          })
+          .map(({ node }) => ({
+            id: node.id,
+            name: node.title,
+            price: parseFloat(node.variants?.edges?.[0]?.node?.price?.amount || 0),
+            img: node.images?.edges?.[0]?.node?.url || 'https://via.placeholder.com/600',
+            category: node.collections?.edges?.[0]?.node?.title || node.productType || 'Otros',
+            collection: node.tags?.some(tag => tag.toLowerCase().includes('oferta')) ? 'Ofertas' : 'General',
+            description: node.description || 'Producto fresco de KolmaRD.'
+          }));
         setProducts(formatted);
       }
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+    } catch (e) { 
+        console.error(e); 
+        showToast('Error cargando productos');
+    } finally { 
+        setLoading(false); 
+    }
   };
 
   const showToast = (message) => {
@@ -150,7 +188,6 @@ export default function KolmaRD() {
   const total = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
 
   // --- FILTROS DE CATEGORÍA ---
-  // Obtenemos categorías únicas de los productos reales para el menú
   const realCategories = useMemo(() => {
     const cats = products.map(p => p.category);
     return ['Todos', ...new Set(cats)];
