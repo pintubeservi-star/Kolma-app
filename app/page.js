@@ -22,7 +22,7 @@ const SVG = {
   EyeOff: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>,
 };
 
-// --- HELPER DE CATEGORÍAS (Iconos coherentes) ---
+// --- HELPER DE CATEGORÍAS ---
 const getCategoryStyle = (name) => {
   const lower = name.toLowerCase();
   if (lower.includes('fresco') || lower.includes('fruta') || lower.includes('vegetal') || lower.includes('agro')) return { icon: '🥦', color: 'bg-emerald-500' };
@@ -52,15 +52,11 @@ export default function KolmaRDApp() {
   const [activeTab, setActiveTab] = useState('home');
   const [isOrdering, setIsOrdering] = useState(false);
   
-  // Sistema de Notificaciones in-app
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
-
-  // Estados Datos API
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Inicialización
   useEffect(() => {
     const savedUser = localStorage.getItem('kolma_user');
     const savedOrders = localStorage.getItem('kolma_orders');
@@ -99,12 +95,10 @@ export default function KolmaRDApp() {
             img: node.images?.edges[0]?.node.url || 'https://via.placeholder.com/400',
             unit: node.variants?.edges[0]?.node.title !== 'Default Title' ? node.variants.edges[0].node.title : 'Unidad',
             desc: node.description || 'Calidad KolmaRD garantizada.',
-            // CORRECCIÓN: Si en Shopify no rastreas inventario, manda "null" o "false". Forzamos a true para que funcione en la app.
             available: true 
           }));
         setProducts(formattedProducts);
 
-        // Generar categorías ordenadas e iconografía coherente
         const uniqueCats = [...new Set(formattedProducts.map(p => p.cat))];
         const dynamicCategories = uniqueCats.map((cat) => {
           const style = getCategoryStyle(cat);
@@ -120,26 +114,20 @@ export default function KolmaRDApp() {
     }
   };
 
-  // Autenticación conectada a Prisma/Vercel (CORRECCIÓN CONTRASEÑA)
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoadingAuth(true);
 
-    // Validación de campos
     if (authMode === 'register') {
       if (!formData.firstName || !formData.phone || !formData.address) {
         setLoadingAuth(false);
-        return showAppToast('Nombre, teléfono y dirección son obligatorios para las entregas.', 'error');
+        return showAppToast('Nombre, teléfono y dirección son obligatorios.', 'error');
       }
     }
 
     try {
       const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register'; 
-      
-      // Enviar SOLO los datos necesarios para evitar conflictos en Prisma
-      const payload = authMode === 'login' 
-        ? { email: formData.email, password: formData.password }
-        : formData;
+      const payload = authMode === 'login' ? { email: formData.email, password: formData.password } : formData;
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -149,7 +137,6 @@ export default function KolmaRDApp() {
       const data = await res.json();
       
       if (res.ok && data.user) {
-        // Asegurar que el usuario traiga los datos correctos
         const loggedUser = {
           ...data.user,
           firstName: data.user.firstName || data.user.name || formData.firstName,
@@ -175,7 +162,7 @@ export default function KolmaRDApp() {
     setCart([]);
     setActiveTab('home');
     setShowLogin(true);
-    setFormData({ ...formData, password: '' }); // Limpiar password por seguridad
+    setFormData({ ...formData, password: '' }); 
     localStorage.removeItem('kolma_user');
     localStorage.removeItem('kolmard_cart');
   };
@@ -183,7 +170,7 @@ export default function KolmaRDApp() {
   const handleGuestEntry = () => {
     setUser({ name: 'Invitado', email: 'Sin registrar', address: 'Cotuí (Por defecto)', phone: 'Requerido para pedido', isGuest: true });
     setShowLogin(false);
-    showAppToast('Has entrado como invitado. Deberás registrarte para comprar.');
+    showAppToast('Has entrado como invitado. Regístrate para comprar.');
   };
 
   // Carrito
@@ -191,9 +178,7 @@ export default function KolmaRDApp() {
     if (!p.available) return showAppToast("Este producto está agotado por el momento.", "error");
     setCart(curr => {
       const ex = curr.find(i => i.id === p.id);
-      const n = ex 
-        ? curr.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i) 
-        : [...curr, { ...p, qty: 1 }];
+      const n = ex ? curr.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i) : [...curr, { ...p, qty: 1 }];
       localStorage.setItem('kolmard_cart', JSON.stringify(n));
       showAppToast(`${p.name} agregado`);
       return n;
@@ -212,15 +197,39 @@ export default function KolmaRDApp() {
     return n;
   });
   
-  const total = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+  // --- LÓGICA DE DESCUENTOS Y TOTALES ---
+  const rawTotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
   const totalItems = cart.reduce((acc, i) => acc + i.qty, 0);
+
+  let discountPercent = 0;
+  let nextGoalAmount = 500;
+  let nextGoalPercent = 5;
+
+  if (rawTotal >= 1000) {
+    discountPercent = 10;
+    nextGoalAmount = 0;
+  } else if (rawTotal >= 500) {
+    discountPercent = 5;
+    nextGoalAmount = 1000;
+    nextGoalPercent = 10;
+  }
+
+  const discountAmount = rawTotal * (discountPercent / 100);
+  const finalTotal = rawTotal - discountAmount;
+  const progressPercent = Math.min((rawTotal / 1000) * 100, 100);
+  const missingForNext = nextGoalAmount > 0 ? nextGoalAmount - rawTotal : 0;
 
   const filteredProducts = useMemo(() => {
     if (!search) return products;
     return products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.cat.toLowerCase().includes(search.toLowerCase()));
   }, [search, products]);
 
-  // Checkout -> Crear Orden
+  // Sugerencias para el carrito
+  const suggestedProducts = useMemo(() => {
+    return products.filter(p => !cart.some(c => c.id === p.id) && p.available).slice(0, 4);
+  }, [products, cart]);
+
+  // Checkout
   const processCheckout = async () => {
     if (cart.length === 0) return;
     if (user.isGuest) {
@@ -237,18 +246,18 @@ export default function KolmaRDApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerInfo: user,
-          items: cart.map(item => ({ variantId: item.variantId, quantity: item.qty }))
+          items: cart.map(item => ({ variantId: item.variantId, quantity: item.qty })),
+          discount: discountAmount // Enviamos el descuento aplicado
         })
       });
 
       if (res.ok) {
         const { order } = await res.json();
-        
         const newOrder = {
           id: order?.id || Date.now(),
           name: order?.name || `#${Math.floor(Math.random() * 10000)}`,
           date: new Date().toISOString(),
-          total: total,
+          total: finalTotal, // Guardar el total con descuento
           status: 'Recibido',
           items: cart
         };
@@ -263,7 +272,7 @@ export default function KolmaRDApp() {
         setActiveTab('orders');
         showAppToast('¡Pedido confirmado! Lo enviaremos pronto.');
       } else {
-        showAppToast('Error al procesar pedido en Shopify. Intenta nuevamente.', 'error');
+        showAppToast('Error al procesar pedido en Shopify.', 'error');
       }
     } catch (error) {
       showAppToast('Error de conexión al enviar el pedido.', 'error');
@@ -272,7 +281,6 @@ export default function KolmaRDApp() {
     }
   };
 
-  // --- COMPONENTE NOTIFICACIONES ---
   const ToastNotification = () => {
     if (!toast.show) return null;
     return (
@@ -285,17 +293,13 @@ export default function KolmaRDApp() {
     );
   };
 
-  // VISTA: PORTAL DE ACCESO (LOGIN / REGISTRO)
   if (showLogin) {
     return (
       <div className="min-h-screen bg-[#F0F2F5] flex items-center justify-center p-6 font-sans relative">
         <ToastNotification />
-        
         <div className="w-full max-w-md bg-white rounded-[3.5rem] shadow-2xl overflow-hidden p-8 sm:p-12 animate-in zoom-in-95 duration-500 border border-white">
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-red-600 rounded-[2rem] mx-auto flex items-center justify-center text-4xl mb-4 shadow-2xl shadow-red-200">
-              <span className="text-white font-black italic">K</span>
-            </div>
+            <div className="w-20 h-20 bg-red-600 rounded-[2rem] mx-auto flex items-center justify-center text-4xl mb-4 shadow-2xl shadow-red-200"><span className="text-white font-black italic">K</span></div>
             <h1 className="text-3xl font-black tracking-tighter mb-1 italic">KOLMARD</h1>
             <p className="text-slate-400 font-bold uppercase text-[9px] tracking-[0.3em]">Cotuí · Express</p>
           </div>
@@ -317,176 +321,92 @@ export default function KolmaRDApp() {
                 </div>
               </>
             )}
-            
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Correo</label>
               <input type="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 px-6 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
             </div>
-            
             <div className="space-y-1 relative">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Contraseña</label>
               <div className="relative">
                 <input type={showPassword ? "text" : "password"} placeholder="••••••••" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 pl-6 pr-14 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-800">
-                  {showPassword ? <SVG.EyeOff /> : <SVG.Eye />}
-                </button>
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-800">{showPassword ? <SVG.EyeOff /> : <SVG.Eye />}</button>
               </div>
             </div>
-
             <button type="submit" disabled={loadingAuth} className="w-full bg-black text-white py-4 rounded-[1.5rem] font-black text-base hover:bg-red-700 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mt-4">
               {loadingAuth ? 'Verificando...' : (authMode === 'login' ? 'Ingresar' : 'Crear Cuenta')} <SVG.Arrow />
             </button>
           </form>
 
           <div className="text-center mt-6 flex flex-col gap-4">
-            <button onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')} className="text-sm font-bold text-red-600 hover:underline">
-              {authMode === 'login' ? '¿No tienes cuenta? Regístrate aquí' : 'Ya tengo cuenta. Entrar'}
-            </button>
-            <div className="flex items-center gap-4">
-              <div className="h-[1px] flex-1 bg-slate-100"></div>
-              <span className="text-[9px] font-black text-slate-300 uppercase">o explorar</span>
-              <div className="h-[1px] flex-1 bg-slate-100"></div>
-            </div>
-            <button onClick={handleGuestEntry} className="text-xs font-bold text-slate-500 uppercase tracking-widest hover:text-slate-900 transition-colors">
-              Entrar como Invitado
-            </button>
+            <button onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')} className="text-sm font-bold text-red-600 hover:underline">{authMode === 'login' ? '¿No tienes cuenta? Regístrate aquí' : 'Ya tengo cuenta. Entrar'}</button>
+            <div className="flex items-center gap-4"><div className="h-[1px] flex-1 bg-slate-100"></div><span className="text-[9px] font-black text-slate-300 uppercase">o explorar</span><div className="h-[1px] flex-1 bg-slate-100"></div></div>
+            <button onClick={handleGuestEntry} className="text-xs font-bold text-slate-500 uppercase tracking-widest hover:text-slate-900 transition-colors">Entrar como Invitado</button>
           </div>
         </div>
       </div>
     );
   }
 
-  // VISTA: APLICACIÓN COMPLETA
   return (
     <div className="min-h-screen bg-[#F7F9FB] text-slate-900 font-sans pb-40 relative">
       <ToastNotification />
 
-      {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-100 h-24 px-6 flex items-center justify-between">
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5 mb-0.5">
             <SVG.Pin />
             <span className="text-[10px] font-black uppercase tracking-widest text-red-600 truncate max-w-[150px]">{user.address || user.location}</span>
           </div>
-          <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2 italic">
-            KOLMARD <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
-          </h1>
+          <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2 italic">KOLMARD <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span></h1>
         </div>
         <div className="flex gap-2">
-           <button onClick={() => setActiveTab('me')} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${activeTab === 'me' ? 'bg-red-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:text-red-600'}`}>
-             <SVG.User />
-           </button>
+           <button onClick={() => setActiveTab('me')} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${activeTab === 'me' ? 'bg-red-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:text-red-600'}`}><SVG.User /></button>
            <button onClick={() => setIsCartOpen(true)} className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center shadow-xl relative">
              <SVG.Cart />
-             {totalItems > 0 && (
-               <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-full border-2 border-white animate-bounce-short">
-                 {totalItems}
-               </span>
-             )}
+             {totalItems > 0 && <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-full border-2 border-white animate-bounce-short">{totalItems}</span>}
            </button>
         </div>
       </header>
 
       <main className="max-w-xl mx-auto px-6 py-8">
-        
         {loadingData ? (
-           <div className="flex flex-col items-center justify-center py-20 opacity-50">
-             <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-             <p className="font-bold tracking-widest text-sm uppercase">Cargando inventario...</p>
-           </div>
+           <div className="flex flex-col items-center justify-center py-20 opacity-50"><div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4"></div><p className="font-bold tracking-widest text-sm uppercase">Cargando inventario...</p></div>
         ) : (
           <>
-            {/* --- VISTA: PERFIL --- */}
             {activeTab === 'me' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
                 <h2 className="text-3xl font-black italic tracking-tighter mb-8">Mi Perfil</h2>
-                
                 {user.isGuest ? (
-                   <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100 text-center">
-                     <div className="text-4xl mb-2">👤</div>
-                     <h3 className="font-black text-red-900 text-lg mb-1">Cuenta de Invitado</h3>
-                     <p className="text-xs text-red-700 mb-4 font-medium">Regístrate para guardar tu dirección, ver tus pedidos y agilizar el proceso de compra.</p>
-                     <button onClick={handleLogout} className="bg-red-600 text-white font-bold px-6 py-3 rounded-xl shadow-sm hover:bg-red-700">Crear Cuenta</button>
-                   </div>
+                   <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100 text-center"><div className="text-4xl mb-2">👤</div><h3 className="font-black text-red-900 text-lg mb-1">Cuenta de Invitado</h3><p className="text-xs text-red-700 mb-4 font-medium">Regístrate para guardar tu dirección y agilizar tus compras.</p><button onClick={handleLogout} className="bg-red-600 text-white font-bold px-6 py-3 rounded-xl shadow-sm hover:bg-red-700">Crear Cuenta</button></div>
                 ) : (
                   <>
-                    <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-50 flex items-center gap-6">
-                      <div className="w-20 h-20 bg-red-600 text-white rounded-[2rem] flex items-center justify-center text-3xl font-black shadow-lg shadow-red-200">
-                        {(user.firstName || user.name || "U").charAt(0)}
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-black tracking-tight leading-none mb-1">{user.firstName || user.name}</h3>
-                        <p className="text-sm font-bold text-slate-400">{user.email}</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-[3rem] shadow-sm border border-slate-50 p-6 space-y-4">
-                      <div className="flex items-start gap-4">
-                        <div className="text-slate-400 mt-1"><SVG.Pin /></div>
-                        <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dirección de Entrega</p>
-                          <p className="font-bold text-slate-800 text-sm mt-0.5">{user.address || user.location}</p>
-                        </div>
-                      </div>
-                      <div className="w-full h-[1px] bg-slate-50"></div>
-                      <div className="flex items-start gap-4">
-                         <div className="text-slate-400 mt-1"><SVG.User /></div>
-                         <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teléfono</p>
-                          <p className="font-bold text-slate-800 text-sm mt-0.5">{user.phone}</p>
-                        </div>
-                      </div>
-                    </div>
+                    <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-50 flex items-center gap-6"><div className="w-20 h-20 bg-red-600 text-white rounded-[2rem] flex items-center justify-center text-3xl font-black shadow-lg shadow-red-200">{(user.firstName || user.name || "U").charAt(0)}</div><div><h3 className="text-2xl font-black tracking-tight leading-none mb-1">{user.firstName || user.name}</h3><p className="text-sm font-bold text-slate-400">{user.email}</p></div></div>
+                    <div className="bg-white rounded-[3rem] shadow-sm border border-slate-50 p-6 space-y-4"><div className="flex items-start gap-4"><div className="text-slate-400 mt-1"><SVG.Pin /></div><div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dirección</p><p className="font-bold text-slate-800 text-sm mt-0.5">{user.address || user.location}</p></div></div><div className="w-full h-[1px] bg-slate-50"></div><div className="flex items-start gap-4"><div className="text-slate-400 mt-1"><SVG.User /></div><div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teléfono</p><p className="font-bold text-slate-800 text-sm mt-0.5">{user.phone}</p></div></div></div>
                   </>
                 )}
-
-                <button onClick={handleLogout} className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-lg hover:bg-red-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mt-8">
-                  <SVG.LogOut /> Cerrar Sesión
-                </button>
+                <button onClick={handleLogout} className="w-full bg-slate-900 text-white py-5 rounded-[2rem] font-black text-lg hover:bg-red-600 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mt-8"><SVG.LogOut /> Cerrar Sesión</button>
               </div>
             )}
 
-            {/* --- VISTA: ÁREA DE PEDIDOS --- */}
             {activeTab === 'orders' && (
               <div className="animate-in fade-in duration-500">
                 <h2 className="text-3xl font-black italic tracking-tighter mb-8">Mis Pedidos</h2>
-                
                 {user.isGuest ? (
-                   <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-50">
-                    <p className="text-slate-400 text-sm">Debes iniciar sesión para ver tus pedidos.</p>
-                    <button onClick={handleLogout} className="mt-4 text-red-600 font-bold hover:underline">Iniciar Sesión</button>
-                   </div>
+                   <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-50"><p className="text-slate-400 text-sm">Inicia sesión para ver tus pedidos.</p><button onClick={handleLogout} className="mt-4 text-red-600 font-bold hover:underline">Iniciar Sesión</button></div>
                 ) : orders.length === 0 ? (
-                  <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-50">
-                    <div className="flex justify-center mb-6"><SVG.Box /></div>
-                    <p className="text-xl font-black text-slate-800 mb-2">Sin Pedidos</p>
-                    <p className="text-slate-400 text-sm">Tus órdenes aparecerán aquí.</p>
-                  </div>
+                  <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-50"><div className="flex justify-center mb-6"><SVG.Box /></div><p className="text-xl font-black text-slate-800 mb-2">Sin Pedidos</p><p className="text-slate-400 text-sm">Tus órdenes aparecerán aquí.</p></div>
                 ) : (
                   <div className="space-y-6">
                     {orders.map(order => (
                       <div key={order.id} className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-50">
                         <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-4">
-                          <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Orden {order.name}</p>
-                            <p className="text-sm font-bold text-slate-900">{new Date(order.date).toLocaleDateString()} - {new Date(order.date).toLocaleTimeString()}</p>
-                          </div>
-                          <div className="bg-red-50 text-red-600 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span> {order.status}
-                          </div>
+                          <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Orden {order.name}</p><p className="text-sm font-bold text-slate-900">{new Date(order.date).toLocaleDateString()} - {new Date(order.date).toLocaleTimeString()}</p></div>
+                          <div className="bg-red-50 text-red-600 text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest flex items-center gap-1.5"><span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span> {order.status}</div>
                         </div>
                         <div className="space-y-3 mb-4">
-                          {order.items.map(item => (
-                            <div key={item.id} className="flex justify-between items-center text-sm font-medium text-slate-600">
-                              <span>{item.qty}x {item.name}</span>
-                              <span className="font-bold text-slate-900">RD${item.price * item.qty}</span>
-                            </div>
-                          ))}
+                          {order.items.map(item => (<div key={item.id} className="flex justify-between items-center text-sm font-medium text-slate-600"><span>{item.qty}x {item.name}</span><span className="font-bold text-slate-900">RD${item.price * item.qty}</span></div>))}
                         </div>
-                        <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-                          <span className="text-xs font-black uppercase tracking-widest text-slate-400">Total</span>
-                          <span className="text-xl font-black italic">RD${order.total}</span>
-                        </div>
+                        <div className="flex justify-between items-center pt-4 border-t border-slate-100"><span className="text-xs font-black uppercase tracking-widest text-slate-400">Total Pagado</span><span className="text-xl font-black italic">RD${order.total}</span></div>
                       </div>
                     ))}
                   </div>
@@ -494,50 +414,28 @@ export default function KolmaRDApp() {
               </div>
             )}
 
-            {/* --- VISTA PRINCIPAL (HOME) --- */}
-            {(activeTab === 'home') && (
+            {activeTab === 'home' && (
               <div className="animate-in fade-in duration-500">
                 <div className="relative mb-10 group">
-                  <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-600 transition-colors">
-                    <SVG.Search />
-                  </div>
-                  <input 
-                    type="text" 
-                    placeholder="Buscar productos..." 
-                    className="w-full bg-white rounded-[2.2rem] py-5 pl-16 pr-12 border-none shadow-sm outline-none focus:ring-2 focus:ring-red-600 transition-all font-medium text-lg"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  {search && (
-                    <button onClick={() => setSearch('')} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-800"><SVG.X /></button>
-                  )}
+                  <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-600 transition-colors"><SVG.Search /></div>
+                  <input type="text" placeholder="Buscar productos..." className="w-full bg-white rounded-[2.2rem] py-5 pl-16 pr-12 border-none shadow-sm outline-none focus:ring-2 focus:ring-red-600 transition-all font-medium text-lg" value={search} onChange={(e) => setSearch(e.target.value)} />
+                  {search && <button onClick={() => setSearch('')} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-800"><SVG.X /></button>}
                 </div>
 
                 {!search && categories.length > 0 && (
                   <section className="mb-12">
                     <h3 className="text-lg font-black mb-6 px-2">Categorías</h3>
                     <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-                      <button onClick={() => setSearch('')} className="snap-start min-w-[80px] flex flex-col items-center gap-3 group">
-                        <div className={`w-16 h-16 bg-slate-900 rounded-[2rem] flex items-center justify-center text-2xl shadow-lg shadow-black/5 group-hover:scale-110 transition-all text-white`}>🌟</div>
-                        <span className="text-[10px] font-black uppercase text-slate-400 group-hover:text-slate-900 tracking-tighter line-clamp-1">Todos</span>
-                      </button>
+                      <button onClick={() => setSearch('')} className="snap-start min-w-[80px] flex flex-col items-center gap-3 group"><div className={`w-16 h-16 bg-slate-900 rounded-[2rem] flex items-center justify-center text-2xl shadow-lg shadow-black/5 group-hover:scale-110 transition-all text-white`}>🌟</div><span className="text-[10px] font-black uppercase text-slate-400 group-hover:text-slate-900 tracking-tighter line-clamp-1">Todos</span></button>
                       {categories.map((c) => (
-                        <button key={c.id} onClick={() => setSearch(c.name)} className="snap-start min-w-[80px] flex flex-col items-center gap-3 group">
-                          <div className={`w-16 h-16 ${c.color} rounded-[2rem] flex items-center justify-center text-3xl shadow-lg shadow-black/5 group-hover:scale-110 transition-all text-white overflow-hidden`}>
-                            {c.icon}
-                          </div>
-                          <span className="text-[10px] font-black uppercase text-slate-400 group-hover:text-slate-900 tracking-tighter line-clamp-1">{c.name}</span>
-                        </button>
+                        <button key={c.id} onClick={() => setSearch(c.name)} className="snap-start min-w-[80px] flex flex-col items-center gap-3 group"><div className={`w-16 h-16 ${c.color} rounded-[2rem] flex items-center justify-center text-3xl shadow-lg shadow-black/5 group-hover:scale-110 transition-all text-white overflow-hidden`}>{c.icon}</div><span className="text-[10px] font-black uppercase text-slate-400 group-hover:text-slate-900 tracking-tighter line-clamp-1">{c.name}</span></button>
                       ))}
                     </div>
                   </section>
                 )}
 
                 <section>
-                  <div className="flex items-center justify-between mb-8 px-2">
-                    <h3 className="text-2xl font-black tracking-tight italic">{search ? `Resultados: ${search}` : 'Todos los Productos'}</h3>
-                    <div className="h-0.5 flex-1 bg-slate-100 mx-4"></div>
-                  </div>
+                  <div className="flex items-center justify-between mb-8 px-2"><h3 className="text-2xl font-black tracking-tight italic">{search ? `Resultados: ${search}` : 'Todos los Productos'}</h3><div className="h-0.5 flex-1 bg-slate-100 mx-4"></div></div>
                   <div className="grid grid-cols-2 gap-5">
                     {filteredProducts.map(p => (
                       <div key={p.id} className={`bg-white rounded-[2.8rem] p-6 shadow-sm border border-slate-50 flex flex-col group transition-all duration-500 ${!p.available ? 'opacity-60' : 'hover:shadow-2xl'}`}>
@@ -551,20 +449,11 @@ export default function KolmaRDApp() {
                         </div>
                         <div className="flex items-center justify-between pt-2">
                           <span className="text-xl font-black tracking-tighter italic">RD${p.price}</span>
-                          <button onClick={() => addToCart(p)} className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center hover:bg-red-600 transition-all active:scale-90 shadow-lg disabled:bg-slate-300">
-                            <SVG.Plus />
-                          </button>
+                          <button onClick={() => addToCart(p)} className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center hover:bg-red-600 transition-all active:scale-90 shadow-lg disabled:bg-slate-300"><SVG.Plus /></button>
                         </div>
                       </div>
                     ))}
-
-                    {filteredProducts.length === 0 && (
-                      <div className="col-span-2 text-center py-20 bg-white rounded-[3rem] border border-slate-50">
-                        <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-300"><SVG.Search /></div>
-                        <p className="text-xl font-black text-slate-800 mb-2">No encontrado</p>
-                        <p className="text-slate-400 text-sm">Prueba buscar con otras palabras.</p>
-                      </div>
-                    )}
+                    {filteredProducts.length === 0 && <div className="col-span-2 text-center py-20 bg-white rounded-[3rem] border border-slate-50"><div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-300"><SVG.Search /></div><p className="text-xl font-black text-slate-800 mb-2">No encontrado</p><p className="text-slate-400 text-sm">Prueba buscar con otras palabras.</p></div>}
                   </div>
                 </section>
               </div>
@@ -573,7 +462,6 @@ export default function KolmaRDApp() {
         )}
       </main>
 
-      {/* Navegación Inferior */}
       <nav className="fixed bottom-8 left-8 right-8 z-[60] h-24 bg-white/90 backdrop-blur-3xl rounded-[3rem] border border-white/50 shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex items-center justify-around px-4">
         {[
           { id: 'home', icon: SVG.Market, label: 'Inicio' },
@@ -581,107 +469,151 @@ export default function KolmaRDApp() {
           { id: 'cart', icon: SVG.Cart, label: 'Cesta' },
           { id: 'me', icon: SVG.User, label: 'Perfil' },
         ].map(i => (
-          <button 
-            key={i.id}
-            onClick={() => {
-              if (i.id === 'cart') setIsCartOpen(true);
-              else { setActiveTab(i.id); setSearch(''); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-            }}
-            className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === i.id && i.id !== 'cart' ? 'text-red-600 scale-110' : 'text-slate-300 hover:text-slate-400'}`}
-          >
+          <button key={i.id} onClick={() => { if (i.id === 'cart') setIsCartOpen(true); else { setActiveTab(i.id); setSearch(''); window.scrollTo({ top: 0, behavior: 'smooth' }); } }} className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === i.id && i.id !== 'cart' ? 'text-red-600 scale-110' : 'text-slate-300 hover:text-slate-400'}`}>
             <i.icon />
             <span className="text-[9px] font-black uppercase tracking-widest leading-none">{i.label}</span>
           </button>
         ))}
       </nav>
 
-      {/* Modal Detalle Producto */}
-      {selectedProduct && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in" onClick={() => setSelectedProduct(null)}></div>
-          <div className="relative w-full max-w-xl bg-white rounded-t-[4rem] sm:rounded-[4rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-500">
-            <button onClick={() => setSelectedProduct(null)} className="absolute top-10 right-10 w-14 h-14 bg-slate-50 rounded-[1.5rem] flex items-center justify-center text-slate-400 z-10 hover:bg-red-50 hover:text-red-600 transition-all"><SVG.X /></button>
-            <div className="flex flex-col sm:flex-row">
-              <div className="sm:w-1/2 bg-slate-50 flex items-center justify-center p-16 relative">
-                 <img src={selectedProduct.img} alt={selectedProduct.name} className={`w-full h-auto mix-blend-multiply ${!selectedProduct.available ? 'grayscale opacity-50' : ''}`} />
-                 {!selectedProduct.available && <div className="absolute inset-0 bg-transparent flex items-center justify-center"><span className="bg-red-600 text-white text-[14px] font-black px-4 py-2 rounded-full uppercase tracking-widest shadow-lg transform -rotate-12">AGOTADO</span></div>}
-              </div>
-              <div className="sm:w-1/2 p-12 flex flex-col">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-[10px] font-black text-red-600 uppercase tracking-widest bg-red-50 px-3 py-1.5 rounded-full italic">Verificado</span>
-                  <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{selectedProduct.unit}</span>
-                </div>
-                <h2 className="text-3xl font-black text-slate-900 leading-tight mb-4 italic">{selectedProduct.name}</h2>
-                <p className="text-slate-500 text-sm mb-12 leading-relaxed font-medium">{selectedProduct.desc}</p>
-                <div className="mt-auto border-t border-slate-100 pt-10 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Precio</span>
-                    <p className="text-3xl font-black tracking-tighter italic">RD${selectedProduct.price}</p>
-                  </div>
-                  <button onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }} className="bg-black text-white px-8 py-5 rounded-[2rem] font-black text-lg hover:bg-red-600 transition-all active:scale-95 shadow-2xl">
-                    {selectedProduct.available ? 'Agregar' : 'Agotado'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Carrito / Checkout */}
+      {/* MODAL CARRITO RENOVADO, MENOS EXAGERADO, CON BARRA DE DESCUENTO Y SUGERENCIAS */}
       {isCartOpen && (
         <div className="fixed inset-0 z-[110] flex items-end">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xl animate-in fade-in" onClick={() => setIsCartOpen(false)}></div>
-          <aside className="relative w-full max-w-xl mx-auto bg-[#F7F9FB] h-[90vh] rounded-t-[4rem] shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
-            <div className="p-10 bg-white flex items-center justify-between border-b border-slate-100">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setIsCartOpen(false)}></div>
+          <aside className="relative w-full max-w-xl mx-auto bg-[#F7F9FB] h-[85vh] rounded-t-[2.5rem] shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-500 overflow-hidden">
+            
+            {/* Header del Carrito */}
+            <div className="p-6 bg-white flex items-center justify-between border-b border-slate-100 shrink-0">
               <div>
-                <h2 className="text-3xl font-black tracking-tighter italic leading-none mb-2">Mi Pedido</h2>
-                <p className="text-[10px] font-black text-red-600 uppercase tracking-[0.2em]">{totalItems} productos • Pago Contra Entrega</p>
+                <h2 className="text-2xl font-black tracking-tighter italic leading-none mb-1">Mi Pedido</h2>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{totalItems} ítems</p>
               </div>
-              <button onClick={() => setIsCartOpen(false)} className="w-14 h-14 bg-slate-50 flex items-center justify-center rounded-[1.5rem] text-slate-400 hover:text-red-600 transition-all"><SVG.X /></button>
+              <button onClick={() => setIsCartOpen(false)} className="w-10 h-10 bg-slate-50 flex items-center justify-center rounded-xl text-slate-400 hover:text-red-600 transition-all"><SVG.X /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-10 space-y-6">
-              {cart.map(i => (
-                <div key={i.id} className="flex gap-5 bg-white p-6 rounded-[2.5rem] border border-slate-50 shadow-sm group">
-                  <div className="w-24 h-24 bg-slate-50 rounded-[1.8rem] flex items-center justify-center shrink-0 p-2 overflow-hidden"><img src={i.img} alt={i.name} className="w-full h-full object-cover mix-blend-multiply" /></div>
-                  <div className="flex-1 flex flex-col justify-between py-1">
-                    <div className="flex justify-between items-start">
-                      <div><h4 className="font-black text-slate-800 text-lg leading-tight mb-1 line-clamp-1">{i.name}</h4><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">RD${i.price} / {i.unit}</p></div>
-                      <button onClick={() => removeFromCart(i.id)} className="text-slate-200 hover:text-red-600 transition-colors"><SVG.X /></button>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* Barra de Progreso Descuentos */}
+              {cart.length > 0 && (
+                <div className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm">
+                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest mb-3">
+                    <span className={discountPercent >= 5 ? 'text-red-600' : 'text-slate-400'}>5% OFF (RD$500)</span>
+                    <span className={discountPercent >= 10 ? 'text-red-600' : 'text-slate-400'}>10% OFF (RD$1000)</span>
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
+                    <div className="h-full bg-red-600 transition-all duration-500 rounded-full" style={{ width: `${progressPercent}%` }}></div>
+                  </div>
+                  <p className="text-center text-[11px] font-bold text-slate-500">
+                    {discountPercent === 10 ? '¡Felicidades! Tienes 10% de descuento aplicado.' : `Agrega RD$${missingForNext} para ganar un ${nextGoalPercent}% de descuento`}
+                  </p>
+                </div>
+              )}
+
+              {/* Items del Carrito */}
+              <div className="space-y-4">
+                {cart.map(i => (
+                  <div key={i.id} className="flex gap-4 bg-white p-4 rounded-3xl border border-slate-50 shadow-sm group">
+                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center shrink-0 p-1 overflow-hidden">
+                      <img src={i.img} alt={i.name} className="w-full h-full object-cover mix-blend-multiply" />
                     </div>
-                    <div className="flex items-center justify-between mt-4">
-                       <span className="text-2xl font-black text-slate-900 tracking-tighter italic">RD${i.price * i.qty}</span>
-                       <div className="flex items-center gap-4 bg-slate-50 rounded-[1.5rem] p-1.5 border border-slate-100">
-                          <button onClick={() => updateQty(i.id, -1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-slate-400 hover:text-red-600"><SVG.Minus /></button>
-                          <span className="text-sm font-black min-w-[24px] text-center">{i.qty}</span>
-                          <button onClick={() => updateQty(i.id, 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-slate-400 hover:text-red-600"><SVG.Plus /></button>
-                       </div>
+                    <div className="flex-1 flex flex-col justify-between py-1">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-black text-slate-800 text-sm leading-tight mb-1 line-clamp-1">{i.name}</h4>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">RD${i.price} / {i.unit}</p>
+                        </div>
+                        <button onClick={() => removeFromCart(i.id)} className="text-slate-300 hover:text-red-600 transition-colors -mt-1 -mr-1"><SVG.X /></button>
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                         <span className="text-lg font-black text-slate-900 tracking-tighter italic">RD${i.price * i.qty}</span>
+                         <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-1 border border-slate-100">
+                            <button onClick={() => updateQty(i.id, -1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm text-slate-400 hover:text-red-600"><SVG.Minus /></button>
+                            <span className="text-xs font-black w-4 text-center">{i.qty}</span>
+                            <button onClick={() => updateQty(i.id, 1)} className="w-7 h-7 flex items-center justify-center bg-white rounded-lg shadow-sm text-slate-400 hover:text-red-600"><SVG.Plus /></button>
+                         </div>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+
+              {/* Sugerencias */}
+              {cart.length > 0 && suggestedProducts.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-slate-200">
+                  <h3 className="text-sm font-black mb-4">Completa tu pedido</h3>
+                  <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x">
+                    {suggestedProducts.map(sp => (
+                      <div key={sp.id} className="snap-start min-w-[140px] max-w-[140px] bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col">
+                        <div className="w-full h-20 bg-slate-50 rounded-xl mb-3 overflow-hidden flex items-center justify-center p-2"><img src={sp.img} className="w-full h-full object-cover mix-blend-multiply" /></div>
+                        <h4 className="text-xs font-bold text-slate-800 line-clamp-1 mb-1">{sp.name}</h4>
+                        <span className="text-sm font-black italic text-slate-900 mb-2">RD${sp.price}</span>
+                        <button onClick={() => addToCart(sp)} className="mt-auto w-full bg-slate-100 text-slate-900 text-[10px] font-black uppercase py-2 rounded-lg hover:bg-red-600 hover:text-white transition-colors">Agregar</button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
+              )}
+
               {cart.length === 0 && (
-                <div className="h-full flex flex-col items-center justify-center text-center py-20 opacity-10 font-black italic"><div className="scale-[3] mb-12"><SVG.Cart /></div><p className="text-3xl tracking-tighter uppercase">Cesta Vacía</p></div>
+                <div className="h-full flex flex-col items-center justify-center text-center py-20 opacity-20 font-black italic"><div className="scale-[2.5] mb-8"><SVG.Cart /></div><p className="text-2xl tracking-tighter uppercase">Cesta Vacía</p></div>
               )}
             </div>
 
-            <div className="p-10 bg-white border-t border-slate-100 shadow-[0_-20px_50px_rgba(0,0,0,0.02)]">
-              <div className="flex justify-between items-center mb-8 px-4">
+            {/* Footer Carrito */}
+            <div className="p-6 bg-white border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] shrink-0">
+              {discountPercent > 0 && cart.length > 0 && (
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[11px] font-bold text-red-600 uppercase tracking-widest">Descuento aplicado ({discountPercent}%)</span>
+                  <span className="text-sm font-black text-red-600">-RD${discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-end mb-6">
                  <div className="flex flex-col">
-                   <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2 italic">Total a Pagar</span>
-                   <span className="text-5xl font-black tracking-tighter italic">RD${total}</span>
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total a Pagar</span>
+                   <span className="text-3xl font-black tracking-tighter italic text-slate-900">RD${finalTotal.toFixed(2)}</span>
                  </div>
                  <button 
                   disabled={cart.length === 0 || isOrdering}
                   onClick={processCheckout}
-                  className={`bg-black text-white px-10 py-6 rounded-[2.5rem] font-black text-lg hover:bg-red-600 transition-all flex items-center gap-3 shadow-2xl active:scale-95 ${(cart.length === 0 || isOrdering) ? 'opacity-50 pointer-events-none' : ''}`}
+                  className={`bg-black text-white px-6 py-4 rounded-2xl font-black text-sm hover:bg-red-600 transition-all flex items-center gap-2 shadow-xl active:scale-95 ${(cart.length === 0 || isOrdering) ? 'opacity-50 pointer-events-none' : ''}`}
                  >
                    {isOrdering ? 'Enviando...' : 'Confirmar'} <SVG.Check />
                  </button>
               </div>
             </div>
           </aside>
+        </div>
+      )}
+
+      {/* Modal Detalle (Ajustado) */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in" onClick={() => setSelectedProduct(null)}></div>
+          <div className="relative w-full max-w-xl bg-white rounded-t-[3rem] sm:rounded-[3rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-500">
+            <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 z-10 hover:bg-red-50 hover:text-red-600 transition-all"><SVG.X /></button>
+            <div className="flex flex-col sm:flex-row">
+              <div className="sm:w-1/2 bg-slate-50 flex items-center justify-center p-12 relative">
+                 <img src={selectedProduct.img} alt={selectedProduct.name} className={`w-full h-auto mix-blend-multiply ${!selectedProduct.available ? 'grayscale opacity-50' : ''}`} />
+              </div>
+              <div className="sm:w-1/2 p-8 flex flex-col">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[10px] font-black text-red-600 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full italic">Verificado</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{selectedProduct.unit}</span>
+                </div>
+                <h2 className="text-2xl font-black text-slate-900 leading-tight mb-3 italic">{selectedProduct.name}</h2>
+                <p className="text-slate-500 text-sm mb-8 leading-relaxed font-medium">{selectedProduct.desc}</p>
+                <div className="mt-auto border-t border-slate-100 pt-6 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Precio</span>
+                    <p className="text-2xl font-black tracking-tighter italic">RD${selectedProduct.price}</p>
+                  </div>
+                  <button onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }} className="bg-black text-white px-6 py-3 rounded-2xl font-black text-sm hover:bg-red-600 transition-all active:scale-95 shadow-xl">
+                    Agregar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
