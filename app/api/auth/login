@@ -4,46 +4,51 @@ export async function POST(request) {
   try {
     const { email, password } = await request.json();
 
-    // 1. Generar el Access Token del cliente
+    const domain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN;
+    const token = process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+
+    // 1. Valida si Vercel está leyendo las variables
+    if (!domain || !token) {
+      return NextResponse.json({ error: "Faltan variables en Vercel (Tokens)" }, { status: 500 });
+    }
+
+    // 2. Generar Access Token
     const loginQuery = `
       mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
         customerAccessTokenCreate(input: $input) {
-          customerAccessToken {
-            accessToken
-          }
-          customerUserErrors {
-            message
-          }
+          customerAccessToken { accessToken }
+          customerUserErrors { message }
         }
       }
     `;
 
-    const loginRes = await fetch(`https://${process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}/api/2024-01/graphql.json`, {
+    const loginRes = await fetch(`https://${domain}/api/2024-01/graphql.json`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+        'X-Shopify-Storefront-Access-Token': token,
       },
-      body: JSON.stringify({ 
-        query: loginQuery, 
-        variables: { input: { email, password } } 
-      }),
+      body: JSON.stringify({ query: loginQuery, variables: { input: { email, password } } }),
     });
 
     const loginJson = await loginRes.json();
+
+    // 3. Capturar errores de sintaxis o de Shopify
+    if (loginJson.errors) {
+      return NextResponse.json({ error: loginJson.errors[0].message }, { status: 500 });
+    }
+
     const errors = loginJson.data?.customerAccessTokenCreate?.customerUserErrors;
-
     if (errors?.length > 0) {
-      return NextResponse.json({ error: "Credenciales incorrectas" }, { status: 401 });
+      return NextResponse.json({ error: errors[0].message }, { status: 401 });
     }
 
-    const token = loginJson.data?.customerAccessTokenCreate?.customerAccessToken?.accessToken;
-
-    if (!token) {
-      return NextResponse.json({ error: "Error al iniciar sesión" }, { status: 401 });
+    const accessToken = loginJson.data?.customerAccessTokenCreate?.customerAccessToken?.accessToken;
+    if (!accessToken) {
+      return NextResponse.json({ error: "No se generó el token" }, { status: 401 });
     }
 
-    // 2. Usar el token para obtener los datos del cliente y enviarlos a KolmaRD
+    // 4. Obtener datos del cliente con el token
     const customerQuery = `
       query customerInfo($customerAccessToken: String!) {
         customer(customerAccessToken: $customerAccessToken) {
@@ -51,45 +56,34 @@ export async function POST(request) {
           firstName
           email
           phone
-          defaultAddress {
-            address1
-          }
         }
       }
     `;
 
-    const customerRes = await fetch(`https://${process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN}/api/2024-01/graphql.json`, {
+    const customerRes = await fetch(`https://${domain}/api/2024-01/graphql.json`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': process.env.NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN,
+        'X-Shopify-Storefront-Access-Token': token,
       },
-      body: JSON.stringify({ 
-        query: customerQuery, 
-        variables: { customerAccessToken: token } 
-      }),
+      body: JSON.stringify({ query: customerQuery, variables: { customerAccessToken: accessToken } }),
     });
 
     const customerJson = await customerRes.json();
     const customer = customerJson.data?.customer;
 
-    if (!customer) {
-      return NextResponse.json({ error: "No se pudieron obtener los datos del usuario" }, { status: 400 });
-    }
-
     return NextResponse.json({ 
       success: true, 
       user: {
-        id: customer.id,
-        email: customer.email,
-        firstName: customer.firstName || "Usuario",
-        phone: customer.phone,
-        address: customer.defaultAddress?.address1 || "Centro",
-        token: token // Se guarda el token para futuras operaciones si las necesitas
+        id: customer?.id,
+        email: customer?.email,
+        firstName: customer?.firstName || "Usuario",
+        phone: customer?.phone || "",
+        token: accessToken
       }
     });
 
   } catch (error) {
-    return NextResponse.json({ error: "Error de conexión con Shopify" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Error interno del servidor" }, { status: 500 });
   }
 }
