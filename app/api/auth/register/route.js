@@ -4,10 +4,11 @@ export async function POST(request) {
   try {
     const { email, password, firstName, phone, address } = await request.json();
 
+    // Se eliminó "addresses" porque Storefront API no lo soporta en la creación.
     const query = `
       mutation customerCreate($input: CustomerCreateInput!) {
         customerCreate(input: $input) {
-          customer { id email }
+          customer { id email firstName phone }
           customerUserErrors { code field message }
         }
       }
@@ -18,15 +19,8 @@ export async function POST(request) {
         email,
         password,
         firstName,
-        phone, // Formato internacional obligatorio: +1...
-        acceptsMarketing: true,
-        addresses: [{
-            address1: address,
-            city: "Cotuí",
-            country: "Dominican Republic",
-            firstName: firstName,
-            phone: phone
-        }]
+        phone: phone ? phone : null, // Debe ser +1... o null si está vacío
+        acceptsMarketing: true
       }
     };
 
@@ -45,7 +39,19 @@ export async function POST(request) {
       return NextResponse.json({ error: json.data.customerCreate.customerUserErrors[0].message }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, customer: json.data.customerCreate.customer });
+    const customer = json.data.customerCreate.customer;
+
+    // Se devuelve "user" con la dirección local para que tu frontend funcione
+    return NextResponse.json({ 
+      success: true, 
+      user: {
+        id: customer.id,
+        email: customer.email,
+        firstName: customer.firstName,
+        phone: customer.phone,
+        address: address // Mantenemos la dirección para el estado local de KolmaRD
+      }
+    });
   } catch (error) {
     return NextResponse.json({ error: "Error de conexión con Shopify" }, { status: 500 });
   }
