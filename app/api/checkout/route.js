@@ -4,14 +4,17 @@ export async function POST(req) {
   try {
     const { customerInfo, items, discount } = await req.json();
 
+    // 1. Extraer ID real de Shopify (Soporta IDs encriptados en Base64)
     const lineItems = items.map(item => {
-      let rawId = item.variantId.toString();
-      // Decodificar Base64 si Shopify Storefront lo envía encriptado
+      let rawId = item.variantId ? item.variantId.toString() : '';
+      
       if (!rawId.includes('gid://') && /^[A-Za-z0-9+/=]+$/.test(rawId)) {
         rawId = Buffer.from(rawId, 'base64').toString('ascii');
       }
-      const numericId = parseInt(rawId.split('?')[0].split('/').pop(), 10);
       
+      const match = rawId.match(/\d+$/);
+      const numericId = match ? parseInt(match[0], 10) : 0;
+
       return {
         variant_id: numericId,
         quantity: item.qty
@@ -19,12 +22,11 @@ export async function POST(req) {
     });
 
     let domain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN || process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN;
+    if (!domain) return NextResponse.json({ success: false, error: "Falta NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN" }, { status: 200 });
     domain = domain.replace('https://', '').replace('/', '');
+    
     const adminToken = process.env.SHOPIFY_ADMIN_TOKEN;
-
-    if (!domain || !adminToken) {
-      return NextResponse.json({ error: "Falta SHOPIFY_ADMIN_TOKEN o DOMAIN en Vercel" }, { status: 500 });
-    }
+    if (!adminToken) return NextResponse.json({ success: false, error: "Falta SHOPIFY_ADMIN_TOKEN en Vercel" }, { status: 200 });
 
     const payload = {
       order: {
@@ -32,12 +34,13 @@ export async function POST(req) {
         customer: {
           first_name: customerInfo.firstName || customerInfo.name || "Cliente",
           last_name: customerInfo.lastName || "KolmaRD",
-          email: (customerInfo.email && customerInfo.email !== "Sin registrar") ? customerInfo.email : undefined,
+          phone: customerInfo.phone || undefined,
         },
         shipping_address: {
           first_name: customerInfo.firstName || customerInfo.name || "Cliente",
           last_name: customerInfo.lastName || "KolmaRD",
           address1: customerInfo.address || "Cotuí",
+          phone: customerInfo.phone || undefined,
           city: "Cotuí",
           province: "Sánchez Ramírez",
           country: "DO"
@@ -48,6 +51,10 @@ export async function POST(req) {
         note: `TELÉFONO: ${customerInfo.phone} | DIRECCIÓN: ${customerInfo.address} | Cobrar al entregar.`,
       }
     };
+
+    if (customerInfo.email && customerInfo.email.includes('@') && customerInfo.email !== "Sin registrar") {
+       payload.order.customer.email = customerInfo.email;
+    }
 
     if (discount > 0) {
       payload.order.discount_codes = [
@@ -67,13 +74,12 @@ export async function POST(req) {
     const data = await response.json();
 
     if (!response.ok) {
-      // Devolver error exacto de Shopify
-      return NextResponse.json({ error: JSON.stringify(data.errors) }, { status: 400 });
+      return NextResponse.json({ success: false, error: JSON.stringify(data.errors) }, { status: 200 });
     }
 
     return NextResponse.json({ success: true, order: data.order }, { status: 200 });
 
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 200 });
   }
 }
