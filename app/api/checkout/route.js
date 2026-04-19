@@ -4,17 +4,26 @@ export async function POST(req) {
   try {
     const { customerInfo, items, discount } = await req.json();
 
-    const lineItems = items.map(item => ({
-      variant_id: parseInt(item.variantId.toString().split('/').pop(), 10),
-      quantity: item.qty
-    }));
+    const lineItems = items.map(item => {
+      let rawId = item.variantId.toString();
+      // Decodificar Base64 si Shopify Storefront lo envía encriptado
+      if (!rawId.includes('gid://') && /^[A-Za-z0-9+/=]+$/.test(rawId)) {
+        rawId = Buffer.from(rawId, 'base64').toString('ascii');
+      }
+      const numericId = parseInt(rawId.split('?')[0].split('/').pop(), 10);
+      
+      return {
+        variant_id: numericId,
+        quantity: item.qty
+      };
+    });
 
     let domain = process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN || process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN;
     domain = domain.replace('https://', '').replace('/', '');
     const adminToken = process.env.SHOPIFY_ADMIN_TOKEN;
 
     if (!domain || !adminToken) {
-      return NextResponse.json({ error: "Faltan tokens en Vercel" }, { status: 500 });
+      return NextResponse.json({ error: "Falta SHOPIFY_ADMIN_TOKEN o DOMAIN en Vercel" }, { status: 500 });
     }
 
     const payload = {
@@ -46,8 +55,7 @@ export async function POST(req) {
       ];
     }
 
-    // Actualizado a la API 2026-01
-    const response = await fetch(`https://${domain}/admin/api/2026-01/orders.json`, {
+    const response = await fetch(`https://${domain}/admin/api/2024-01/orders.json`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -59,7 +67,7 @@ export async function POST(req) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Error Shopify:", data.errors);
+      // Devolver error exacto de Shopify
       return NextResponse.json({ error: JSON.stringify(data.errors) }, { status: 400 });
     }
 
