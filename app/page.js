@@ -21,7 +21,10 @@ const SVG = {
   Eye: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
   EyeOff: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>,
   Sparkles: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>,
-  Edit: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+  Edit: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>,
+  Money: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>,
+  CreditCard: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+  Motorcycle: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-8 h-8 text-white drop-shadow-md"><path d="M5 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M5 10h1.5l1.5 2h3l1.5-2H14l1.5 3H19"/><path d="M9 10 7 6h2l2 4"/></svg>
 };
 
 const getCategoryStyle = (name) => {
@@ -53,6 +56,7 @@ export default function KolmaRDApp() {
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   
   const [search, setSearch] = useState('');
@@ -266,14 +270,17 @@ export default function KolmaRDApp() {
     return products.filter(p => !cart.some(c => c.id === p.id) && p.available).slice(0, 4);
   }, [products, cart]);
 
-  const processCheckout = async () => {
+  const handleCheckoutClick = () => {
     if (cart.length === 0) return;
     if (user.isGuest) {
       setIsCartOpen(false);
       setShowLogin(true);
       return showAppToast('Crea una cuenta o inicia sesión para procesar tu pedido.', 'error');
     }
+    setShowPayment(true);
+  };
 
+  const processCheckout = async () => {
     setIsOrdering(true);
 
     try {
@@ -289,7 +296,6 @@ export default function KolmaRDApp() {
 
       const data = await res.json(); 
 
-      // Verificamos "data.success" explícitamente como se configuró en la API
       if (res.ok && data.success) {
         const newOrder = {
           id: data.order?.id || Date.now(),
@@ -307,10 +313,10 @@ export default function KolmaRDApp() {
         setCart([]);
         localStorage.removeItem('kolmard_cart');
         setIsCartOpen(false);
+        setShowPayment(false);
         setActiveTab('orders');
         showAppToast('¡Orden recibida! La estamos preparando.');
       } else {
-        // MUESTRA EL ERROR REAL QUE DEVUELVE SHOPIFY
         showAppToast(`Detalle: ${data.error || 'Respuesta inválida de Shopify'}`, 'error');
       }
     } catch (error) {
@@ -444,6 +450,11 @@ export default function KolmaRDApp() {
         </div>
       </header>
 
+      {/* BANNER SUPERIOR DE ESTILO */}
+      <div className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest py-2 text-center flex items-center justify-center gap-2 shadow-md relative z-40">
+        <span className="text-red-500 animate-pulse">⚡</span> ENTREGAS RÁPIDAS EN TODO COTUÍ <span className="text-red-500 animate-pulse">⚡</span>
+      </div>
+
       <main className="max-w-xl mx-auto px-6 py-4">
         
         {loadingData ? (
@@ -534,6 +545,23 @@ export default function KolmaRDApp() {
 
             {activeTab === 'orders' && (
               <div className="animate-in fade-in duration-500 mt-4">
+                
+                {/* MAPA ANIMADO DE COTUÍ */}
+                <div className="bg-slate-900 rounded-[2.5rem] p-6 mb-8 text-white relative overflow-hidden shadow-xl border border-slate-800">
+                   <h3 className="text-lg font-black italic mb-1">Ruta Cotuí Activa</h3>
+                   <p className="text-xs text-slate-400 font-bold mb-6">Nuestros motores están en la calle</p>
+                   <div className="relative h-32 bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden map-bg">
+                      <svg className="absolute inset-0 w-full h-full opacity-30" preserveAspectRatio="none" viewBox="0 0 100 100">
+                        <path d="M 10,50 Q 30,20 50,50 T 90,50" fill="none" stroke="white" strokeWidth="2" strokeDasharray="4 4" />
+                      </svg>
+                      <div className="absolute top-[45%] left-[5%] w-3 h-3 bg-red-600 rounded-full shadow-[0_0_10px_red]"></div>
+                      <div className="absolute top-[45%] right-[5%] w-3 h-3 bg-green-500 rounded-full shadow-[0_0_10px_green]"></div>
+                      <div className="absolute text-white animate-motorcycle-route">
+                         <SVG.Motorcycle />
+                      </div>
+                   </div>
+                </div>
+
                 <h2 className="text-3xl font-black italic tracking-tighter mb-8">Mis Órdenes</h2>
                 
                 {user.isGuest ? (
@@ -827,14 +855,57 @@ export default function KolmaRDApp() {
                  </div>
                  <button 
                   disabled={cart.length === 0 || isOrdering}
-                  onClick={processCheckout}
+                  onClick={handleCheckoutClick}
                   className={`bg-black text-white px-6 py-3.5 rounded-2xl font-black text-sm hover:bg-red-600 transition-all flex items-center gap-2 shadow-xl active:scale-95 ${(cart.length === 0 || isOrdering) ? 'opacity-50 pointer-events-none' : ''}`}
                  >
-                   {isOrdering ? 'Facturando...' : 'Enviar Pedido'} <SVG.Check />
+                   Proceder al Pago <SVG.Check />
                  </button>
               </div>
             </div>
           </aside>
+        </div>
+      )}
+
+      {/* MODAL MÉTODOS DE PAGO */}
+      {showPayment && (
+        <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setShowPayment(false)}></div>
+          <div className="relative w-full max-w-md bg-white rounded-[2.5rem] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-black italic">Método de Pago</h2>
+              <button onClick={() => setShowPayment(false)} className="bg-slate-100 p-2 rounded-xl text-slate-400 hover:text-red-600 transition-colors"><SVG.X/></button>
+            </div>
+            
+            <div className="space-y-4 mb-6">
+              {/* PAGO CONTRA ENTREGA (SELECCIONADO) */}
+              <label className="flex items-center gap-4 p-4 rounded-2xl border-2 border-black bg-slate-50 cursor-pointer transition-all shadow-sm">
+                <div className="text-green-600"><SVG.Money /></div>
+                <div className="flex-1">
+                  <p className="font-black text-sm text-slate-900">Pago contra entrega</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Efectivo o Transferencia al recibir</p>
+                </div>
+                <div className="w-5 h-5 rounded-full border-4 border-black bg-white"></div>
+              </label>
+
+              {/* PAGO CON TARJETA (DESHABILITADO) */}
+              <label className="flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-100 bg-white opacity-50 cursor-not-allowed">
+                <div className="text-slate-400"><SVG.CreditCard /></div>
+                <div className="flex-1">
+                  <p className="font-black text-sm text-slate-500 line-through">Tarjeta de Crédito / Débito</p>
+                  <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest">No disponible por el momento</p>
+                </div>
+                <div className="w-5 h-5 rounded-full border-2 border-slate-200"></div>
+              </label>
+            </div>
+
+            <button 
+              onClick={processCheckout} 
+              disabled={isOrdering} 
+              className="w-full bg-black text-white px-6 py-4 rounded-2xl font-black text-sm flex justify-center gap-2 hover:bg-red-600 transition-colors shadow-xl active:scale-95"
+            >
+              {isOrdering ? 'Procesando...' : 'Confirmar y Pedir'} <SVG.Check />
+            </button>
+          </div>
         </div>
       )}
 
@@ -843,6 +914,19 @@ export default function KolmaRDApp() {
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes bounce-short { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         .animate-bounce-short { animation: bounce-short 1.5s ease-in-out infinite; }
+        
+        /* Animación del Mapa y Motor */
+        @keyframes routeCotu {
+           0% { top: 35%; left: 5%; transform: scaleX(1) translateY(0); }
+           25% { transform: scaleX(1) translateY(-10px); }
+           45% { top: 15%; left: 45%; transform: scaleX(1) translateY(0); }
+           70% { transform: scaleX(1) translateY(-10px); }
+           90% { top: 35%; left: 85%; transform: scaleX(1) translateY(0); }
+           95% { top: 35%; left: 85%; transform: scaleX(-1) translateY(0); }
+           100% { top: 35%; left: 5%; transform: scaleX(-1) translateY(0); }
+        }
+        .animate-motorcycle-route { animation: routeCotu 6s linear infinite; }
+        .map-bg { background-image: radial-gradient(#334155 2px, transparent 2px); background-size: 15px 15px; }
       `}} />
     </div>
   );
