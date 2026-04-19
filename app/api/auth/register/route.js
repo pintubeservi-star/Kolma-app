@@ -4,7 +4,6 @@ export async function POST(request) {
   try {
     const { email, password, firstName, phone, address } = await request.json();
 
-    // Se eliminó "addresses" porque Storefront API no lo soporta en la creación.
     const query = `
       mutation customerCreate($input: CustomerCreateInput!) {
         customerCreate(input: $input) {
@@ -19,7 +18,7 @@ export async function POST(request) {
         email,
         password,
         firstName,
-        phone: phone ? phone : null, // Debe ser +1... o null si está vacío
+        phone: phone ? phone : null,
         acceptsMarketing: true
       }
     };
@@ -41,15 +40,15 @@ export async function POST(request) {
 
     const customer = json.data.customerCreate.customer;
 
-    // Se devuelve "user" con la dirección local para que tu frontend funcione
     return NextResponse.json({ 
       success: true, 
       user: {
         id: customer.id,
         email: customer.email,
         firstName: customer.firstName,
-        phone: customer.phone,
-        address: address // Mantenemos la dirección para el estado local de KolmaRD
+        name: customer.firstName, // Agregado para compatibilidad con la app
+        phone: customer.phone || phone,
+        address: address
       }
     });
   } catch (error) {
