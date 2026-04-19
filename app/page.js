@@ -43,12 +43,10 @@ export default function KolmaRDApp() {
   const [user, setUser] = useState(null);
   const [showLogin, setShowLogin] = useState(true);
   const [authMode, setAuthMode] = useState('login'); 
-  // Modificado: Agregado lastName y teléfono con +1 por defecto
   const [formData, setFormData] = useState({ email: '', password: '', firstName: '', lastName: '', phone: '+1 ', address: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(false);
 
-  // Estados Edición de Perfil
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editForm, setEditForm] = useState({});
 
@@ -69,7 +67,7 @@ export default function KolmaRDApp() {
 
   const showAppToast = useCallback((message, type = 'success') => {
     setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 5000); 
   }, []);
 
   useEffect(() => {
@@ -187,7 +185,6 @@ export default function KolmaRDApp() {
     showAppToast('Navegando como invitado. Crea cuenta para hacer pedidos.');
   };
 
-  // Funciones Edición Perfil
   const startEditProfile = () => {
     setEditForm({
       firstName: user.firstName || user.name || '',
@@ -285,16 +282,18 @@ export default function KolmaRDApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerInfo: user,
-          items: cart.map(item => ({ variantId: item.variantId, quantity: item.qty })),
+          items: cart.map(item => ({ variantId: item.variantId, qty: item.qty })),
           discount: discountAmount
         })
       });
 
-      if (res.ok) {
-        const { order } = await res.json();
+      const data = await res.json(); 
+
+      // Verificamos "data.success" explícitamente como se configuró en la API
+      if (res.ok && data.success) {
         const newOrder = {
-          id: order?.id || Date.now(),
-          name: order?.name || `#${Math.floor(Math.random() * 10000)}`,
+          id: data.order?.id || Date.now(),
+          name: data.order?.name || `#${Math.floor(Math.random() * 10000)}`,
           date: new Date().toISOString(),
           total: finalTotal, 
           status: 'Preparando Empaque',
@@ -311,10 +310,11 @@ export default function KolmaRDApp() {
         setActiveTab('orders');
         showAppToast('¡Orden recibida! La estamos preparando.');
       } else {
-        showAppToast('Hubo un problema procesando tu compra.', 'error');
+        // MUESTRA EL ERROR REAL QUE DEVUELVE SHOPIFY
+        showAppToast(`Detalle: ${data.error || 'Respuesta inválida de Shopify'}`, 'error');
       }
     } catch (error) {
-      showAppToast('Error de conexión al enviar la orden.', 'error');
+      showAppToast(`Error local: ${error.message}`, 'error');
     } finally {
       setIsOrdering(false);
     }
@@ -453,7 +453,6 @@ export default function KolmaRDApp() {
            </div>
         ) : (
           <>
-            {/* VISTA: MI PERFIL (Con edición) */}
             {activeTab === 'me' && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6 mt-4">
                 <div className="flex justify-between items-center mb-8">
@@ -533,7 +532,6 @@ export default function KolmaRDApp() {
               </div>
             )}
 
-            {/* VISTA: ÓRDENES */}
             {activeTab === 'orders' && (
               <div className="animate-in fade-in duration-500 mt-4">
                 <h2 className="text-3xl font-black italic tracking-tighter mb-8">Mis Órdenes</h2>
@@ -581,7 +579,6 @@ export default function KolmaRDApp() {
               </div>
             )}
 
-            {/* VISTA: HOME */}
             {activeTab === 'home' && (
               <div className="animate-in fade-in duration-500">
                 
