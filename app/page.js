@@ -20,9 +20,10 @@ const SVG = {
   Box: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-12 h-12 text-slate-300"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
   Eye: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
   EyeOff: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>,
+  Sparkles: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>,
+  Edit: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
 };
 
-// --- HELPER DE CATEGORÍAS (LÓGICA CORREGIDA PARA SUPERMERCADO) ---
 const getCategoryStyle = (name) => {
   const lower = name.toLowerCase();
   if (lower.includes('pan') || lower.includes('reposter')) return { icon: '🍞', color: 'bg-amber-600' };
@@ -42,15 +43,22 @@ export default function KolmaRDApp() {
   const [user, setUser] = useState(null);
   const [showLogin, setShowLogin] = useState(true);
   const [authMode, setAuthMode] = useState('login'); 
-  const [formData, setFormData] = useState({ email: '', password: '', firstName: '', phone: '', address: '' });
+  // Modificado: Agregado lastName y teléfono con +1 por defecto
+  const [formData, setFormData] = useState({ email: '', password: '', firstName: '', lastName: '', phone: '+1 ', address: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(false);
+
+  // Estados Edición de Perfil
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editForm, setEditForm] = useState({});
 
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  
   const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState('Todos');
   const [activeTab, setActiveTab] = useState('home');
   const [isOrdering, setIsOrdering] = useState(false);
   
@@ -82,7 +90,7 @@ export default function KolmaRDApp() {
   const fetchProducts = async () => {
     try {
       const res = await fetch('/api/products');
-      if (!res.ok) throw new Error('Error al conectar con la API');
+      if (!res.ok) throw new Error('Error de red');
       const json = await res.json();
       
       if (json.data?.products) {
@@ -96,8 +104,8 @@ export default function KolmaRDApp() {
             price: parseFloat(node.variants?.edges[0]?.node.price.amount || 0),
             img: node.images?.edges[0]?.node.url || 'https://via.placeholder.com/400',
             unit: node.variants?.edges[0]?.node.title !== 'Default Title' ? node.variants.edges[0].node.title : 'Unidad',
-            desc: node.description || 'Calidad KolmaRD garantizada.',
-            available: true // Forzamos disponibilidad para evitar errores de "Agotado"
+            desc: node.description || 'Calidad garantizada en Kolma RD.',
+            available: true 
           }));
         setProducts(formattedProducts);
 
@@ -109,8 +117,7 @@ export default function KolmaRDApp() {
         setCategories(dynamicCategories);
       }
     } catch (error) {
-      console.error(error);
-      showAppToast('Error cargando catálogo. Revisa la conexión.', 'error');
+      showAppToast('Error cargando pasillos. Verifica tu conexión.', 'error');
     } finally {
       setLoadingData(false);
     }
@@ -121,9 +128,13 @@ export default function KolmaRDApp() {
     setLoadingAuth(true);
 
     if (authMode === 'register') {
-      if (!formData.firstName || !formData.phone || !formData.address) {
+      if (!formData.firstName || !formData.lastName || !formData.phone || !formData.address) {
         setLoadingAuth(false);
-        return showAppToast('Nombre, teléfono y dirección son obligatorios.', 'error');
+        return showAppToast('Nombres, apellidos, teléfono y dirección son obligatorios.', 'error');
+      }
+      if (formData.phone.length < 12) {
+        setLoadingAuth(false);
+        return showAppToast('Ingresa un número de teléfono válido con su código de área.', 'error');
       }
     }
 
@@ -142,13 +153,14 @@ export default function KolmaRDApp() {
         const loggedUser = {
           ...data.user,
           firstName: data.user.firstName || data.user.name || formData.firstName,
+          lastName: data.user.lastName || formData.lastName || '',
           phone: data.user.phone || formData.phone,
           address: data.user.address || formData.address,
         };
         setUser(loggedUser);
         localStorage.setItem('kolma_user', JSON.stringify(loggedUser));
         setShowLogin(false);
-        showAppToast(authMode === 'login' ? 'Bienvenido de vuelta' : 'Cuenta creada con éxito');
+        showAppToast(authMode === 'login' ? '¡Bienvenido de vuelta al súper!' : '¡Cuenta creada, listo para comprar!');
       } else {
         showAppToast(data.error || 'Verifica tu correo y contraseña.', 'error');
       }
@@ -170,19 +182,40 @@ export default function KolmaRDApp() {
   };
 
   const handleGuestEntry = () => {
-    setUser({ name: 'Invitado', email: 'Sin registrar', address: 'Cotuí (Por defecto)', phone: 'Requerido para pedido', isGuest: true });
+    setUser({ name: 'Invitado', lastName: '', email: 'Sin registrar', address: 'Cotuí (Por defecto)', phone: '+1 ', isGuest: true });
     setShowLogin(false);
-    showAppToast('Has entrado como invitado. Regístrate para comprar.');
+    showAppToast('Navegando como invitado. Crea cuenta para hacer pedidos.');
   };
 
-  // Lógica del Carrito
+  // Funciones Edición Perfil
+  const startEditProfile = () => {
+    setEditForm({
+      firstName: user.firstName || user.name || '',
+      lastName: user.lastName || '',
+      phone: user.phone || '+1 ',
+      address: user.address || ''
+    });
+    setIsEditingProfile(true);
+  };
+
+  const saveProfile = () => {
+    if (!editForm.firstName || !editForm.phone || !editForm.address) {
+      return showAppToast('Nombre, teléfono y dirección son obligatorios', 'error');
+    }
+    const updatedUser = { ...user, ...editForm, name: editForm.firstName };
+    setUser(updatedUser);
+    localStorage.setItem('kolma_user', JSON.stringify(updatedUser));
+    setIsEditingProfile(false);
+    showAppToast('Datos actualizados exitosamente');
+  };
+
   const addToCart = (p) => {
-    if (!p.available) return showAppToast("Este producto está agotado por el momento.", "error");
+    if (!p.available) return showAppToast("Producto agotado por el momento.", "error");
     setCart(curr => {
       const ex = curr.find(i => i.id === p.id);
       const n = ex ? curr.map(i => i.id === p.id ? { ...i, qty: i.qty + 1 } : i) : [...curr, { ...p, qty: 1 }];
       localStorage.setItem('kolmard_cart', JSON.stringify(n));
-      showAppToast(`${p.name} agregado`);
+      showAppToast(`${p.name} en tu cesta`);
       return n;
     });
   };
@@ -199,7 +232,6 @@ export default function KolmaRDApp() {
     return n;
   });
   
-  // Descuentos y Totales
   const rawTotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
   const totalItems = cart.reduce((acc, i) => acc + i.qty, 0);
 
@@ -222,22 +254,27 @@ export default function KolmaRDApp() {
   const missingForNext = nextGoalAmount > 0 ? nextGoalAmount - rawTotal : 0;
 
   const filteredProducts = useMemo(() => {
-    if (!search) return products;
-    return products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.cat.toLowerCase().includes(search.toLowerCase()));
-  }, [search, products]);
+    let result = products;
+    if (activeCategory !== 'Todos') result = result.filter(p => p.cat === activeCategory);
+    if (search) result = result.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.cat.toLowerCase().includes(search.toLowerCase()));
+    return result;
+  }, [search, activeCategory, products]);
 
-  // Sugerencias Inteligentes
-  const suggestedProducts = useMemo(() => {
+  const homeSuggestions = useMemo(() => {
+    if (products.length === 0) return [];
+    return [...products].sort(() => 0.5 - Math.random()).slice(0, 5);
+  }, [products]);
+
+  const cartSuggestions = useMemo(() => {
     return products.filter(p => !cart.some(c => c.id === p.id) && p.available).slice(0, 4);
   }, [products, cart]);
 
-  // Procesar Pago
   const processCheckout = async () => {
     if (cart.length === 0) return;
     if (user.isGuest) {
       setIsCartOpen(false);
       setShowLogin(true);
-      return showAppToast('Debes crear una cuenta o iniciar sesión para pedir.', 'error');
+      return showAppToast('Crea una cuenta o inicia sesión para procesar tu pedido.', 'error');
     }
 
     setIsOrdering(true);
@@ -260,7 +297,7 @@ export default function KolmaRDApp() {
           name: order?.name || `#${Math.floor(Math.random() * 10000)}`,
           date: new Date().toISOString(),
           total: finalTotal, 
-          status: 'Recibido',
+          status: 'Preparando Empaque',
           items: cart
         };
         
@@ -272,12 +309,12 @@ export default function KolmaRDApp() {
         localStorage.removeItem('kolmard_cart');
         setIsCartOpen(false);
         setActiveTab('orders');
-        showAppToast('¡Pedido confirmado! Lo enviaremos pronto.');
+        showAppToast('¡Orden recibida! La estamos preparando.');
       } else {
-        showAppToast('Error al procesar pedido en Shopify.', 'error');
+        showAppToast('Hubo un problema procesando tu compra.', 'error');
       }
     } catch (error) {
-      showAppToast('Error de conexión al enviar el pedido.', 'error');
+      showAppToast('Error de conexión al enviar la orden.', 'error');
     } finally {
       setIsOrdering(false);
     }
@@ -295,13 +332,11 @@ export default function KolmaRDApp() {
     );
   };
 
-  // VISTA: LOGIN / REGISTRO
   if (showLogin) {
     return (
       <div className="min-h-screen bg-[#F0F2F5] flex items-center justify-center p-6 font-sans relative overflow-hidden">
         <ToastNotification />
         
-        {/* Decoración de Fondo Supermercado */}
         <div className="absolute top-10 left-10 text-6xl opacity-10 animate-pulse">🛒</div>
         <div className="absolute bottom-20 right-10 text-6xl opacity-10 animate-bounce">🍎</div>
         <div className="absolute top-40 right-20 text-5xl opacity-10">🧀</div>
@@ -321,13 +356,19 @@ export default function KolmaRDApp() {
           <form onSubmit={handleAuth} className="space-y-4">
             {authMode === 'register' && (
               <>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Nombre Completo *</label>
-                  <input type="text" placeholder="Ej: Juan Pérez" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 px-6 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
+                <div className="flex gap-3">
+                  <div className="space-y-1 flex-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Nombre *</label>
+                    <input type="text" placeholder="Juan" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 px-6 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
+                  </div>
+                  <div className="space-y-1 flex-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Apellido *</label>
+                    <input type="text" placeholder="Pérez" value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 px-6 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Teléfono *</label>
-                  <input type="tel" placeholder="Ej: 809-585-0000" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 px-6 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
+                  <input type="tel" placeholder="+1 809-000-0000" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 px-6 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Dirección de Entrega *</label>
@@ -337,8 +378,8 @@ export default function KolmaRDApp() {
             )}
             
             <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Correo</label>
-              <input type="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 px-6 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Correo Electrónico</label>
+              <input type="email" placeholder="tucorreo@ejemplo.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] py-4 px-6 focus:ring-2 focus:ring-red-600 outline-none transition-all font-medium text-sm" required/>
             </div>
             
             <div className="space-y-1 relative">
@@ -357,8 +398,8 @@ export default function KolmaRDApp() {
           </form>
 
           <div className="text-center mt-6 flex flex-col gap-4">
-            <button onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')} className="text-sm font-bold text-red-600 hover:underline">
-              {authMode === 'login' ? '¿No tienes cuenta? Regístrate aquí' : 'Ya tengo cuenta. Entrar'}
+            <button onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setFormData({...formData, phone: '+1 '}); }} className="text-sm font-bold text-red-600 hover:underline">
+              {authMode === 'login' ? '¿Primera compra? Regístrate aquí' : 'Ya tengo cuenta. Iniciar sesión'}
             </button>
             <div className="flex items-center gap-4">
               <div className="h-[1px] flex-1 bg-slate-100"></div>
@@ -366,7 +407,7 @@ export default function KolmaRDApp() {
               <div className="h-[1px] flex-1 bg-slate-100"></div>
             </div>
             <button onClick={handleGuestEntry} className="text-xs font-bold text-slate-500 uppercase tracking-widest hover:text-slate-900 transition-colors">
-              Entrar como Invitado
+              Entrar sin registrarse
             </button>
           </div>
         </div>
@@ -374,12 +415,11 @@ export default function KolmaRDApp() {
     );
   }
 
-  // VISTA: APLICACIÓN COMPLETA
   return (
     <div className="min-h-screen bg-[#F7F9FB] text-slate-900 font-sans pb-40 relative">
       <ToastNotification />
 
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-100 h-24 px-6 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-2xl border-b border-slate-100 h-24 px-6 flex items-center justify-between">
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5 mb-0.5">
             <SVG.Pin />
@@ -404,26 +444,57 @@ export default function KolmaRDApp() {
         </div>
       </header>
 
-      <main className="max-w-xl mx-auto px-6 py-8">
+      <main className="max-w-xl mx-auto px-6 py-4">
         
         {loadingData ? (
            <div className="flex flex-col items-center justify-center py-20 opacity-50">
              <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-             <p className="font-bold tracking-widest text-sm uppercase">Cargando inventario...</p>
+             <p className="font-bold tracking-widest text-sm uppercase">Cargando pasillos...</p>
            </div>
         ) : (
           <>
+            {/* VISTA: MI PERFIL (Con edición) */}
             {activeTab === 'me' && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
-                <h2 className="text-3xl font-black italic tracking-tighter mb-8">Mi Perfil</h2>
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6 mt-4">
+                <div className="flex justify-between items-center mb-8">
+                  <h2 className="text-3xl font-black italic tracking-tighter">Mi Perfil</h2>
+                  {!user.isGuest && !isEditingProfile && (
+                    <button onClick={startEditProfile} className="text-red-600 font-bold text-sm flex items-center gap-1 hover:underline">
+                      <SVG.Edit /> Editar
+                    </button>
+                  )}
+                </div>
                 
                 {user.isGuest ? (
                    <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100 text-center">
                      <div className="text-4xl mb-2">👤</div>
                      <h3 className="font-black text-red-900 text-lg mb-1">Cuenta de Invitado</h3>
-                     <p className="text-xs text-red-700 mb-4 font-medium">Regístrate para guardar tu dirección, ver tus pedidos y agilizar el proceso de compra.</p>
+                     <p className="text-xs text-red-700 mb-4 font-medium">Regístrate para guardar tu dirección, ver tus órdenes pasadas y pedir más rápido.</p>
                      <button onClick={handleLogout} className="bg-red-600 text-white font-bold px-6 py-3 rounded-xl shadow-sm hover:bg-red-700">Crear Cuenta</button>
                    </div>
+                ) : isEditingProfile ? (
+                  <div className="bg-white p-6 rounded-[3rem] shadow-sm border border-slate-50 space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4">Nombre</label>
+                      <input type="text" value={editForm.firstName} onChange={(e) => setEditForm({...editForm, firstName: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl py-3 px-5 focus:ring-2 focus:ring-red-600 outline-none font-medium text-sm"/>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4">Apellido</label>
+                      <input type="text" value={editForm.lastName} onChange={(e) => setEditForm({...editForm, lastName: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl py-3 px-5 focus:ring-2 focus:ring-red-600 outline-none font-medium text-sm"/>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4">Teléfono</label>
+                      <input type="text" value={editForm.phone} onChange={(e) => setEditForm({...editForm, phone: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl py-3 px-5 focus:ring-2 focus:ring-red-600 outline-none font-medium text-sm"/>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4">Dirección</label>
+                      <input type="text" value={editForm.address} onChange={(e) => setEditForm({...editForm, address: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl py-3 px-5 focus:ring-2 focus:ring-red-600 outline-none font-medium text-sm"/>
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                      <button onClick={() => setIsEditingProfile(false)} className="flex-1 bg-slate-100 text-slate-600 py-3 rounded-2xl font-black text-sm hover:bg-slate-200">Cancelar</button>
+                      <button onClick={saveProfile} className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-black text-sm shadow-lg hover:bg-red-700">Guardar</button>
+                    </div>
+                  </div>
                 ) : (
                   <>
                     <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-50 flex items-center gap-6">
@@ -431,7 +502,7 @@ export default function KolmaRDApp() {
                         {(user.firstName || user.name || "U").charAt(0)}
                       </div>
                       <div>
-                        <h3 className="text-2xl font-black tracking-tight leading-none mb-1">{user.firstName || user.name}</h3>
+                        <h3 className="text-2xl font-black tracking-tight leading-none mb-1">{user.firstName || user.name} {user.lastName}</h3>
                         <p className="text-sm font-bold text-slate-400">{user.email}</p>
                       </div>
                     </div>
@@ -448,7 +519,7 @@ export default function KolmaRDApp() {
                       <div className="flex items-start gap-4">
                          <div className="text-slate-400 mt-1"><SVG.User /></div>
                          <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teléfono</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Teléfono de Contacto</p>
                           <p className="font-bold text-slate-800 text-sm mt-0.5">{user.phone}</p>
                         </div>
                       </div>
@@ -462,20 +533,21 @@ export default function KolmaRDApp() {
               </div>
             )}
 
+            {/* VISTA: ÓRDENES */}
             {activeTab === 'orders' && (
-              <div className="animate-in fade-in duration-500">
-                <h2 className="text-3xl font-black italic tracking-tighter mb-8">Mis Pedidos</h2>
+              <div className="animate-in fade-in duration-500 mt-4">
+                <h2 className="text-3xl font-black italic tracking-tighter mb-8">Mis Órdenes</h2>
                 
                 {user.isGuest ? (
                    <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-50">
-                    <p className="text-slate-400 text-sm">Debes iniciar sesión para ver tus pedidos.</p>
+                    <p className="text-slate-400 text-sm">Debes iniciar sesión para ver tus compras anteriores.</p>
                     <button onClick={handleLogout} className="mt-4 text-red-600 font-bold hover:underline">Iniciar Sesión</button>
                    </div>
                 ) : orders.length === 0 ? (
                   <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-50">
                     <div className="flex justify-center mb-6"><SVG.Box /></div>
-                    <p className="text-xl font-black text-slate-800 mb-2">Sin Pedidos</p>
-                    <p className="text-slate-400 text-sm">Tus órdenes aparecerán aquí.</p>
+                    <p className="text-xl font-black text-slate-800 mb-2">Sin Compras</p>
+                    <p className="text-slate-400 text-sm">Tus recibos aparecerán aquí.</p>
                   </div>
                 ) : (
                   <div className="space-y-6">
@@ -494,12 +566,12 @@ export default function KolmaRDApp() {
                           {order.items.map(item => (
                             <div key={item.id} className="flex justify-between items-center text-sm font-medium text-slate-600">
                               <span>{item.qty}x {item.name}</span>
-                              <span className="font-bold text-slate-900">RD${item.price * item.qty}</span>
+                              <span className="font-bold text-slate-900">RD${(item.price * item.qty).toFixed(2)}</span>
                             </div>
                           ))}
                         </div>
                         <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-                          <span className="text-xs font-black uppercase tracking-widest text-slate-400">Total</span>
+                          <span className="text-xs font-black uppercase tracking-widest text-slate-400">Pagado</span>
                           <span className="text-xl font-black italic">RD${order.total.toFixed(2)}</span>
                         </div>
                       </div>
@@ -509,16 +581,35 @@ export default function KolmaRDApp() {
               </div>
             )}
 
+            {/* VISTA: HOME */}
             {activeTab === 'home' && (
               <div className="animate-in fade-in duration-500">
-                <div className="relative mb-10 group">
+                
+                <div className="sticky top-24 z-40 bg-[#F7F9FB] pt-4 pb-4 -mx-6 px-6 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.05)]">
+                  <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x">
+                    <button onClick={() => { setActiveCategory('Todos'); setSearch(''); }} className={`snap-start min-w-[70px] flex flex-col items-center gap-2 group ${activeCategory === 'Todos' ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}>
+                      <div className={`w-14 h-14 rounded-[1.2rem] flex items-center justify-center text-2xl shadow-sm transition-all ${activeCategory === 'Todos' ? 'bg-red-600 text-white scale-110 shadow-red-200' : 'bg-white text-slate-400'}`}>🌟</div>
+                      <span className={`text-[9px] font-black uppercase tracking-tighter ${activeCategory === 'Todos' ? 'text-red-600' : 'text-slate-400'}`}>Todos</span>
+                    </button>
+                    {categories.map((c) => (
+                      <button key={c.id} onClick={() => { setActiveCategory(c.name); setSearch(''); }} className={`snap-start min-w-[70px] flex flex-col items-center gap-2 group ${activeCategory === c.name ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}>
+                        <div className={`w-14 h-14 rounded-[1.2rem] flex items-center justify-center text-3xl shadow-sm transition-all ${activeCategory === c.name ? c.color + ' text-white scale-110 shadow-lg' : 'bg-white text-slate-400'}`}>
+                          {activeCategory === c.name ? c.icon : <span className="grayscale">{c.icon}</span>}
+                        </div>
+                        <span className={`text-[9px] font-black uppercase tracking-tighter line-clamp-1 ${activeCategory === c.name ? 'text-slate-900' : 'text-slate-400'}`}>{c.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="relative mt-6 mb-8 group">
                   <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-600 transition-colors">
                     <SVG.Search />
                   </div>
                   <input 
                     type="text" 
-                    placeholder="Buscar productos..." 
-                    className="w-full bg-white rounded-[2.2rem] py-5 pl-16 pr-12 border-none shadow-sm outline-none focus:ring-2 focus:ring-red-600 transition-all font-medium text-lg"
+                    placeholder="Busca en el súper (ej. Arroz, Leche)..." 
+                    className="w-full bg-white rounded-[2rem] py-4 pl-16 pr-12 border-none shadow-sm outline-none focus:ring-2 focus:ring-red-600 transition-all font-medium text-sm"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
@@ -527,43 +618,45 @@ export default function KolmaRDApp() {
                   )}
                 </div>
 
-                {!search && categories.length > 0 && (
-                  <section className="mb-12">
-                    <h3 className="text-lg font-black mb-6 px-2">Categorías</h3>
+                {!search && activeCategory === 'Todos' && homeSuggestions.length > 0 && (
+                  <div className="mb-10">
+                    <div className="flex items-center gap-2 px-2 mb-4">
+                      <span className="text-red-600"><SVG.Sparkles /></span>
+                      <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Lleva también</h3>
+                    </div>
                     <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-                      <button onClick={() => setSearch('')} className="snap-start min-w-[80px] flex flex-col items-center gap-3 group">
-                        <div className={`w-16 h-16 bg-slate-900 rounded-[2rem] flex items-center justify-center text-2xl shadow-lg shadow-black/5 group-hover:scale-110 transition-all text-white`}>🌟</div>
-                        <span className="text-[10px] font-black uppercase text-slate-400 group-hover:text-slate-900 tracking-tighter line-clamp-1">Todos</span>
-                      </button>
-                      {categories.map((c) => (
-                        <button key={c.id} onClick={() => setSearch(c.name)} className="snap-start min-w-[80px] flex flex-col items-center gap-3 group">
-                          <div className={`w-16 h-16 ${c.color} rounded-[2rem] flex items-center justify-center text-3xl shadow-lg shadow-black/5 group-hover:scale-110 transition-all text-white overflow-hidden`}>
-                            {c.icon}
+                      {homeSuggestions.map(sp => (
+                        <div key={'sug_'+sp.id} className="snap-start min-w-[140px] bg-white p-3 rounded-2xl border border-slate-50 shadow-sm flex flex-col">
+                          <div onClick={() => setSelectedProduct(sp)} className="w-full h-24 bg-[#F8FAFB] rounded-xl mb-3 flex items-center justify-center p-2 cursor-pointer">
+                            <img src={sp.img} className="w-full h-full object-contain mix-blend-multiply" />
                           </div>
-                          <span className="text-[10px] font-black uppercase text-slate-400 group-hover:text-slate-900 tracking-tighter line-clamp-1">{c.name}</span>
-                        </button>
+                          <h4 className="text-[11px] font-bold text-slate-800 line-clamp-1 mb-1">{sp.name}</h4>
+                          <span className="text-sm font-black italic text-slate-900 mb-3">RD${sp.price}</span>
+                          <button onClick={() => addToCart(sp)} className="mt-auto w-full bg-slate-100 text-slate-900 text-[10px] font-black uppercase py-2 rounded-lg hover:bg-red-600 hover:text-white transition-colors">Añadir</button>
+                        </div>
                       ))}
                     </div>
-                  </section>
+                  </div>
                 )}
 
                 <section>
-                  <div className="flex items-center justify-between mb-8 px-2">
-                    <h3 className="text-2xl font-black tracking-tight italic">{search ? `Resultados: ${search}` : 'Catálogo Completo'}</h3>
-                    <div className="h-0.5 flex-1 bg-slate-100 mx-4"></div>
+                  <div className="flex items-center justify-between mb-6 px-2">
+                    <h3 className="text-2xl font-black tracking-tight italic">
+                      {search ? `Buscando: ${search}` : activeCategory !== 'Todos' ? `Pasillo de ${activeCategory}` : 'Todos los Productos'}
+                    </h3>
                   </div>
                   <div className="grid grid-cols-2 gap-4 sm:gap-5">
                     {filteredProducts.map(p => (
-                      <div key={p.id} className={`bg-white rounded-[2rem] p-5 shadow-sm border border-slate-50 flex flex-col group transition-all duration-500 ${!p.available ? 'opacity-60' : 'hover:shadow-xl'}`}>
-                        <div onClick={() => setSelectedProduct(p)} className="aspect-square bg-[#F8FAFB] rounded-3xl flex items-center justify-center mb-4 overflow-hidden relative cursor-pointer">
-                          <img src={p.img} alt={p.name} className={`w-full h-full object-cover mix-blend-multiply group-hover:scale-105 transition-transform ${!p.available ? 'grayscale' : ''}`} />
+                      <div key={p.id} className={`bg-white rounded-[2rem] p-4 shadow-sm border border-slate-50 flex flex-col group transition-all duration-500 ${!p.available ? 'opacity-60' : 'hover:shadow-xl'}`}>
+                        <div onClick={() => setSelectedProduct(p)} className="aspect-square bg-[#F8FAFB] rounded-3xl flex items-center justify-center mb-4 overflow-hidden relative cursor-pointer p-2">
+                          <img src={p.img} alt={p.name} className={`w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform ${!p.available ? 'grayscale' : ''}`} />
                           {!p.available && <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm"><span className="bg-red-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">Agotado</span></div>}
                         </div>
                         <div className="flex-1 px-1" onClick={() => setSelectedProduct(p)}>
-                          <p className="text-[10px] font-black text-red-600 uppercase mb-1 tracking-tighter line-clamp-1">{p.cat}</p>
+                          <p className="text-[9px] font-black text-red-600 uppercase mb-1 tracking-widest line-clamp-1">{p.cat}</p>
                           <h4 className="font-bold text-slate-800 leading-tight mb-3 text-sm h-10 line-clamp-2 cursor-pointer">{p.name}</h4>
                         </div>
-                        <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-50">
                           <span className="text-lg font-black tracking-tighter italic">RD${p.price}</span>
                           <button onClick={() => addToCart(p)} className="w-10 h-10 bg-slate-900 text-white rounded-[0.8rem] flex items-center justify-center hover:bg-red-600 transition-all active:scale-90 shadow-lg disabled:bg-slate-300">
                             <SVG.Plus />
@@ -575,8 +668,8 @@ export default function KolmaRDApp() {
                     {filteredProducts.length === 0 && (
                       <div className="col-span-2 text-center py-20 bg-white rounded-[3rem] border border-slate-50">
                         <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-300"><SVG.Search /></div>
-                        <p className="text-xl font-black text-slate-800 mb-2">No encontrado</p>
-                        <p className="text-slate-400 text-sm">Prueba buscar con otras palabras.</p>
+                        <p className="text-xl font-black text-slate-800 mb-2">No encontrado en el súper</p>
+                        <p className="text-slate-400 text-sm">Prueba buscar otra marca o producto.</p>
                       </div>
                     )}
                   </div>
@@ -590,7 +683,7 @@ export default function KolmaRDApp() {
       <nav className="fixed bottom-8 left-8 right-8 z-[60] h-20 bg-white/95 backdrop-blur-3xl rounded-[2.5rem] border border-white/50 shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex items-center justify-around px-4">
         {[
           { id: 'home', icon: SVG.Market, label: 'Inicio' },
-          { id: 'orders', icon: SVG.Truck, label: 'Pedidos' },
+          { id: 'orders', icon: SVG.Truck, label: 'Órdenes' },
           { id: 'cart', icon: SVG.Cart, label: 'Cesta' },
           { id: 'me', icon: SVG.User, label: 'Perfil' },
         ].map(i => (
@@ -632,7 +725,7 @@ export default function KolmaRDApp() {
                     <p className="text-2xl font-black tracking-tighter italic">RD${selectedProduct.price}</p>
                   </div>
                   <button onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }} className="bg-black text-white px-6 py-3.5 rounded-2xl font-black text-sm hover:bg-red-600 transition-all active:scale-95 shadow-xl">
-                    {selectedProduct.available ? 'Agregar' : 'Agotado'}
+                    {selectedProduct.available ? 'Agregar a Cesta' : 'Agotado'}
                   </button>
                 </div>
               </div>
@@ -641,24 +734,22 @@ export default function KolmaRDApp() {
         </div>
       )}
 
-      {/* MODAL CARRITO ELEGANTE Y COMPACTO */}
+      {/* MODAL CARRITO */}
       {isCartOpen && (
         <div className="fixed inset-0 z-[110] flex items-end">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setIsCartOpen(false)}></div>
           <aside className="relative w-full max-w-md mx-auto bg-[#F7F9FB] h-[85vh] rounded-t-[2.5rem] shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300 overflow-hidden">
             
-            {/* Header Carrito */}
             <div className="p-6 bg-white flex items-center justify-between border-b border-slate-100 shrink-0">
               <div>
-                <h2 className="text-2xl font-black tracking-tighter italic leading-none mb-1">Mi Cesta</h2>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{totalItems} productos</p>
+                <h2 className="text-2xl font-black tracking-tighter italic leading-none mb-1">Tu Cesta</h2>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{totalItems} artículos en cola</p>
               </div>
               <button onClick={() => setIsCartOpen(false)} className="w-10 h-10 bg-slate-50 flex items-center justify-center rounded-xl text-slate-400 hover:text-red-600 transition-all"><SVG.X /></button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               
-              {/* Barra de Progreso Descuentos */}
               {cart.length > 0 && (
                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                   <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-2.5">
@@ -674,7 +765,6 @@ export default function KolmaRDApp() {
                 </div>
               )}
 
-              {/* Items del Carrito */}
               <div className="space-y-3">
                 {cart.map(i => (
                   <div key={i.id} className="flex gap-3 bg-white p-3 rounded-[1.5rem] border border-slate-50 shadow-sm">
@@ -702,17 +792,16 @@ export default function KolmaRDApp() {
                 ))}
               </div>
 
-              {/* Sugerencias Dinámicas */}
-              {cart.length > 0 && suggestedProducts.length > 0 && (
+              {cart.length > 0 && cartSuggestions.length > 0 && (
                 <div className="mt-6 pt-4 border-t border-slate-200">
-                  <h3 className="text-xs font-black mb-3 uppercase tracking-widest text-slate-400">Completa tu pedido</h3>
+                  <h3 className="text-xs font-black mb-3 uppercase tracking-widest text-slate-400">Otros clientes también compran</h3>
                   <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x">
-                    {suggestedProducts.map(sp => (
-                      <div key={sp.id} className="snap-start min-w-[120px] bg-white p-2.5 rounded-[1.2rem] border border-slate-100 shadow-sm flex flex-col">
+                    {cartSuggestions.map(sp => (
+                      <div key={'cart_sug_'+sp.id} className="snap-start min-w-[120px] bg-white p-2.5 rounded-[1.2rem] border border-slate-100 shadow-sm flex flex-col">
                         <div className="w-full h-16 bg-slate-50 rounded-xl mb-2 flex items-center justify-center p-1"><img src={sp.img} className="w-full h-full object-contain mix-blend-multiply" /></div>
                         <h4 className="text-[10px] font-bold text-slate-800 line-clamp-1 mb-1">{sp.name}</h4>
                         <span className="text-xs font-black italic text-slate-900 mb-2">RD${sp.price}</span>
-                        <button onClick={() => addToCart(sp)} className="mt-auto w-full bg-slate-100 text-slate-900 text-[9px] font-black uppercase py-1.5 rounded-lg hover:bg-red-600 hover:text-white transition-colors">Agregar</button>
+                        <button onClick={() => addToCart(sp)} className="mt-auto w-full bg-slate-100 text-slate-900 text-[9px] font-black uppercase py-1.5 rounded-lg hover:bg-red-600 hover:text-white transition-colors">Añadir</button>
                       </div>
                     ))}
                   </div>
@@ -722,22 +811,21 @@ export default function KolmaRDApp() {
               {cart.length === 0 && (
                 <div className="h-full flex flex-col items-center justify-center text-center py-20 opacity-20 font-black italic">
                   <div className="scale-[2.5] mb-8"><SVG.Cart /></div>
-                  <p className="text-2xl tracking-tighter uppercase">Cesta Vacía</p>
+                  <p className="text-2xl tracking-tighter uppercase">Tu cesta está vacía</p>
                 </div>
               )}
             </div>
 
-            {/* Footer Carrito (Totales) */}
             <div className="p-6 bg-white border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] shrink-0">
               {discountPercent > 0 && cart.length > 0 && (
                 <div className="flex justify-between items-center mb-3 border-b border-dashed border-slate-200 pb-2">
-                  <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">Descuento ({discountPercent}%)</span>
+                  <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">Descuento Ganado ({discountPercent}%)</span>
                   <span className="text-sm font-black text-red-600">-RD${discountAmount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between items-center">
                  <div className="flex flex-col">
-                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total a Pagar</span>
+                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total Final</span>
                    <span className="text-2xl font-black tracking-tighter italic text-slate-900">RD${finalTotal.toFixed(2)}</span>
                  </div>
                  <button 
@@ -745,7 +833,7 @@ export default function KolmaRDApp() {
                   onClick={processCheckout}
                   className={`bg-black text-white px-6 py-3.5 rounded-2xl font-black text-sm hover:bg-red-600 transition-all flex items-center gap-2 shadow-xl active:scale-95 ${(cart.length === 0 || isOrdering) ? 'opacity-50 pointer-events-none' : ''}`}
                  >
-                   {isOrdering ? 'Procesando...' : 'Pedir Ahora'} <SVG.Check />
+                   {isOrdering ? 'Facturando...' : 'Enviar Pedido'} <SVG.Check />
                  </button>
               </div>
             </div>
