@@ -1,58 +1,39 @@
 import { NextResponse } from 'next/server';
 
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
-
-  if (!id) return NextResponse.json({ success: false, error: 'Falta ID' }, { status: 400 });
-
-  // 1. Esconde tu clave en las variables de entorno de Vercel
-  const SHIPDAY_KEY = process.env.SHIPDAY_API_KEY;
-
+export async function POST(req) {
   try {
-    const response = await fetch(`https://api.shipday.com/orders/number/${id}`, {
+    const { orderId } = await req.json();
+    const shipdayApiKey = process.env.SHIPDAY_API_KEY || "FzKmvwy7mB.DgaRNOaMv19P28urcMEb.";
+
+    const res = await fetch(`https://api.shipday.com/orders/${orderId}`, {
       method: 'GET',
-      headers: { 'Authorization': `Basic ${SHIPDAY_KEY}`, 'Content-Type': 'application/json' },
-      cache: 'no-store' // 2. Evita que Vercel guarde en caché respuestas viejas
+      headers: { 'Authorization': `Basic ${shipdayApiKey}` }
     });
 
-    const dataArray = await response.json();
-    const p = Array.isArray(dataArray) ? dataArray[0] : dataArray;
+    if (!res.ok) return NextResponse.json({ status: 'Preparando Empaque' });
 
-    if (!p) return NextResponse.json({ success: false, error: 'No encontrado' }, { status: 404 });
+    const data = await res.json();
 
-    // NORMALIZACIÓN DE ESTADOS
-    let rawStatus = (p.status || p.orderStatus?.shipdayStatus || "PENDING").toUpperCase();
-    
-    // OBJETO STATUS_ROUTE
-    const status_route = {
-      order_id: id,
-      status: rawStatus,
-      driver_name: p.carrier?.name || "Buscando...",
-      driver_phone: p.carrier?.phoneNumber || "",
-      driver_location: null,
-      customer_location: { 
-        lat: parseFloat(p.customer?.latitude) || 19.0527, 
-        lng: parseFloat(p.customer?.longitude) || -70.1492 
-      },
-      eta: p.eta || p.etaTime || "Calculando...",
-      last_update: new Date().toISOString()
+    // Diccionario de estados Shipday a Español
+    const statusMap = {
+      'ACTIVE': 'Preparando Empaque',
+      'NOT_ASSIGNED': 'Buscando Repartidor',
+      'NOT_ACCEPTED': 'Esperando al Repartidor',
+      'ASSIGNED': 'Repartidor Asignado',
+      'STARTED': 'Repartidor en camino al súper',
+      'PICKED_UP': 'Pedido en camino 🛵',
+      'READY_TO_DELIVER': 'Llegando a tu puerta 📍',
+      'ALREADY_DELIVERED': 'Entregado ✅',
+      'FAILED_DELIVERY': 'Fallo en Entrega ❌',
+      'INCOMPLETE': 'Cancelado 🚫',
+      'CANCELED': 'Cancelado 🚫'
     };
 
-    // Extraer ubicación del mensajero si existe
-    const lat = p.carrier?.location?.latitude || p.carrier?.latitude;
-    const lng = p.carrier?.location?.longitude || p.carrier?.longitude;
+    const estadoTraducido = statusMap[data.orderStatus] || 'Actualizando...';
 
-    if (lat && lng && parseFloat(lat) !== 0) {
-      status_route.driver_location = {
-        lat: parseFloat(lat),
-        lng: parseFloat(lng)
-      };
-    }
-
-    return NextResponse.json({ success: true, status_route });
+    return NextResponse.json({ status: estadoTraducido });
 
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ status: 'Preparando Empaque' });
   }
 }
