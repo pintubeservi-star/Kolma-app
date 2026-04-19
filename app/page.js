@@ -88,6 +88,40 @@ export default function KolmaRDApp() {
 
     fetchProducts();
   }, []);
+// ... otros useEffect anteriores ...
+
+// PEGA ESTO AQUÍ DEBAJO:
+useEffect(() => {
+  if (activeTab === 'orders' && orders.length > 0) {
+    const updateStatuses = async () => {
+      const updatedOrders = await Promise.all(orders.map(async (order) => {
+        if (order.status.includes('✅') || order.status.includes('🚫') || order.status.includes('❌')) {
+          return order;
+        }
+        try {
+          const res = await fetch('/api/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: order.id })
+          });
+          const data = await res.json();
+          return { ...order, status: data.status || order.status };
+        } catch (e) {
+          return order;
+        }
+      }));
+      
+      if (JSON.stringify(orders) !== JSON.stringify(updatedOrders)) {
+        setOrders(updatedOrders);
+        localStorage.setItem('kolma_orders', JSON.stringify(updatedOrders));
+      }
+    };
+    
+    updateStatuses(); 
+    const interval = setInterval(updateStatuses, 15000); 
+    return () => clearInterval(interval);
+  }
+}, [activeTab, orders]); // Asegúrate de incluir 'orders' aquí para que detecte cambios
 
   const fetchProducts = async () => {
     try {
