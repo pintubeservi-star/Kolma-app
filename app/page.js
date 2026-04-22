@@ -24,7 +24,8 @@ const SVG = {
   Edit: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>,
   Money: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>,
   CreditCard: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-6 h-6"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
-  Motorcycle: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-8 h-8 text-white drop-shadow-md"><path d="M5 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M5 10h1.5l1.5 2h3l1.5-2H14l1.5 3H19"/><path d="M9 10 7 6h2l2 4"/></svg>
+  Motorcycle: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-8 h-8 text-white drop-shadow-md"><path d="M5 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M5 10h1.5l1.5 2h3l1.5-2H14l1.5 3H19"/><path d="M9 10 7 6h2l2 4"/></svg>,
+  Clock: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 };
 
 const getCategoryStyle = (name) => {
@@ -88,40 +89,38 @@ export default function KolmaRDApp() {
 
     fetchProducts();
   }, []);
-// ... otros useEffect anteriores ...
 
-// PEGA ESTO AQUÍ DEBAJO:
-useEffect(() => {
-  if (activeTab === 'orders' && orders.length > 0) {
-    const updateStatuses = async () => {
-      const updatedOrders = await Promise.all(orders.map(async (order) => {
-        if (order.status.includes('✅') || order.status.includes('🚫') || order.status.includes('❌')) {
-          return order;
+  useEffect(() => {
+    if (activeTab === 'orders' && orders.length > 0) {
+      const updateStatuses = async () => {
+        const updatedOrders = await Promise.all(orders.map(async (order) => {
+          if (order.status.includes('✅') || order.status.includes('🚫') || order.status.includes('❌')) {
+            return order;
+          }
+          try {
+            const res = await fetch('/api/status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId: order.id })
+            });
+            const data = await res.json();
+            return { ...order, status: data.status || order.status };
+          } catch (e) {
+            return order;
+          }
+        }));
+        
+        if (JSON.stringify(orders) !== JSON.stringify(updatedOrders)) {
+          setOrders(updatedOrders);
+          localStorage.setItem('kolma_orders', JSON.stringify(updatedOrders));
         }
-        try {
-          const res = await fetch('/api/status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: order.id })
-          });
-          const data = await res.json();
-          return { ...order, status: data.status || order.status };
-        } catch (e) {
-          return order;
-        }
-      }));
+      };
       
-      if (JSON.stringify(orders) !== JSON.stringify(updatedOrders)) {
-        setOrders(updatedOrders);
-        localStorage.setItem('kolma_orders', JSON.stringify(updatedOrders));
-      }
-    };
-    
-    updateStatuses(); 
-    const interval = setInterval(updateStatuses, 15000); 
-    return () => clearInterval(interval);
-  }
-}, [activeTab, orders]); // Asegúrate de incluir 'orders' aquí para que detecte cambios
+      updateStatuses(); 
+      const interval = setInterval(updateStatuses, 15000); 
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, orders]);
 
   const fetchProducts = async () => {
     try {
@@ -131,6 +130,7 @@ useEffect(() => {
       
       if (json.data?.products) {
         const formattedProducts = json.data.products.edges
+          // FILTRO: Excluir productos que tengan la etiqueta 'pos' ignorando mayúsculas/minúsculas
           .filter(({ node }) => !node.tags?.some(tag => tag.toLowerCase() === 'pos'))
           .map(({ node }) => ({
             id: node.id,
@@ -153,7 +153,7 @@ useEffect(() => {
         setCategories(dynamicCategories);
       }
     } catch (error) {
-      showAppToast('Error cargando pasillos. Verifica tu conexión.', 'error');
+      showAppToast('Error cargando pasillos del supermercado. Verifica tu conexión.', 'error');
     } finally {
       setLoadingData(false);
     }
@@ -270,22 +270,19 @@ useEffect(() => {
   const rawTotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
   const totalItems = cart.reduce((acc, i) => acc + i.qty, 0);
 
+  // LOGICA ACTUALIZADA DE DESCUENTO: 10% si llega a 500
   let discountPercent = 0;
   let nextGoalAmount = 500;
-  let nextGoalPercent = 5;
+  let nextGoalPercent = 10;
 
-  if (rawTotal >= 1000) {
+  if (rawTotal >= 500) {
     discountPercent = 10;
     nextGoalAmount = 0;
-  } else if (rawTotal >= 500) {
-    discountPercent = 5;
-    nextGoalAmount = 1000;
-    nextGoalPercent = 10;
   }
 
   const discountAmount = rawTotal * (discountPercent / 100);
   const finalTotal = rawTotal - discountAmount;
-  const progressPercent = Math.min((rawTotal / 1000) * 100, 100);
+  const progressPercent = Math.min((rawTotal / 500) * 100, 100);
   const missingForNext = nextGoalAmount > 0 ? nextGoalAmount - rawTotal : 0;
 
   const filteredProducts = useMemo(() => {
@@ -349,7 +346,7 @@ useEffect(() => {
         setIsCartOpen(false);
         setShowPayment(false);
         setActiveTab('orders');
-        showAppToast('¡Orden recibida! La estamos preparando.');
+        showAppToast('¡Orden recibida! La estamos preparando en el supermercado.');
       } else {
         showAppToast(`Detalle: ${data.error || 'Respuesta inválida de Shopify'}`, 'error');
       }
@@ -389,8 +386,12 @@ useEffect(() => {
             </div>
             <h1 className="text-3xl font-black tracking-tighter mb-1 italic">KOLMARD</h1>
             <p className="text-slate-400 font-bold uppercase text-[9px] tracking-[0.3em] flex items-center justify-center gap-1">
-              <span>Tu Súper Express</span> <span className="text-red-600">⚡</span>
+              <span>Tu Supermercado</span> <span className="text-red-600">⚡</span>
             </p>
+            {/* Banner Marketing Sesgo */}
+            <div className="mt-4 bg-red-50 border border-red-100 rounded-xl py-2 px-3 flex items-center justify-center gap-2 animate-pulse">
+              <span className="text-red-600 font-black text-sm">🔥 10% OFF en pedidos &gt; RD$500 HOY</span>
+            </div>
           </div>
 
           <form onSubmit={handleAuth} className="space-y-4">
@@ -433,7 +434,7 @@ useEffect(() => {
             </div>
 
             <button type="submit" disabled={loadingAuth} className="w-full bg-black text-white py-4 rounded-[1.5rem] font-black text-base hover:bg-red-700 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mt-4">
-              {loadingAuth ? 'Verificando...' : (authMode === 'login' ? 'Entrar al Súper' : 'Crear Cuenta')} <SVG.Arrow />
+              {loadingAuth ? 'Verificando...' : (authMode === 'login' ? 'Entrar al Súper' : 'Aprovechar Oferta')} <SVG.Arrow />
             </button>
           </form>
 
@@ -484,9 +485,18 @@ useEffect(() => {
         </div>
       </header>
 
-      {/* BANNER SUPERIOR DE ESTILO */}
-      <div className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest py-2 text-center flex items-center justify-center gap-2 shadow-md relative z-40">
-        <span className="text-red-500 animate-pulse">⚡</span> ENTREGAS RÁPIDAS EN TODO COTUÍ <span className="text-red-500 animate-pulse">⚡</span>
+      {/* BANNER MARKETING - URGENCIA Y PROMOCIÓN */}
+      <div className="bg-gradient-to-r from-red-600 to-red-800 text-white py-2.5 px-4 shadow-md relative z-40 flex flex-col items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20"></div>
+        <div className="flex items-center gap-2 z-10">
+          <span className="text-xl animate-bounce">⚡</span>
+          <span className="text-[11px] font-black uppercase tracking-widest text-center">¡SOLO POR HOY! 10% DE DESCUENTO</span>
+          <span className="text-xl animate-bounce">⚡</span>
+        </div>
+        <div className="z-10 mt-1 bg-black/30 px-3 py-0.5 rounded-full flex items-center gap-1.5">
+          <SVG.Clock />
+          <span className="text-[9px] font-bold uppercase tracking-widest">En pedidos de RD$500 o más</span>
+        </div>
       </div>
 
       <main className="max-w-xl mx-auto px-6 py-4">
@@ -644,7 +654,16 @@ useEffect(() => {
             {activeTab === 'home' && (
               <div className="animate-in fade-in duration-500">
                 
-                <div className="sticky top-24 z-40 bg-[#F7F9FB] pt-4 pb-4 -mx-6 px-6 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.05)]">
+                {/* BLOQUE DE SOCIAL PROOF (SESGO DE PRUEBA SOCIAL / URGENCIA) */}
+                <div className="bg-orange-50 border border-orange-100 rounded-2xl p-3 mb-4 mt-2 flex items-center gap-3">
+                  <div className="text-2xl animate-pulse">🛒</div>
+                  <div>
+                    <p className="text-[11px] font-black text-orange-800 uppercase tracking-wide">Supermercado Activo</p>
+                    <p className="text-[10px] text-orange-600 font-bold">14 personas de Cotuí están comprando ahora mismo. ¡Aprovecha el 10%!</p>
+                  </div>
+                </div>
+
+                <div className="sticky top-24 z-40 bg-[#F7F9FB] pt-2 pb-4 -mx-6 px-6 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.05)]">
                   <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x">
                     <button onClick={() => { setActiveCategory('Todos'); setSearch(''); }} className={`snap-start min-w-[70px] flex flex-col items-center gap-2 group ${activeCategory === 'Todos' ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}>
                       <div className={`w-14 h-14 rounded-[1.2rem] flex items-center justify-center text-2xl shadow-sm transition-all ${activeCategory === 'Todos' ? 'bg-red-600 text-white scale-110 shadow-red-200' : 'bg-white text-slate-400'}`}>🌟</div>
@@ -661,13 +680,13 @@ useEffect(() => {
                   </div>
                 </div>
 
-                <div className="relative mt-6 mb-8 group">
+                <div className="relative mt-4 mb-8 group">
                   <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-600 transition-colors">
                     <SVG.Search />
                   </div>
                   <input 
                     type="text" 
-                    placeholder="Busca en el súper (ej. Arroz, Leche)..." 
+                    placeholder="Busca en el supermercado..." 
                     className="w-full bg-white rounded-[2rem] py-4 pl-16 pr-12 border-none shadow-sm outline-none focus:ring-2 focus:ring-red-600 transition-all font-medium text-sm"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -681,17 +700,20 @@ useEffect(() => {
                   <div className="mb-10">
                     <div className="flex items-center gap-2 px-2 mb-4">
                       <span className="text-red-600"><SVG.Sparkles /></span>
-                      <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Lleva también</h3>
+                      <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Lleva también (Más Vendidos)</h3>
                     </div>
                     <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
                       {homeSuggestions.map(sp => (
-                        <div key={'sug_'+sp.id} className="snap-start min-w-[140px] bg-white p-3 rounded-2xl border border-slate-50 shadow-sm flex flex-col">
+                        <div key={'sug_'+sp.id} className="snap-start min-w-[140px] bg-white p-3 rounded-2xl border border-slate-50 shadow-sm flex flex-col relative overflow-hidden">
+                          {/* Etiqueta de escasez aleatoria */}
+                          {Math.random() > 0.5 && <div className="absolute top-0 right-0 bg-red-600 text-white text-[8px] font-black px-2 py-1 rounded-bl-lg z-10">¡Pocos disponibles!</div>}
+                          
                           <div onClick={() => setSelectedProduct(sp)} className="w-full h-24 bg-[#F8FAFB] rounded-xl mb-3 flex items-center justify-center p-2 cursor-pointer">
                             <img src={sp.img} className="w-full h-full object-contain mix-blend-multiply" />
                           </div>
                           <h4 className="text-[11px] font-bold text-slate-800 line-clamp-1 mb-1">{sp.name}</h4>
                           <span className="text-sm font-black italic text-slate-900 mb-3">RD${sp.price}</span>
-                          <button onClick={() => addToCart(sp)} className="mt-auto w-full bg-slate-100 text-slate-900 text-[10px] font-black uppercase py-2 rounded-lg hover:bg-red-600 hover:text-white transition-colors">Añadir</button>
+                          <button onClick={() => addToCart(sp)} className="mt-auto w-full bg-red-50 text-red-700 text-[10px] font-black uppercase py-2 rounded-lg hover:bg-red-600 hover:text-white transition-colors">Añadir Rápido</button>
                         </div>
                       ))}
                     </div>
@@ -809,17 +831,19 @@ useEffect(() => {
 
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               
+              {/* BARRA DE PROGRESO DESCUENTO ACTUALIZADA */}
               {cart.length > 0 && (
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                  <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-2.5">
-                    <span className={discountPercent >= 5 ? 'text-red-600' : 'text-slate-400'}>5% OFF (RD$500)</span>
-                    <span className={discountPercent >= 10 ? 'text-red-600' : 'text-slate-400'}>10% OFF (RD$1000)</span>
+                <div className="bg-white p-4 rounded-2xl border border-red-100 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-red-600"></div>
+                  <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-2.5 pl-2">
+                    <span className="text-slate-600">Oferta del Día</span>
+                    <span className={discountPercent >= 10 ? 'text-red-600 animate-pulse' : 'text-slate-400'}>10% OFF (Llega a RD$500)</span>
                   </div>
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2">
-                    <div className="h-full bg-red-600 transition-all duration-500 rounded-full" style={{ width: `${progressPercent}%` }}></div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-2 ml-2">
+                    <div className="h-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-500 rounded-full" style={{ width: `${progressPercent}%` }}></div>
                   </div>
-                  <p className="text-center text-[10px] font-bold text-slate-500">
-                    {discountPercent === 10 ? '¡Felicidades! Tienes 10% de descuento aplicado.' : `Agrega RD$${missingForNext.toFixed(2)} para ganar un ${nextGoalPercent}% de descuento`}
+                  <p className="text-center text-[10px] font-bold text-slate-500 ml-2">
+                    {discountPercent === 10 ? '¡Felicidades! Tienes 10% de descuento aplicado.' : `Agrega RD$${missingForNext.toFixed(2)} más para ganar tu 10% de descuento HOY`}
                   </p>
                 </div>
               )}
