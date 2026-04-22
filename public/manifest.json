@@ -1,24 +1,24 @@
 {
-  "name": "Kolma RD Supermercado Digital",
+  "name": "Kolma RD Supermercado",
   "short_name": "Kolma RD",
-  "description": "El supermercado digital más completo de Cotuí. Calidad y rapidez en tus manos.",
+  "description": "Tu Súper Express",
   "start_url": "/",
   "display": "standalone",
+  "background_color": "#F7F9FB",
+  "theme_color": "#DC2626",
   "orientation": "portrait",
-  "background_color": "#ffffff",
-  "theme_color": "#E31E24",
   "icons": [
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ],
-  "categories": ["shopping", "food"]
+  ]
 }
