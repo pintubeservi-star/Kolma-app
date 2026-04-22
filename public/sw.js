@@ -1,8 +1,13 @@
+const CACHE_NAME = 'kolmard-v1';
+
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(['/']))
+  );
 });
 
 self.addEventListener('fetch', (event) => {
-  // Este código permite que la app cargue online normalmente
-  event.respondWith(fetch(event.request));
+  event.respondWith(
+    caches.match(event.request).then((response) => response || fetch(event.request))
+  );
 });
