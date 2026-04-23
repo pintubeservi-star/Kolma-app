@@ -12,7 +12,7 @@ const primaryColor = "bg-[#E31E52]";
 const textColor = "text-[#E31E52]";
 const primaryHex = "#E31E52";
 
-// Iconos SVG Personalizados que no están en Lucide
+// Iconos SVG Personalizados
 const SVG = {
   Box: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-12 h-12 text-slate-300"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
   Motorcycle: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-8 h-8 text-white drop-shadow-md"><path d="M5 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19 16a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M5 10h1.5l1.5 2h3l1.5-2H14l1.5 3H19"/><path d="M9 10 7 6h2l2 4"/></svg>
@@ -36,7 +36,6 @@ const getCategoryStyle = (name) => {
 const defaultGuest = { name: 'Invitado', lastName: '', email: 'Sin registrar', address: 'Cotuí, Sánchez Ramírez', phone: '+1 ', isGuest: true };
 
 export default function KolmaApp() {
-  // LÓGICA DE SHOPIFY Y ESTADO ORIGINAL
   const [user, setUser] = useState(defaultGuest);
   const [showLogin, setShowLogin] = useState(false);
   const [authMode, setAuthMode] = useState('login'); 
@@ -62,7 +61,6 @@ export default function KolmaApp() {
   const [categories, setCategories] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // NUEVOS ESTADOS DE NAVEGACIÓN UI
   const [currentView, setCurrentView] = useState('inicio');
   const [activeTab, setActiveTab] = useState('inicio');
 
@@ -147,7 +145,7 @@ export default function KolmaApp() {
         setCategories(dynamicCategories);
       }
     } catch (error) {
-      showAppToast('Error cargando pasillos del supermercado. Verifica tu conexión.', 'error');
+      showAppToast('Error cargando pasillos del supermercado.', 'error');
     } finally {
       setLoadingData(false);
     }
@@ -190,7 +188,7 @@ export default function KolmaApp() {
         setUser(loggedUser);
         localStorage.setItem('kolma_user', JSON.stringify(loggedUser));
         setShowLogin(false);
-        showAppToast(authMode === 'login' ? '¡Bienvenido de vuelta al súper!' : '¡Cuenta creada, listo para comprar!');
+        showAppToast(authMode === 'login' ? '¡Bienvenido de vuelta!' : '¡Cuenta creada!');
       } else {
         showAppToast(data.error || 'Verifica tu correo y contraseña.', 'error');
       }
@@ -206,10 +204,11 @@ export default function KolmaApp() {
     setCart([]);
     setActiveTab('inicio');
     setCurrentView('inicio');
-    setShowLogin(true);
+    setShowLogin(false); 
     setFormData({ ...formData, password: '' }); 
     localStorage.removeItem('kolma_user');
     localStorage.removeItem('kolmard_cart');
+    showAppToast('Sesión cerrada');
   };
 
   const handleGuestEntry = () => {
@@ -283,21 +282,12 @@ export default function KolmaApp() {
     return result;
   }, [search, activeCategory, products]);
 
-  const homeSuggestions = useMemo(() => {
-    if (products.length === 0) return [];
-    return [...products].sort(() => 0.5 - Math.random()).slice(0, 5);
-  }, [products]);
-
-  const cartSuggestions = useMemo(() => {
-    return products.filter(p => !cart.some(c => c.id === p.id) && p.available).slice(0, 4);
-  }, [products, cart]);
-
   const handleCheckoutClick = () => {
     if (cart.length === 0) return;
     if (user.isGuest) {
       setIsCartOpen(false);
       setShowLogin(true);
-      return showAppToast('Inicia sesión o regístrate para procesar tu pedido.', 'error');
+      return showAppToast('Inicia sesión para procesar tu pedido.', 'error');
     }
     setShowPayment(true);
   };
@@ -336,9 +326,9 @@ export default function KolmaApp() {
         setIsCartOpen(false);
         setShowPayment(false);
         setActiveTab('pedidos');
-        showAppToast('¡Orden recibida! La estamos preparando en el supermercado.');
+        showAppToast('¡Orden recibida!');
       } else {
-        showAppToast(`Detalle: ${data.error || 'Respuesta inválida de Shopify'}`, 'error');
+        showAppToast(`Detalle: ${data.error || 'Error de Shopify'}`, 'error');
       }
     } catch (error) {
       showAppToast(`Error local: ${error.message}`, 'error');
@@ -372,7 +362,7 @@ export default function KolmaApp() {
         <div className="bg-red-50 p-4 rounded-2xl flex items-start gap-3">
           <Package className={textColor} size={20} />
           <p className="text-sm text-gray-700">
-            Envía paquetes, documentos o cualquier encargo dentro de <strong>Cotuí</strong> de forma segura.
+            Envía paquetes, documentos o cualquier encargo dentro de <strong>Cotuí</strong>.
           </p>
         </div>
 
@@ -411,10 +401,10 @@ export default function KolmaApp() {
           onClick={() => {
             if (user.isGuest) {
               setShowLogin(true);
-              return showAppToast('Inicia sesión o regístrate para pedir un Mandao.', 'error');
+              return showAppToast('Inicia sesión para pedir un Mandao.', 'error');
             }
             setCurrentView('inicio');
-            showAppToast('Solicitud de Mandao recibida.');
+            showAppToast('Solicitud recibida.');
           }}
           className={`${primaryColor} w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg active:scale-95 transition-transform`}
         >
@@ -443,9 +433,6 @@ export default function KolmaApp() {
             <p className="text-slate-400 font-bold uppercase text-[9px] tracking-[0.3em] flex items-center justify-center gap-1">
               <span>Tu Supermercado</span> <span className={textColor}>⚡</span>
             </p>
-            <div className="mt-4 bg-red-50 border border-red-100 rounded-xl py-2 px-3 flex items-center justify-center gap-2 animate-pulse">
-              <span className={`${textColor} font-black text-sm`}>🔥 10% OFF en pedidos &gt; RD$500 HOY</span>
-            </div>
           </div>
 
           <form onSubmit={handleAuth} className="space-y-4">
@@ -488,7 +475,7 @@ export default function KolmaApp() {
             </div>
 
             <button type="submit" disabled={loadingAuth} className={`w-full ${primaryColor} text-white py-4 rounded-[1.5rem] font-black text-base hover:bg-[#C91A47] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mt-4`}>
-              {loadingAuth ? 'Verificando...' : (authMode === 'login' ? 'Entrar al Súper' : 'Aprovechar Oferta')}
+              {loadingAuth ? 'Verificando...' : (authMode === 'login' ? 'Entrar al Súper' : 'Crear Cuenta')}
             </button>
           </form>
 
@@ -518,7 +505,6 @@ export default function KolmaApp() {
         <MandaoForm />
       ) : (
         <>
-          {/* HEADER VIBRANTE Y BUSCADOR */}
           {activeTab === 'inicio' && (
             <div className={`${primaryColor} text-white p-4 pb-8 rounded-b-[2.5rem] shadow-md`}>
               <div className="flex justify-between items-center mb-6">
@@ -576,7 +562,6 @@ export default function KolmaApp() {
             </div>
           )}
 
-          {/* CONTENIDO PRINCIPAL */}
           <main className="px-4 py-4">
             {loadingData ? (
                <div className="flex flex-col items-center justify-center py-20 opacity-50">
@@ -585,7 +570,6 @@ export default function KolmaApp() {
                </div>
             ) : (
               <>
-                {/* VISTA INICIO */}
                 {activeTab === 'inicio' && (
                   <div className="animate-in fade-in duration-500">
                     
@@ -616,7 +600,6 @@ export default function KolmaApp() {
                           </div>
                         </div>
 
-                        {/* CATEGORÍAS (De Shopify) */}
                         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x -mx-4 px-4 mb-6">
                           <button onClick={() => { setActiveCategory('Todos'); setSearch(''); }} className={`snap-start min-w-[70px] flex flex-col items-center gap-2 group`}>
                             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-all ${activeCategory === 'Todos' ? `${primaryColor} text-white scale-110 shadow-red-200` : 'bg-white text-slate-400'}`}>🌟</div>
@@ -669,7 +652,6 @@ export default function KolmaApp() {
                   </div>
                 )}
 
-                {/* VISTA PEDIDOS (Órdenes) */}
                 {activeTab === 'pedidos' && (
                   <div className="animate-in fade-in duration-500 pt-6">
                     <div className={`${primaryColor} rounded-[2.5rem] p-6 mb-8 text-white relative overflow-hidden shadow-xl border border-red-500`}>
@@ -692,7 +674,7 @@ export default function KolmaApp() {
                     {user.isGuest ? (
                        <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-50">
                         <p className="text-slate-400 text-sm mb-4">Debes iniciar sesión para ver tus compras.</p>
-                        <button onClick={handleLogout} className={`${textColor} font-bold hover:underline`}>Iniciar Sesión</button>
+                        <button onClick={() => setShowLogin(true)} className={`${textColor} font-bold hover:underline`}>Iniciar Sesión</button>
                        </div>
                     ) : orders.length === 0 ? (
                       <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-50">
@@ -732,7 +714,6 @@ export default function KolmaApp() {
                   </div>
                 )}
 
-                {/* VISTA PERFIL */}
                 {activeTab === 'perfil' && (
                   <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6 pt-6">
                     <div className="flex justify-between items-center mb-4">
@@ -749,7 +730,7 @@ export default function KolmaApp() {
                          <div className="text-4xl mb-2">👤</div>
                          <h3 className={`font-black ${textColor} text-lg mb-1`}>Cuenta de Invitado</h3>
                          <p className="text-xs text-red-700 mb-4 font-medium">Regístrate para guardar tu dirección y hacer pedidos más rápido.</p>
-                         <button onClick={handleLogout} className={`${primaryColor} text-white font-bold px-6 py-3 rounded-xl shadow-sm hover:bg-[#C91A47]`}>Iniciar Sesión / Registro</button>
+                         <button onClick={() => setShowLogin(true)} className={`${primaryColor} text-white font-bold px-6 py-3 rounded-xl shadow-sm hover:bg-[#C91A47]`}>Iniciar Sesión / Registro</button>
                        </div>
                     ) : isEditingProfile ? (
                       <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-50 space-y-4">
@@ -803,12 +784,12 @@ export default function KolmaApp() {
                             </div>
                           </div>
                         </div>
+                        
+                        <button onClick={handleLogout} className="w-full bg-slate-900 text-white py-4 rounded-[2rem] font-black text-lg hover:bg-[#E31E52] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mt-8">
+                          <LogOut size={20}/> Cerrar Sesión
+                        </button>
                       </>
                     )}
-
-                    <button onClick={handleLogout} className="w-full bg-slate-900 text-white py-4 rounded-[2rem] font-black text-lg hover:bg-[#E31E52] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 mt-8">
-                      <LogOut size={20}/> Cerrar Sesión
-                    </button>
                   </div>
                 )}
               </>
